@@ -1,11 +1,20 @@
+import { useState } from 'react'
 import { Header } from '../../components/Header/Header'
 import { WalletCard } from '../../components/WalletCard/WalletCard'
 import { PositionTable } from '../../components/PositionTable/PositionTable'
+import { AddPositionModal } from '../../components/AddPositionModal/AddPositionModal'
 import { useWallets } from '../../hooks/useWallets'
+import type { WalletSummary } from '../../types/WalletSummary'
 import './Wallet.css'
 
 export function Wallet() {
-  const { wallets, loading, error } = useWallets()
+  const { wallets, setWallets, loading, error } = useWallets()
+  const [activeModal, setActiveModal] = useState<string | null>(null)
+
+  function handlePositionAdded(updated: WalletSummary) {
+    setWallets(prev => prev.map(w => w.id === updated.id ? updated : w))
+    setActiveModal(null)
+  }
 
   if (loading) return (
     <div className="wallet-page">
@@ -34,10 +43,22 @@ export function Wallet() {
 
       {wallets.map((wallet, i) => (
         <div key={wallet.id} className="wallet-section">
-          <WalletCard wallet={wallet} index={i} />
+          <WalletCard wallet={wallet} index={i} onAddPosition={() => setActiveModal(wallet.id)} />
           <PositionTable positions={wallet.positions} />
         </div>
       ))}
+
+      {activeModal && (() => {
+        const wallet = wallets.find(w => w.id === activeModal)!
+        return (
+          <AddPositionModal
+            walletId={wallet.id}
+            walletName={wallet.name}
+            onClose={() => setActiveModal(null)}
+            onSuccess={handlePositionAdded}
+          />
+        )
+      })()}
     </div>
   )
 }
