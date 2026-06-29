@@ -1,0 +1,7 @@
+.wallet-page { max-width: 960px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+.wallet-section { margin-bottom: 2rem; }
+
+.wallet-state { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+
+.wallet-state--error { color: #e24b4a; }
