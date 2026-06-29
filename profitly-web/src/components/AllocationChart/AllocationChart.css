@@ -1,0 +1,36 @@
+.allocation-chart {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.allocation-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.allocation-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.allocation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.allocation-ticker {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  width: 52px;
+}
+
+.allocation-pct {
+  font-size: 12px;
+  color: #888;
+}
