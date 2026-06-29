@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAddPosition } from '../../hooks/useAddPosition'
+import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { useStockQuotes } from '../../hooks/useStockQuotes'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './AddPositionModal.css'
@@ -13,9 +13,10 @@ interface AddPositionModalProps {
 
 export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: AddPositionModalProps) {
   const { stocks } = useStockQuotes()
-  const { addPosition, loading, error } = useAddPosition()
+  const { addEntry, loading, error } = usePositionEntries()
 
   const [ticker, setTicker] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
   const [quantity, setQuantity] = useState(1)
   const [price, setPrice] = useState(0)
 
@@ -31,14 +32,9 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!ticker || quantity <= 0 || price <= 0) return
+    if (!ticker || !date || quantity <= 0 || price <= 0) return
 
-    const updated = await addPosition(walletId, {
-      ticker,
-      quantity,
-      averagePrice: price,
-    })
-
+    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: price })
     if (updated) onSuccess(updated)
   }
 
@@ -73,6 +69,17 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
           <div className="modal-row">
             <div className="modal-field">
+              <label className="modal-label">Date</label>
+              <input
+                className="modal-input"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="modal-field">
               <label className="modal-label">Quantity</label>
               <input
                 className="modal-input"
@@ -86,7 +93,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Price (R$)</label>
+              <label className="modal-label">Paid price (R$)</label>
               <input
                 className="modal-input"
                 type="number"
@@ -100,7 +107,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
           </div>
 
           <div className="modal-total">
-            <span className="modal-total-label">Total value</span>
+            <span className="modal-total-label">Total invested</span>
             <span className="modal-total-value">
               {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
@@ -113,7 +120,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
               Cancel
             </button>
             <button type="submit" className="modal-btn-submit" disabled={loading}>
-              {loading ? 'Adding...' : '+ Add position'}
+              {loading ? 'Adding...' : '+ Add entry'}
             </button>
           </div>
         </form>
