@@ -11,8 +11,12 @@ export function Wallet() {
   const { wallets, setWallets, loading, error } = useWallets()
   const [activeModal, setActiveModal] = useState<string | null>(null)
 
-  function handlePositionAdded(updated: WalletSummary) {
+  function handleWalletUpdate(updated: WalletSummary) {
     setWallets(prev => prev.map(w => w.id === updated.id ? updated : w))
+  }
+
+  function handlePositionAdded(updated: WalletSummary) {
+    handleWalletUpdate(updated)
     setActiveModal(null)
   }
 
@@ -44,7 +48,7 @@ export function Wallet() {
       {wallets.map((wallet, i) => (
         <div key={wallet.id} className="wallet-section">
           <WalletCard wallet={wallet} index={i} onAddPosition={() => setActiveModal(wallet.id)} />
-          <PositionTable positions={wallet.positions} />
+          <PositionTable walletId={wallet.id} positions={wallet.positions} onWalletUpdate={handleWalletUpdate} />
         </div>
       ))}
 
