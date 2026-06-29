@@ -1,3 +1,11 @@
+export interface PositionEntry {
+  id: string
+  date: string
+  quantity: number
+  paidPrice: number
+  total: number
+}
+
 export interface WalletPositionSummary {
   id: string
   ticker: string
@@ -9,6 +17,7 @@ export interface WalletPositionSummary {
   currentValue: number
   profitOrLoss: number
   profitOrLossPercent: number
+  entries: PositionEntry[]
 }
 
 export interface WalletSummary {
