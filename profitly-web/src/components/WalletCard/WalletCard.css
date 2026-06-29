@@ -1,41 +1,107 @@
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .wallet-card {
-  background: #f9f9f9;
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.25rem;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  animation: fadeInUp 0.45s ease both;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.wallet-card:hover {
+  box-shadow: 0 6px 24px rgba(55,138,221,0.10);
+  transform: translateY(-2px);
+}
+
+.wallet-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.wallet-card-left {
+  flex: 1;
+  min-width: 0;
 }
 
 .wallet-card-name {
-  font-size: 15px;
-  font-weight: 500;
-  margin-bottom: 0.875rem;
-  color: #222;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 1.125rem;
+  letter-spacing: -0.01em;
 }
 
-.wallet-card-grid {
+.wallet-card-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
 }
 
-.wallet-card-stat {
+.wallet-stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  padding-right: 1.5rem;
+  border-right: 1px solid #f0f0f0;
 }
 
-.wallet-card-label {
-  font-size: 11px;
-  color: #888;
+.wallet-stat:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.wallet-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #aaa;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.07em;
 }
 
-.wallet-card-value {
-  font-size: 16px;
-  font-weight: 500;
-  color: #222;
+.wallet-stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: -0.02em;
 }
+
+.wallet-stat-return {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.return--up   { background: #e1f5ee; color: #0f6e56; }
+.return--down { background: #fcebeb; color: #a32d2d; }
 
 .positive { color: #1d9e75; }
 .negative { color: #e24b4a; }
+
+.wallet-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wallet-chart-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  align-self: flex-start;
+}
