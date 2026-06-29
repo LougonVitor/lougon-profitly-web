@@ -1,0 +1,29 @@
+.summary-card {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.summary-value--positive { color: #1d9e75; }
+.summary-value--negative { color: #e24b4a; }
+.summary-value--default  { color: #222; }
+
+.summary-sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.summary-sub--positive { color: #1d9e75; }
+.summary-sub--negative { color: #e24b4a; }
+.summary-sub--default  { color: #888; }

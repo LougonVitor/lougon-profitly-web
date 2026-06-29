@@ -1,0 +1,39 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0 1.25rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.logo-accent {
+  color: #378add;
+}
+
+.header-subtitle {
+  font-size: 13px;
+  color: #888;
+}
+
+.header-search {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  outline: none;
+  width: 200px;
+}
+
+.header-search:focus {
+  border-color: #378add;
+}
