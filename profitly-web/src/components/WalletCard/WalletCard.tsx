@@ -5,21 +5,25 @@ import './WalletCard.css'
 interface WalletCardProps {
   wallet: WalletSummary
   index: number
+  onAddPosition: () => void
 }
 
 function fmtBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export function WalletCard({ wallet, index }: WalletCardProps) {
+export function WalletCard({ wallet, index, onAddPosition }: WalletCardProps) {
   const up = wallet.profitOrLoss >= 0
 
   return (
     <div className="wallet-card" style={{ animationDelay: `${index * 0.08}s` }}>
+      <div className="wallet-card-top">
+          <div className="wallet-card-name">{wallet.name}</div>
+          <button className="wallet-add-btn" onClick={onAddPosition}>+ Add position</button>
+        </div>
+
       <div className="wallet-card-body">
         <div className="wallet-card-left">
-          <div className="wallet-card-name">{wallet.name}</div>
-
           <div className="wallet-card-stats">
             <div className="wallet-stat">
               <span className="wallet-stat-label">Invested</span>
