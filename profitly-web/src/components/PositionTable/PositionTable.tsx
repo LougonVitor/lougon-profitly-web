@@ -1,12 +1,14 @@
-import type { WalletPositionSummary } from '../../types/WalletSummary'
+import type { WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { PositionRow } from '../PositionRow/PositionRow'
 import './PositionTable.css'
 
 interface PositionTableProps {
+  walletId: string
   positions: WalletPositionSummary[]
+  onWalletUpdate: (updated: WalletSummary) => void
 }
 
-export function PositionTable({ positions }: PositionTableProps) {
+export function PositionTable({ walletId, positions, onWalletUpdate }: PositionTableProps) {
   return (
     <div className="position-table-wrap">
       <div className="position-table-header">
@@ -16,7 +18,7 @@ export function PositionTable({ positions }: PositionTableProps) {
       <table>
         <thead>
           <tr>
-            <th style={{ width: 150 }}>Ticker</th>
+            <th style={{ width: 160 }}>Ticker</th>
             <th className="right" style={{ width: 60 }}>Qty</th>
             <th className="right" style={{ width: 110 }}>Avg price</th>
             <th className="right" style={{ width: 120 }}>Current price</th>
@@ -24,11 +26,18 @@ export function PositionTable({ positions }: PositionTableProps) {
             <th className="right" style={{ width: 120 }}>Current value</th>
             <th className="right" style={{ width: 120 }}>P&amp;L</th>
             <th className="right" style={{ width: 100 }}>P&amp;L %</th>
+            <th style={{ width: 30 }}></th>
           </tr>
         </thead>
         <tbody>
           {positions.map((position, i) => (
-            <PositionRow key={position.id} position={position} index={i} />
+            <PositionRow
+              key={position.id}
+              walletId={walletId}
+              position={position}
+              index={i}
+              onWalletUpdate={onWalletUpdate}
+            />
           ))}
         </tbody>
       </table>
