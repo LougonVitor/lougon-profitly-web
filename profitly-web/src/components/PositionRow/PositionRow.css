@@ -3,8 +3,14 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes entriesIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .position-row {
   animation: fadeInRow 0.35s ease both;
+  cursor: pointer;
 }
 
 .position-row:hover td { background: #f8faff; }
@@ -44,6 +50,19 @@
   font-size: 13px;
   font-weight: 600;
   color: #111;
+  display: block;
+}
+
+.position-entries-count {
+  font-size: 11px;
+  color: #aaa;
+  display: block;
+  margin-top: 1px;
+}
+
+.expand-icon {
+  font-size: 10px;
+  color: #aaa;
 }
 
 .positive { color: #1d9e75; }
@@ -62,3 +81,95 @@
 }
 .badge--up   { background: #e1f5ee; color: #0f6e56; }
 .badge--down { background: #fcebeb; color: #a32d2d; }
+
+/* ---- Entries sub-table ---- */
+
+.entries-row { }
+
+.entries-cell {
+  padding: 0 !important;
+  border-bottom: 1px solid #e8e8e8 !important;
+}
+
+.entries-container {
+  background: #f8faff;
+  border-top: 1px solid #e8e8e8;
+  animation: entriesIn 0.2s ease both;
+}
+
+.entries-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.entries-table th {
+  font-size: 10px;
+  font-weight: 600;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 1.25rem;
+  border-bottom: 1px solid #eef0f5;
+  background: transparent;
+}
+
+.entries-table td {
+  font-size: 12px;
+  color: #444;
+  padding: 8px 1.25rem;
+  border-bottom: 1px solid #eef0f5;
+}
+
+.entry-row:last-child td { border-bottom: none; }
+
+.entry-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.entry-btn {
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.entry-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.entry-btn--edit {
+  background: #eef3fb;
+  color: #378add;
+}
+.entry-btn--edit:hover { background: #dce8f7; }
+
+.entry-btn--delete {
+  background: #fcebeb;
+  color: #e24b4a;
+}
+.entry-btn--delete:hover:not(:disabled) { background: #f7d5d5; }
+
+.entries-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 1.25rem;
+  border-top: 1px solid #eef0f5;
+}
+
+.entry-btn--delete-all {
+  background: none;
+  color: #e24b4a;
+  border: 1px solid #e24b4a;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.entry-btn--delete-all:hover:not(:disabled) { background: #fcebeb; }
+.entry-btn--delete-all:disabled { opacity: 0.4; cursor: not-allowed; }
