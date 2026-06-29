@@ -17,5 +17,5 @@ export function useWallets() {
       .finally(() => setLoading(false))
   }, [])
 
-  return { wallets, loading, error }
+  return { wallets, setWallets, loading, error }
 }
