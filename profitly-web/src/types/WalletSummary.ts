@@ -1,6 +1,7 @@
 export interface WalletPositionSummary {
   id: string
   ticker: string
+  logoUrl: string | null
   quantity: number
   averagePrice: number
   currentPrice: number
