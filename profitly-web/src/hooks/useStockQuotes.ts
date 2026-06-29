@@ -11,7 +11,7 @@ export function useStockQuotes() {
   useEffect(() => {
     async function fetchStocks() {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/stocks`)
+        const response = await fetch(`${API_BASE_URL}/api/stocks/quote`)
         if (!response.ok) throw new Error('Failed to fetch stocks')
         const data: StockQuote[] = await response.json()
         setStocks(data)
