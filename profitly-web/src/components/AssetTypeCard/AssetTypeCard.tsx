@@ -126,7 +126,7 @@ export function AssetTypeCard({
   walletId, label, assetType, positions, portfolioCurrentValue, onWalletUpdate,
 }: AssetTypeCardProps) {
   const { t } = useI18n()
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
   const totalCurrentValue = positions.reduce((s, p) => s + (p.currentValue ?? 0), 0)
   const totalInvested = positions.reduce((s, p) => s + (p.totalInvested ?? 0), 0)
