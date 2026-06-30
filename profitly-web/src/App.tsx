@@ -3,7 +3,7 @@ import { Dashboard } from './pages/Dashboard/Dashboard'
 import { Wallet } from './pages/Wallet/Wallet'
 import { Login } from './pages/Login/Login'
 import { Register } from './pages/Register/Register'
-import { TickerDetail } from './pages/TickerDetail/TickerDetail'
+import { TickerAnalysis } from './pages/TickerAnalysis/TickerAnalysis'
 import { I18nProvider } from './i18n/I18nContext'
 import { ThemeProvider } from './i18n/ThemeContext'
 
@@ -22,7 +22,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
             <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
-            <Route path="/ticker/:symbol" element={<PrivateRoute><TickerDetail /></PrivateRoute>} />
+            <Route path="/ticker/:symbol" element={<PrivateRoute><TickerAnalysis /></PrivateRoute>} />
           </Routes>
         </BrowserRouter>
       </I18nProvider>
