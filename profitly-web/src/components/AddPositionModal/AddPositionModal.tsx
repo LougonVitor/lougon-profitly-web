@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
-import { useStockQuotes } from '../../hooks/useStockQuotes'
+import { useTickers } from '../../hooks/useTickers'
 import { TickerSelect } from '../TickerSelect/TickerSelect'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './AddPositionModal.css'
@@ -13,7 +13,7 @@ interface AddPositionModalProps {
 }
 
 export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: AddPositionModalProps) {
-  const { stocks } = useStockQuotes()
+  const { tickers } = useTickers()
   const { addEntry, loading, error } = usePositionEntries()
 
   const [ticker, setTicker] = useState('')
@@ -52,7 +52,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="modal-field">
             <label className="modal-label">Ticker</label>
-            <TickerSelect stocks={stocks} value={ticker} onChange={setTicker} />
+            <TickerSelect tickers={tickers} value={ticker} onChange={setTicker} />
           </div>
 
           <div className="modal-row">
