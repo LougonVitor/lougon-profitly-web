@@ -45,3 +45,64 @@
   animation: pulse 1.4s ease-in-out infinite;
   animation-delay: 0.15s;
 }
+
+.wallet-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.wallet-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.wallet-new-btn {
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.wallet-new-btn:hover { background: #378add; }
+.wallet-new-btn:active { transform: scale(0.97); }
+
+.wallet-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 5rem 2rem;
+}
+
+.wallet-empty-text {
+  font-size: 15px;
+  color: #aaa;
+  margin: 0;
+}
+
+.wallet-empty-btn {
+  background: none;
+  border: 2px dashed #d0d0d0;
+  color: #888;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.wallet-empty-btn:hover {
+  border-color: #378add;
+  color: #378add;
+}

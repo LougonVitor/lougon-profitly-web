@@ -3,6 +3,7 @@ import { Header } from '../../components/Header/Header'
 import { WalletCard } from '../../components/WalletCard/WalletCard'
 import { PositionTable } from '../../components/PositionTable/PositionTable'
 import { AddPositionModal } from '../../components/AddPositionModal/AddPositionModal'
+import { CreateWalletModal } from '../../components/CreateWalletModal/CreateWalletModal'
 import { useWallets } from '../../hooks/useWallets'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './Wallet.css'
@@ -10,6 +11,7 @@ import './Wallet.css'
 export function Wallet() {
   const { wallets, setWallets, loading, error } = useWallets()
   const [activeModal, setActiveModal] = useState<string | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   function handleWalletUpdate(updated: WalletSummary) {
     setWallets(prev => prev.map(w => w.id === updated.id ? updated : w))
@@ -18,6 +20,11 @@ export function Wallet() {
   function handlePositionAdded(updated: WalletSummary) {
     handleWalletUpdate(updated)
     setActiveModal(null)
+  }
+
+  function handleWalletCreated(created: WalletSummary) {
+    setWallets(prev => [...prev, created])
+    setShowCreateModal(false)
   }
 
   if (loading) return (
@@ -41,8 +48,20 @@ export function Wallet() {
     <div className="wallet-page">
       <Header />
 
+      <div className="wallet-page-header">
+        <h2 className="wallet-page-title">My Wallets</h2>
+        <button className="wallet-new-btn" onClick={() => setShowCreateModal(true)}>
+          + New wallet
+        </button>
+      </div>
+
       {wallets.length === 0 && (
-        <div className="wallet-state">No wallets found.</div>
+        <div className="wallet-empty">
+          <p className="wallet-empty-text">No wallets yet.</p>
+          <button className="wallet-empty-btn" onClick={() => setShowCreateModal(true)}>
+            + Create your first wallet
+          </button>
+        </div>
       )}
 
       {wallets.map((wallet, i) => (
@@ -51,6 +70,13 @@ export function Wallet() {
           <PositionTable walletId={wallet.id} positions={wallet.positions} onWalletUpdate={handleWalletUpdate} />
         </div>
       ))}
+
+      {showCreateModal && (
+        <CreateWalletModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={handleWalletCreated}
+        />
+      )}
 
       {activeModal && (() => {
         const wallet = wallets.find(w => w.id === activeModal)!
