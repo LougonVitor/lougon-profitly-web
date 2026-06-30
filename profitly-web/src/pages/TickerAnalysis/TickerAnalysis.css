@@ -214,10 +214,25 @@
   margin-bottom: 1rem;
 }
 
+.ta-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 1.25rem 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ta-section-header .ta-range-btns {
+  padding: 0;
+}
+
 .ta-section-title {
   font-size: 13px; font-weight: 700; color: var(--text-primary);
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
+}
+
+.ta-section-header .ta-section-title {
+  border-bottom: none;
+  padding: 0.5rem 1.25rem;
 }
 
 .ta-info-rows { display: flex; flex-direction: column; }

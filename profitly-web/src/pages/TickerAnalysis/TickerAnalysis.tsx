@@ -182,16 +182,46 @@ function PriceChartSection({ symbol }: { symbol: string }) {
   )
 }
 
-function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
-  const dividends = (analysis.dividends ?? [])
-    .filter(d => d.rate != null && d.rate > 0)
-    .slice(0, 24)
+const DIV_RANGES = [
+  { label: '1A',   years: 1 },
+  { label: '3A',   years: 3 },
+  { label: '5A',   years: 5 },
+  { label: '10A',  years: 10 },
+  { label: 'TODOS', years: 0 },
+]
 
-  if (dividends.length === 0) return null
+function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
+  const [divRange, setDivRange] = useState(5)
+
+  const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
+
+  const cutoff = divRange > 0
+    ? new Date(Date.now() - divRange * 365.25 * 24 * 60 * 60 * 1000)
+    : null
+
+  const dividends = (cutoff
+    ? all.filter(d => d.lastDatePrior && new Date(d.lastDatePrior) >= cutoff)
+    : all
+  )
+
+  if (all.length === 0) return null
 
   return (
     <div className="ta-section-card">
-      <div className="ta-section-title">Histórico de Dividendos</div>
+      <div className="ta-section-header">
+        <div className="ta-section-title">Histórico de Dividendos</div>
+        <div className="ta-range-btns">
+          {DIV_RANGES.map(r => (
+            <button
+              key={r.years}
+              className={`ta-range-btn ${divRange === r.years ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setDivRange(r.years)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="ta-dividends-chart">
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={dividends} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} barSize={14}>
