@@ -1,6 +1,7 @@
 import type { Ticker } from '../../types/Ticker'
 import { StockRow } from '../StockRow/StockRow'
 import type { FilterType } from '../../hooks/useTickerFilter'
+import { useI18n } from '../../i18n/I18nContext'
 import './StockTable.css'
 
 interface StockTableProps {
@@ -10,10 +11,12 @@ interface StockTableProps {
 }
 
 export function StockTable({ tickers, filter, onFilter }: StockTableProps) {
+  const { t } = useI18n()
+
   return (
     <div className="table-wrap">
       <div className="table-header">
-        <span className="table-title">Tickers</span>
+        <span className="table-title">{t.nav.tickers}</span>
         <div className="filter-row">
           {(['all', 'up', 'down'] as FilterType[]).map(f => (
             <button
@@ -21,7 +24,7 @@ export function StockTable({ tickers, filter, onFilter }: StockTableProps) {
               className={`filter-btn ${filter === f ? 'filter-btn--active' : ''}`}
               onClick={() => onFilter(f)}
             >
-              {f === 'all' ? 'All' : f === 'up' ? 'Advancing' : 'Declining'}
+              {f === 'all' ? t.filter.all : f === 'up' ? t.filter.advancing : t.filter.declining}
             </button>
           ))}
         </div>
@@ -29,12 +32,12 @@ export function StockTable({ tickers, filter, onFilter }: StockTableProps) {
       <table>
         <thead>
           <tr>
-            <th style={{ width: 200 }}>Ticker</th>
-            <th className="right" style={{ width: 90 }}>Price</th>
-            <th className="right" style={{ width: 100 }}>Change %</th>
-            <th className="right" style={{ width: 90 }}>Volume</th>
-            <th className="right" style={{ width: 110 }}>Market cap</th>
-            <th style={{ width: 100 }}>Type</th>
+            <th style={{ width: 200 }}>{t.position.ticker}</th>
+            <th className="right" style={{ width: 100 }}>Price</th>
+            <th className="right" style={{ width: 110 }}>Change %</th>
+            <th className="right" style={{ width: 100 }}>Volume</th>
+            <th className="right" style={{ width: 120 }}>Market cap</th>
+            <th style={{ width: 90 }}>Type</th>
           </tr>
         </thead>
         <tbody>
