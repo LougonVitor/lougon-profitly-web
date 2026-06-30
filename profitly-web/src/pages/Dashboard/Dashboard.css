@@ -1,10 +1,7 @@
-.dashboard { max-width: 960px; margin: 0 auto; padding: 0 1rem 2rem; }
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 1.25rem;
+.dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
 }
 
 .dashboard-state {
@@ -15,3 +12,334 @@
 }
 
 .dashboard-state--error { color: var(--text-down); }
+
+/* ── Market Pulse ───────────────────────────────────── */
+
+.market-pulse {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.pulse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.pulse-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(55,138,221,0.2);
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(55,138,221,0.2); }
+  50%       { box-shadow: 0 0 0 6px rgba(55,138,221,0.08); }
+}
+
+.pulse-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pulse-total {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.pulse-stats {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.pulse-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 110px;
+}
+
+.pulse-stat--up .pulse-stat-icon { color: var(--text-up); }
+.pulse-stat--down .pulse-stat-icon { color: var(--text-down); }
+
+.pulse-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pulse-stat--up .pulse-stat-icon {
+  background: var(--bg-badge-up);
+}
+
+.pulse-stat--down .pulse-stat-icon {
+  background: var(--bg-badge-down);
+}
+
+.pulse-stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pulse-stat-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.pulse-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.pulse-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.pulse-stat-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+/* Breadth bar */
+.pulse-breadth { flex: 1; }
+
+.breadth-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 8px;
+  background: var(--bg-subtle);
+}
+
+.breadth-up {
+  background: var(--text-up);
+  border-radius: 999px 0 0 999px;
+  transition: width 0.6s ease;
+}
+
+.breadth-neutral {
+  background: var(--text-muted);
+  opacity: 0.3;
+  transition: width 0.6s ease;
+}
+
+.breadth-down {
+  background: var(--text-down);
+  border-radius: 0 999px 999px 0;
+  margin-left: auto;
+  transition: width 0.6s ease;
+}
+
+.breadth-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.breadth-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breadth-legend-item--up { color: var(--text-up); }
+.breadth-legend-item--down { color: var(--text-down); }
+
+.breadth-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.breadth-dot--up { background: var(--text-up); }
+.breadth-dot--neutral { background: var(--text-muted); opacity: 0.4; }
+.breadth-dot--down { background: var(--text-down); }
+
+/* ── Main Grid ──────────────────────────────────────── */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Movers Card ───────────────────────────────────── */
+
+.movers-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.movers-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.875rem 1.25rem;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+.movers-card-header--up {
+  color: var(--text-up);
+}
+
+.movers-card-header--down {
+  color: var(--text-down);
+}
+
+.movers-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.movers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.625rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.12s;
+}
+
+.mover-row:last-child { border-bottom: none; }
+.mover-row:hover { background: var(--bg-card-hover); }
+
+.mover-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.mover-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: var(--bg-subtle);
+  flex-shrink: 0;
+}
+
+.mover-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.mover-symbol {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mover-price {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.mover-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mover-badge--up {
+  background: var(--bg-badge-up);
+  color: var(--text-up);
+}
+
+.mover-badge--down {
+  background: var(--bg-badge-down);
+  color: var(--text-down);
+}
+
+/* ── Distribution Card ─────────────────────────────── */
+
+.dist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.25rem 0.75rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dist-header { }
+
+.dist-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dist-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Responsive ────────────────────────────────────── */
+
+@media (max-width: 800px) {
+  .pulse-stats {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
