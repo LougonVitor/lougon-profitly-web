@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import './Header.css'
 
 interface HeaderProps {
@@ -7,6 +7,15 @@ interface HeaderProps {
 }
 
 export function Header({ search, onSearch }: HeaderProps) {
+  const navigate = useNavigate()
+  const username = localStorage.getItem('profitly_username')
+
+  function handleLogout() {
+    localStorage.removeItem('profitly_token')
+    localStorage.removeItem('profitly_username')
+    navigate('/login')
+  }
+
   return (
     <header className="header">
       <div className="header-left">
@@ -20,15 +29,23 @@ export function Header({ search, onSearch }: HeaderProps) {
           </NavLink>
         </nav>
       </div>
-      {onSearch !== undefined && (
-        <input
-          className="header-search"
-          type="text"
-          placeholder="Search ticker..."
-          value={search ?? ''}
-          onChange={e => onSearch(e.target.value)}
-        />
-      )}
+      <div className="header-right">
+        {onSearch !== undefined && (
+          <input
+            className="header-search"
+            type="text"
+            placeholder="Search ticker..."
+            value={search ?? ''}
+            onChange={e => onSearch(e.target.value)}
+          />
+        )}
+        {username && (
+          <div className="header-user">
+            <span className="header-username">{username}</span>
+            <button className="header-logout" onClick={handleLogout}>Logout</button>
+          </div>
+        )}
+      </div>
     </header>
   )
 }
