@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { useTickers } from '../../hooks/useTickers'
 import { TickerSelect } from '../TickerSelect/TickerSelect'
+import { useI18n } from '../../i18n/I18nContext'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './AddPositionModal.css'
 
@@ -15,6 +16,7 @@ interface AddPositionModalProps {
 export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: AddPositionModalProps) {
   const { tickers } = useTickers()
   const { addEntry, loading, error } = usePositionEntries()
+  const { t } = useI18n()
 
   const [ticker, setTicker] = useState('')
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
@@ -43,7 +45,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">Add position</div>
+            <div className="modal-title">{t.modal.addPosition}</div>
             <div className="modal-subtitle">{walletName}</div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -51,13 +53,13 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="modal-field">
-            <label className="modal-label">Ticker</label>
+            <label className="modal-label">{t.modal.ticker}</label>
             <TickerSelect tickers={tickers} value={ticker} onChange={setTicker} />
           </div>
 
           <div className="modal-row">
             <div className="modal-field">
-              <label className="modal-label">Date</label>
+              <label className="modal-label">{t.modal.date}</label>
               <input
                 className="modal-input"
                 type="date"
@@ -68,7 +70,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Quantity</label>
+              <label className="modal-label">{t.modal.quantity}</label>
               <input
                 className="modal-input"
                 type="number"
@@ -81,7 +83,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Paid price (R$)</label>
+              <label className="modal-label">{t.modal.paidPrice}</label>
               <input
                 className="modal-input"
                 type="number"
@@ -95,7 +97,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
           </div>
 
           <div className="modal-total">
-            <span className="modal-total-label">Total invested</span>
+            <span className="modal-total-label">{t.modal.totalInvested}</span>
             <span className="modal-total-value">
               {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
@@ -105,10 +107,10 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
           <div className="modal-actions">
             <button type="button" className="modal-btn-cancel" onClick={onClose}>
-              Cancel
+              {t.modal.cancel}
             </button>
             <button type="submit" className="modal-btn-submit" disabled={loading || !ticker}>
-              {loading ? 'Adding...' : '+ Add entry'}
+              {loading ? t.modal.adding : t.modal.addEntry}
             </button>
           </div>
         </form>
