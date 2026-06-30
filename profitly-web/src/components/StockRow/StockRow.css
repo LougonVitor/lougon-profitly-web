@@ -1,3 +1,5 @@
+.stock-row--clickable { cursor: pointer; }
+
 .stock-info { display: flex; align-items: center; gap: 10px; }
 
 .stock-logo {

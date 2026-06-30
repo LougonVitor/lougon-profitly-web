@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import type { Ticker } from '../../types/Ticker'
 import './StockRow.css'
 
@@ -30,10 +31,11 @@ function fmtVol(v: number | null | undefined): string {
 }
 
 export function StockRow({ ticker }: StockRowProps) {
+  const navigate = useNavigate()
   const up = (ticker.changePercent ?? 0) >= 0
 
   return (
-    <tr className="stock-row">
+    <tr className="stock-row stock-row--clickable" onClick={() => navigate(`/ticker/${ticker.symbol}`)}>
       <td>
         <div className="stock-info">
           <img
