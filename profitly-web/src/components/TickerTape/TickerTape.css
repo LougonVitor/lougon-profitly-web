@@ -1,0 +1,91 @@
+.ticker-tape {
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.ticker-tape::before,
+.ticker-tape::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ticker-tape::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--bg-card), transparent);
+}
+
+.ticker-tape::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--bg-card), transparent);
+}
+
+.ticker-tape-track {
+  display: flex;
+  width: max-content;
+  animation: tape-scroll calc(var(--item-count, 18) * 2.8s) linear infinite;
+}
+
+.ticker-tape-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes tape-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.tape-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-right: 1px solid var(--border-subtle);
+  transition: background 0.12s;
+  text-decoration: none;
+}
+
+.tape-item:hover {
+  background: var(--bg-subtle);
+}
+
+.tape-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: var(--bg-subtle);
+}
+
+.tape-symbol {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.tape-price {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.tape-change {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tape-change--up   { color: var(--text-up); }
+.tape-change--down { color: var(--text-down); }
