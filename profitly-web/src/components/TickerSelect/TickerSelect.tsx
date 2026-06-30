@@ -1,27 +1,27 @@
 import { useState, useRef, useEffect } from 'react'
-import type { StockQuote } from '../../types/StockQuote'
+import type { Ticker } from '../../types/Ticker'
 import './TickerSelect.css'
 
 interface TickerSelectProps {
-  stocks: StockQuote[]
+  tickers: Ticker[]
   value: string
   onChange: (symbol: string) => void
 }
 
-export function TickerSelect({ stocks, value, onChange }: TickerSelectProps) {
+export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selected = stocks.find(s => s.symbol === value)
+  const selected = tickers.find(t => t.symbol === value)
 
   const filtered = query.trim()
-    ? stocks.filter(s =>
-        s.symbol.toLowerCase().includes(query.toLowerCase()) ||
-        s.longName.toLowerCase().includes(query.toLowerCase())
+    ? tickers.filter(t =>
+        t.symbol.toLowerCase().includes(query.toLowerCase()) ||
+        (t.name ?? '').toLowerCase().includes(query.toLowerCase())
       )
-    : stocks
+    : tickers
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -61,11 +61,11 @@ export function TickerSelect({ stocks, value, onChange }: TickerSelectProps) {
             </div>
             <div className="ticker-info">
               <span className="ticker-symbol">{selected.symbol}</span>
-              <span className="ticker-name">{selected.longName}</span>
+              <span className="ticker-name">{selected.longName ?? selected.name}</span>
             </div>
           </div>
         ) : (
-          <span className="ticker-placeholder">Select a stock...</span>
+          <span className="ticker-placeholder">Select a ticker...</span>
         )}
         <span className="ticker-arrow">{open ? '▲' : '▼'}</span>
       </button>
@@ -83,25 +83,25 @@ export function TickerSelect({ stocks, value, onChange }: TickerSelectProps) {
             />
           </div>
           <ul className="ticker-list">
-            {filtered.slice(0, 80).map(stock => (
+            {filtered.slice(0, 80).map(t => (
               <li
-                key={stock.symbol}
-                className={`ticker-option ${stock.symbol === value ? 'ticker-option--selected' : ''}`}
-                onClick={() => handleSelect(stock.symbol)}
+                key={t.symbol}
+                className={`ticker-option ${t.symbol === value ? 'ticker-option--selected' : ''}`}
+                onClick={() => handleSelect(t.symbol)}
               >
                 <div className="ticker-logo-wrap">
-                  {stock.logoUrl ? (
-                    <img src={stock.logoUrl} alt={stock.symbol} className="ticker-logo"
+                  {t.logoUrl ? (
+                    <img src={t.logoUrl} alt={t.symbol} className="ticker-logo"
                       onError={e => (e.currentTarget.style.display = 'none')} />
                   ) : (
-                    <span className="ticker-logo-fallback">{stock.symbol[0]}</span>
+                    <span className="ticker-logo-fallback">{t.symbol[0]}</span>
                   )}
                 </div>
                 <div className="ticker-info">
-                  <span className="ticker-symbol">{stock.symbol}</span>
-                  <span className="ticker-name">{stock.longName}</span>
+                  <span className="ticker-symbol">{t.symbol}</span>
+                  <span className="ticker-name">{t.longName ?? t.name}</span>
                 </div>
-                {stock.symbol === value && <span className="ticker-check">✓</span>}
+                {t.symbol === value && <span className="ticker-check">✓</span>}
               </li>
             ))}
             {filtered.length === 0 && (
