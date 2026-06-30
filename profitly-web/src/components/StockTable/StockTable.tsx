@@ -1,19 +1,19 @@
-import type { StockQuote } from '../../types/StockQuote'
+import type { Ticker } from '../../types/Ticker'
 import { StockRow } from '../StockRow/StockRow'
-import type { FilterType } from '../../hooks/useStockFIlter'
+import type { FilterType } from '../../hooks/useTickerFilter'
 import './StockTable.css'
 
 interface StockTableProps {
-  stocks: StockQuote[]
+  tickers: Ticker[]
   filter: FilterType
   onFilter: (f: FilterType) => void
 }
 
-export function StockTable({ stocks, filter, onFilter }: StockTableProps) {
+export function StockTable({ tickers, filter, onFilter }: StockTableProps) {
   return (
     <div className="table-wrap">
       <div className="table-header">
-        <span className="table-title">Stock quotes</span>
+        <span className="table-title">Tickers</span>
         <div className="filter-row">
           {(['all', 'up', 'down'] as FilterType[]).map(f => (
             <button
@@ -29,18 +29,17 @@ export function StockTable({ stocks, filter, onFilter }: StockTableProps) {
       <table>
         <thead>
           <tr>
-            <th style={{ width: 200 }}>Stock</th>
+            <th style={{ width: 200 }}>Ticker</th>
             <th className="right" style={{ width: 90 }}>Price</th>
-            <th className="right" style={{ width: 90 }}>Change</th>
             <th className="right" style={{ width: 100 }}>Change %</th>
             <th className="right" style={{ width: 90 }}>Volume</th>
             <th className="right" style={{ width: 110 }}>Market cap</th>
-            <th style={{ width: 130 }}>52w range</th>
+            <th style={{ width: 100 }}>Type</th>
           </tr>
         </thead>
         <tbody>
-          {stocks.map(stock => (
-            <StockRow key={stock.symbol} stock={stock} />
+          {tickers.map(t => (
+            <StockRow key={t.symbol} ticker={t} />
           ))}
         </tbody>
       </table>
