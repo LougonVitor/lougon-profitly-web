@@ -4,12 +4,10 @@
 }
 
 .wallet-page {
-  max-width: 980px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 1rem 3rem;
 }
-
-/* ---- Tab nav ---- */
 
 .wallet-nav-row {
   display: flex;
@@ -29,7 +27,7 @@
   padding: 7px 16px;
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
   background: none;
   border: 1px solid transparent;
   border-radius: 20px;
@@ -38,18 +36,18 @@
   white-space: nowrap;
 }
 
-.wallet-tab:hover { background: #f0f0f0; color: #111; }
+.wallet-tab:hover { background: var(--bg-subtle); color: var(--text-primary); }
 
 .wallet-tab--active {
-  background: #eef4fd;
-  color: #185fa5;
-  border-color: #c5dcf5;
+  background: var(--bg-accent);
+  color: var(--text-accent);
+  border-color: rgba(55,138,221,0.3);
   font-weight: 600;
 }
 
 .wallet-new-btn {
-  background: #111;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--bg-card);
   border: none;
   border-radius: 10px;
   padding: 9px 18px;
@@ -61,10 +59,8 @@
   flex-shrink: 0;
 }
 
-.wallet-new-btn:hover { background: #378add; }
+.wallet-new-btn:hover { background: var(--accent); }
 .wallet-new-btn:active { transform: scale(0.97); }
-
-/* ---- Wallet section ---- */
 
 .wallet-section {
   display: flex;
@@ -80,9 +76,9 @@
 .wallet-delete-btn {
   font-size: 12px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--text-muted);
   background: none;
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 12px;
   cursor: pointer;
@@ -90,49 +86,104 @@
 }
 
 .wallet-delete-btn:hover {
-  background: #fcebeb;
-  color: #e24b4a;
-  border-color: #e24b4a;
+  background: var(--bg-badge-down);
+  color: var(--text-down);
+  border-color: var(--text-down);
 }
 
-/* ---- Confirm dialog ---- */
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: backdropIn 0.15s ease;
+}
 
-.modal--confirm {
-  max-width: 380px;
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 1.75rem;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal--confirm { max-width: 380px; }
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
 }
 
 .confirm-text {
   font-size: 14px;
-  color: #555;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0.75rem 0 1.5rem;
 }
 
-.modal-btn-danger {
-  background: #e24b4a;
-  color: #fff;
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-btn-cancel {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
   border: none;
   border-radius: 10px;
-  padding: 11px 22px;
+  padding: 10px 20px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.modal-btn-danger:hover { background: #c93a39; }
+.modal-btn-cancel:hover { background: var(--border); }
 
-/* ---- Empty + skeleton ---- */
+.modal-btn-danger {
+  background: var(--text-down);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
 
+.modal-btn-danger:hover { opacity: 0.85; }
+
+/* Empty + skeleton */
 .wallet-state {
   text-align: center;
   padding: 4rem;
-  color: #aaa;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
-.wallet-state--error { color: #e24b4a; }
+.wallet-state--error { color: var(--text-down); }
 
 .wallet-empty {
   display: flex;
@@ -144,14 +195,14 @@
 
 .wallet-empty-text {
   font-size: 15px;
-  color: #aaa;
+  color: var(--text-muted);
   margin: 0;
 }
 
 .wallet-empty-btn {
   background: none;
-  border: 2px dashed #d0d0d0;
-  color: #888;
+  border: 2px dashed var(--border);
+  color: var(--text-muted);
   border-radius: 12px;
   padding: 12px 28px;
   font-size: 14px;
@@ -160,33 +211,16 @@
   transition: border-color 0.15s, color 0.15s;
 }
 
-.wallet-empty-btn:hover { border-color: #378add; color: #378add; }
+.wallet-empty-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-.wallet-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+.wallet-skeleton { display: flex; flex-direction: column; gap: 0.75rem; }
 
-.skeleton-tabs {
-  height: 38px;
-  width: 260px;
-  border-radius: 20px;
-  background: #f0f0f0;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-.skeleton-card {
-  height: 130px;
+.skeleton-tabs, .skeleton-card, .skeleton-table {
   border-radius: 14px;
-  background: #f0f0f0;
+  background: var(--bg-subtle);
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-.skeleton-table {
-  height: 220px;
-  border-radius: 14px;
-  background: #f0f0f0;
-  animation: pulse 1.4s ease-in-out infinite;
-  animation-delay: 0.15s;
-}
+.skeleton-tabs  { height: 38px; width: 260px; }
+.skeleton-card  { height: 150px; }
+.skeleton-table { height: 220px; animation-delay: 0.15s; }

@@ -5,12 +5,14 @@ import { PositionTable } from '../../components/PositionTable/PositionTable'
 import { AddPositionModal } from '../../components/AddPositionModal/AddPositionModal'
 import { CreateWalletModal } from '../../components/CreateWalletModal/CreateWalletModal'
 import { useWallets } from '../../hooks/useWallets'
+import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './Wallet.css'
 
 export function Wallet() {
   const { wallets, setWallets, loading, error } = useWallets()
+  const { t } = useI18n()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addPositionWalletId, setAddPositionWalletId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -74,15 +76,15 @@ export function Wallet() {
           ))}
         </div>
         <button className="wallet-new-btn" onClick={() => setShowCreateModal(true)}>
-          + New wallet
+          {t.wallet.newWallet}
         </button>
       </div>
 
       {wallets.length === 0 ? (
         <div className="wallet-empty">
-          <p className="wallet-empty-text">No wallets yet.</p>
+          <p className="wallet-empty-text">{t.wallet.noWallets}</p>
           <button className="wallet-empty-btn" onClick={() => setShowCreateModal(true)}>
-            + Create your first wallet
+            {t.wallet.createFirst}
           </button>
         </div>
       ) : activeWallet && (
@@ -91,15 +93,15 @@ export function Wallet() {
             <button
               className="wallet-delete-btn"
               onClick={() => setDeletingId(activeWallet.id)}
-              title="Delete this wallet"
             >
-              Delete wallet
+              {t.wallet.deleteWallet}
             </button>
           </div>
           <WalletCard
             wallet={activeWallet}
             index={0}
             onAddPosition={() => setAddPositionWalletId(activeWallet.id)}
+            onWalletUpdate={handleWalletUpdate}
           />
           <PositionTable
             walletId={activeWallet.id}
@@ -110,18 +112,18 @@ export function Wallet() {
       )}
 
       {deletingId && (() => {
-        const name = wallets.find(w => w.id === deletingId)?.name ?? 'this wallet'
+        const name = wallets.find(w => w.id === deletingId)?.name ?? ''
         return (
           <div className="modal-backdrop" onClick={() => setDeletingId(null)}>
             <div className="modal modal--confirm" onClick={e => e.stopPropagation()}>
-              <div className="modal-title">Delete wallet</div>
-              <p className="confirm-text">
-                Are you sure you want to delete <strong>{name}</strong>? All positions and entries will be lost.
-              </p>
+              <div className="modal-title">{t.confirm.deleteWallet}</div>
+              <p className="confirm-text">{t.confirm.deleteWalletText(name)}</p>
               <div className="modal-actions">
-                <button className="modal-btn-cancel" onClick={() => setDeletingId(null)}>Cancel</button>
+                <button className="modal-btn-cancel" onClick={() => setDeletingId(null)}>
+                  {t.confirm.cancel}
+                </button>
                 <button className="modal-btn-danger" onClick={() => handleDeleteWallet(deletingId)}>
-                  Delete
+                  {t.confirm.delete}
                 </button>
               </div>
             </div>
