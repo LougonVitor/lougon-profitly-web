@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactElement } from 'react'
 import type { WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { PositionRow } from '../PositionRow/PositionRow'
 import { useI18n } from '../../i18n/I18nContext'
@@ -101,7 +101,7 @@ function OtherIcon() {
   </svg>
 }
 
-const ICON_MAP: Record<string, () => JSX.Element> = {
+const ICON_MAP: Record<string, () => ReactElement> = {
   stock: StockIcon,
   unit: UnitIcon,
   fii: FiiIcon,
