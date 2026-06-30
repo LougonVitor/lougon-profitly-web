@@ -1,19 +1,81 @@
 .allocation-chart {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.allocation-mode-row {
+  display: flex;
+  gap: 4px;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.allocation-mode-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.allocation-mode-btn:hover { color: var(--text-primary); }
+
+.allocation-mode-btn--active {
+  background: var(--bg-accent);
+  color: var(--text-accent);
+}
+
+.allocation-back-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-accent);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: 2px;
+}
+
+.allocation-back-btn:hover { background: var(--bg-subtle); }
+
+.allocation-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .allocation-legend {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+  min-width: 80px;
 }
 
 .allocation-legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.allocation-legend-item--clickable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  transition: background 0.12s;
+}
+
+.allocation-legend-item--clickable:hover {
+  background: var(--bg-subtle);
 }
 
 .allocation-dot {
@@ -24,13 +86,19 @@
 }
 
 .allocation-ticker {
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-  width: 52px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 68px;
 }
 
 .allocation-pct {
-  font-size: 12px;
-  color: #888;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
 }
