@@ -1,0 +1,288 @@
+.ta-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.ta-state {
+  text-align: center;
+  padding: 4rem;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.ta-state--error { color: var(--text-down); }
+
+/* ── Breadcrumb ───────────────────────────────── */
+.ta-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  padding-top: 0.25rem;
+}
+
+.ta-breadcrumb-btn {
+  background: none; border: none;
+  color: var(--accent); font-size: 12px;
+  cursor: pointer; padding: 0; font-weight: 500;
+  transition: opacity 0.15s;
+}
+.ta-breadcrumb-btn:hover { opacity: 0.75; }
+.ta-sep { color: var(--border); }
+.ta-breadcrumb-part { color: var(--text-muted); }
+.ta-breadcrumb-active { font-weight: 700; color: var(--text-secondary); }
+
+/* ── Hero ─────────────────────────────────────── */
+.ta-hero {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.ta-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+}
+
+.ta-hero-left { display: flex; align-items: center; gap: 1.25rem; }
+
+.ta-logo-wrap {
+  width: 72px; height: 72px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+
+.ta-logo { width: 60px; height: 60px; object-fit: contain; }
+
+.ta-hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+
+.ta-symbol {
+  font-size: 28px; font-weight: 800;
+  letter-spacing: -0.03em; color: var(--text-primary); margin: 0;
+}
+
+.ta-type-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  background: var(--bg-accent); color: var(--text-accent);
+  border: 1px solid rgba(55,138,221,0.25);
+}
+
+.ta-long-name { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+.ta-sector { font-size: 12px; color: var(--text-muted); }
+
+.ta-hero-right { text-align: right; flex-shrink: 0; }
+
+.ta-price {
+  font-size: 32px; font-weight: 800;
+  letter-spacing: -0.04em; color: var(--text-primary);
+  line-height: 1; margin-bottom: 6px;
+}
+
+.ta-day-change {
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+}
+.ta-day-change--up { color: var(--text-up); }
+.ta-day-change--down { color: var(--text-down); }
+.ta-day-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+.ta-52w { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── Metrics Bar ──────────────────────────────── */
+.ta-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.ta-metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.ta-metric:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(55,138,221,0.2);
+}
+
+.ta-metric-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+
+.ta-metric-value {
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.ta-metric-value--up   { color: var(--text-up); }
+.ta-metric-value--down { color: var(--text-down); }
+
+.ta-metric-sub {
+  font-size: 10px; color: var(--text-muted);
+  margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Chart Card ───────────────────────────────── */
+.ta-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.ta-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+
+.ta-chart-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+
+.ta-chart-change { font-size: 12px; font-weight: 600; margin-top: 2px; }
+.ta-chart-change--up   { color: var(--text-up); }
+.ta-chart-change--down { color: var(--text-down); }
+
+.ta-range-btns { display: flex; gap: 3px; flex-wrap: wrap; justify-content: flex-end; }
+
+.ta-range-btn {
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  cursor: pointer; transition: all 0.12s;
+}
+.ta-range-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+.ta-range-btn--active {
+  background: var(--bg-accent); color: var(--text-accent);
+  border-color: rgba(55,138,221,0.35);
+}
+
+.ta-chart-body { padding: 1rem 1rem 0.5rem; }
+
+.ta-chart-loading, .ta-chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 280px; font-size: 13px; color: var(--text-muted);
+}
+
+/* ── Info Grid ────────────────────────────────── */
+.ta-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ta-section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.ta-section-title {
+  font-size: 13px; font-weight: 700; color: var(--text-primary);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ta-info-rows { display: flex; flex-direction: column; }
+
+.ta-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.ta-info-row:last-child { border-bottom: none; }
+.ta-info-row span { color: var(--text-muted); }
+.ta-info-row strong { color: var(--text-primary); }
+.ta-info-row .up   { color: var(--text-up); }
+.ta-info-row .down { color: var(--text-down); }
+
+/* ── Dividends ────────────────────────────────── */
+.ta-dividends-chart { padding: 1rem 1.25rem 0; }
+
+.ta-dividends-table {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.ta-dividends-table table {
+  width: 100%; border-collapse: collapse; table-layout: auto;
+}
+
+.ta-dividends-table th {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left; white-space: nowrap;
+}
+
+.ta-dividends-table td {
+  font-size: 12px; color: var(--text-primary);
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ta-dividends-table tr:last-child td { border-bottom: none; }
+.ta-dividends-table th.right,
+.ta-dividends-table td.right { text-align: right; }
+.ta-dividends-table td.muted { color: var(--text-muted); }
+
+.ta-div-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px;
+  background: var(--bg-accent); color: var(--text-accent);
+  text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+}
+
+.ta-div-value { font-weight: 700; color: var(--text-up); }
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 900px) {
+  .ta-metrics-bar { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .ta-hero { flex-direction: column; align-items: flex-start; }
+  .ta-hero-right { text-align: left; }
+  .ta-metrics-bar { grid-template-columns: repeat(2, 1fr); }
+  .ta-info-grid { grid-template-columns: 1fr; }
+  .ta-chart-header { flex-direction: column; align-items: flex-start; }
+}
