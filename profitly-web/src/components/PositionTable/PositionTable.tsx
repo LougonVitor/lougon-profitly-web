@@ -1,5 +1,6 @@
 import type { WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { AssetTypeCard } from '../AssetTypeCard/AssetTypeCard'
+import { useI18n } from '../../i18n/I18nContext'
 import './PositionTable.css'
 
 interface PositionTableProps {
@@ -8,21 +9,9 @@ interface PositionTableProps {
   onWalletUpdate: (updated: WalletSummary) => void
 }
 
-const ASSET_TYPE_LABELS: Record<string, string> = {
-  stock: 'Ações',
-  unit: 'Units',
-  fii: 'FIIs',
-  etf: 'ETFs',
-  bdr: 'BDRs',
-  'fi-infra': 'FI-Infra',
-  'fi-agro': 'FI-Agro',
-  fip: 'FIPs',
-  fidc: 'FIDCs',
-  outros: 'Outros',
-}
-
-function labelFor(assetType: string): string {
-  return ASSET_TYPE_LABELS[assetType.toLowerCase()] ?? assetType.toUpperCase()
+const ASSET_TYPE_LABELS_STATIC: Record<string, string> = {
+  stock: 'Ações', unit: 'Units', fii: 'FIIs', etf: 'ETFs', bdr: 'BDRs',
+  'fi-infra': 'FI-Infra', 'fi-agro': 'FI-Agro', fip: 'FIPs', fidc: 'FIDCs', outros: 'Outros',
 }
 
 const TYPE_ORDER: Record<string, number> = {
@@ -35,6 +24,14 @@ function sortOrder(assetType: string): number {
 }
 
 export function PositionTable({ walletId, positions, onWalletUpdate }: PositionTableProps) {
+  const { t } = useI18n()
+
+  function labelFor(key: string): string {
+    return (t.assetType as Record<string, string>)[key.toLowerCase()]
+      ?? ASSET_TYPE_LABELS_STATIC[key.toLowerCase()]
+      ?? key.toUpperCase()
+  }
+
   const groups = new Map<string, WalletPositionSummary[]>()
   for (const pos of positions) {
     const key = pos.assetType?.toLowerCase() ?? 'outros'
@@ -43,14 +40,13 @@ export function PositionTable({ walletId, positions, onWalletUpdate }: PositionT
   }
 
   const sortedGroups = [...groups.entries()].sort(([a], [b]) => sortOrder(a) - sortOrder(b))
-
   const totalCurrentValue = positions.reduce((s, p) => s + p.currentValue, 0)
 
   return (
     <div className="position-table-section">
       <div className="position-table-section-header">
-        <span className="position-table-section-title">Posições</span>
-        <span className="position-table-section-count">{positions.length} ativo{positions.length !== 1 ? 's' : ''}</span>
+        <span className="position-table-section-title">{t.wallet.positions}</span>
+        <span className="position-table-section-count">{t.wallet.assets(positions.length)}</span>
       </div>
 
       {positions.length === 0 ? (
