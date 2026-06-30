@@ -1,7 +1,17 @@
 .dashboard { max-width: 960px; margin: 0 auto; padding: 0 1rem 2rem; }
 
-.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
 
-.dashboard-state { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+.dashboard-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+  font-size: 14px;
+}
 
-.dashboard-state--error { color: #e24b4a; }
+.dashboard-state--error { color: var(--text-down); }
