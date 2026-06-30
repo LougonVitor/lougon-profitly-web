@@ -1,26 +1,22 @@
-/* ---- Card shell ---- */
-
 .asset-card {
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  transition: box-shadow 0.15s;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
 .asset-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-card);
 }
-
-/* ---- Header button ---- */
 
 .asset-card-header {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem;
+  padding: 0.9rem 1.25rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -28,9 +24,7 @@
   transition: background 0.12s;
 }
 
-.asset-card-header:hover { background: #fafafa; }
-
-/* ---- Left: icon + label ---- */
+.asset-card-header:hover { background: var(--bg-card-hover); }
 
 .asset-card-left {
   display: flex;
@@ -41,16 +35,16 @@
 }
 
 .asset-card-label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #111;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
-/* ---- Icon ---- */
-
+/* Icon base */
 .asset-icon {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -59,28 +53,35 @@
 }
 
 .asset-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
-.asset-icon--stock {
-  background: #eef4fd;
-  color: #2878d0;
-}
+/* Per-type colors */
+.asset-icon--stock     { background: #eef4fd; color: #2878d0; }
+.asset-icon--unit      { background: #e8f5ff; color: #0369a1; }
+.asset-icon--fii       { background: #edf7f0; color: #16a34a; }
+.asset-icon--etf       { background: #fef3c7; color: #b45309; }
+.asset-icon--bdr       { background: #ede9fe; color: #7c3aed; }
+.asset-icon--fi_infra  { background: #fef9c3; color: #ca8a04; }
+.asset-icon--fi_agro   { background: #dcfce7; color: #15803d; }
+.asset-icon--fip       { background: #fce7f3; color: #be185d; }
+.asset-icon--fidc      { background: #ffe4e6; color: #be123c; }
+.asset-icon--outros    { background: #f3f4f6; color: #6b7280; }
+.asset-icon--other     { background: #f3f4f6; color: #6b7280; }
 
-.asset-icon--fii {
-  background: #edf7f0;
-  color: #27a85a;
-}
+[data-theme="dark"] .asset-icon--stock     { background: #1a2d45; color: #5ba4e8; }
+[data-theme="dark"] .asset-icon--unit      { background: #0c2236; color: #38bdf8; }
+[data-theme="dark"] .asset-icon--fii       { background: #0d2b1a; color: #4ade80; }
+[data-theme="dark"] .asset-icon--etf       { background: #2b1f0a; color: #fbbf24; }
+[data-theme="dark"] .asset-icon--bdr       { background: #1e1245; color: #a78bfa; }
+[data-theme="dark"] .asset-icon--fi_infra  { background: #2b240a; color: #fde047; }
+[data-theme="dark"] .asset-icon--fi_agro   { background: #0d2b1a; color: #86efac; }
+[data-theme="dark"] .asset-icon--fip       { background: #2b0d1e; color: #f472b6; }
+[data-theme="dark"] .asset-icon--fidc      { background: #2b0d14; color: #fb7185; }
+[data-theme="dark"] .asset-icon--outros    { background: #1f2235; color: #9ca3af; }
 
-.asset-icon--outros,
-.asset-icon--other {
-  background: #f5f3ff;
-  color: #7c5cc8;
-}
-
-/* ---- Stats row ---- */
-
+/* Stats */
 .asset-card-stats {
   display: flex;
   gap: 2rem;
@@ -98,28 +99,26 @@
 
 .asset-stat-label {
   font-size: 10px;
-  font-weight: 600;
-  color: #bbb;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
 }
 
 .asset-stat-value {
   font-size: 13px;
-  font-weight: 600;
-  color: #111;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.asset-stat-value--up { color: #27a85a; }
-.asset-stat-value--down { color: #e24b4a; }
-
-/* ---- Chevron ---- */
+.asset-stat-value--up   { color: var(--text-up); }
+.asset-stat-value--down { color: var(--text-down); }
 
 .asset-card-chevron {
   font-size: 16px;
-  color: #bbb;
-  margin-left: 12px;
+  color: var(--text-muted);
+  margin-left: 8px;
   flex-shrink: 0;
   transition: transform 0.2s;
   display: inline-block;
@@ -129,10 +128,9 @@
   transform: rotate(180deg);
 }
 
-/* ---- Body (expanded positions) ---- */
-
+/* Body */
 .asset-card-body {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-subtle);
   animation: cardBodyIn 0.2s ease both;
 }
 
@@ -141,8 +139,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Table styles (scoped to card body) */
-
 .asset-card-body table {
   width: 100%;
   border-collapse: collapse;
@@ -150,23 +146,24 @@
 }
 
 .asset-card-body th {
-  font-size: 11px;
-  font-weight: 600;
-  color: #aaa;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
   text-align: left;
   padding: 0.55rem 1.25rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .asset-card-body th.right { text-align: right; }
 
 .asset-card-body td {
   font-size: 13px;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid #f5f5f5;
+  color: var(--text-primary);
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
 

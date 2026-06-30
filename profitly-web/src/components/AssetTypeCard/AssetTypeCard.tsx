@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { PositionRow } from '../PositionRow/PositionRow'
+import { useI18n } from '../../i18n/I18nContext'
 import './AssetTypeCard.css'
 
 interface AssetTypeCardProps {
@@ -17,48 +18,105 @@ function fmtBRL(v: number) {
 }
 
 function fmtPct(v: number) {
-  const sign = v >= 0 ? '+' : ''
-  return `${sign}${v.toFixed(2).replace('.', ',')}%`
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2).replace('.', ',')}%`
 }
 
+/* ---- SVG Icons ---- */
 function StockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-      <polyline points="16 7 22 7 22 13" />
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+    <polyline points="16 7 22 7 22 13" />
+  </svg>
 }
 
 function FiiIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="10" width="18" height="11" rx="1" />
-      <path d="M12 3L2 10h20L12 3z" />
-      <rect x="9" y="14" width="6" height="7" />
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="10" width="18" height="11" rx="1" />
+    <path d="M12 3L2 10h20L12 3z" />
+    <rect x="9" y="14" width="6" height="7" />
+  </svg>
+}
+
+function EtfIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+    <path d="M2 12h20" />
+  </svg>
+}
+
+function BdrIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+}
+
+function UnitIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2" />
+    <path d="M8 21h8M12 17v4" />
+    <path d="M7 10l3 3 3-3 4 4" />
+  </svg>
+}
+
+function InfraIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+  </svg>
+}
+
+function AgroIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 8C8 10 5.9 16.17 3.82 19c1.43 2 3.94 2.01 5.18 0C10.74 16.23 13.24 15.21 17 15" />
+    <path d="M2 12c0 6 4 8 8 8" />
+    <path d="M17 3v15M17 3c0 0 4 4 4 9" />
+  </svg>
+}
+
+function FipIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" />
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+    <line x1="12" y1="12" x2="12" y2="16" />
+    <line x1="10" y1="14" x2="14" y2="14" />
+  </svg>
+}
+
+function FidcIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="8" y1="13" x2="16" y2="13" />
+    <line x1="8" y1="17" x2="16" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </svg>
 }
 
 function OtherIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
 }
 
-const ICONS: Record<string, () => JSX.Element> = {
+const ICON_MAP: Record<string, () => JSX.Element> = {
   stock: StockIcon,
+  unit: UnitIcon,
   fii: FiiIcon,
+  etf: EtfIcon,
+  bdr: BdrIcon,
+  'fi-infra': InfraIcon,
+  'fi-agro': AgroIcon,
+  fip: FipIcon,
+  fidc: FidcIcon,
 }
 
 function AssetIcon({ assetType }: { assetType: string }) {
-  const Icon = ICONS[assetType.toLowerCase()] ?? OtherIcon
+  const Icon = ICON_MAP[assetType.toLowerCase()] ?? OtherIcon
   return (
-    <div className={`asset-icon asset-icon--${assetType.toLowerCase()}`}>
+    <div className={`asset-icon asset-icon--${assetType.toLowerCase().replace('-', '_')}`}>
       <Icon />
     </div>
   )
@@ -67,6 +125,7 @@ function AssetIcon({ assetType }: { assetType: string }) {
 export function AssetTypeCard({
   walletId, label, assetType, positions, portfolioCurrentValue, onWalletUpdate,
 }: AssetTypeCardProps) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(true)
 
   const totalCurrentValue = positions.reduce((s, p) => s + (p.currentValue ?? 0), 0)
@@ -85,28 +144,26 @@ export function AssetTypeCard({
 
         <div className="asset-card-stats">
           <div className="asset-stat">
-            <span className="asset-stat-label">Ativos</span>
+            <span className="asset-stat-label">{t.wallet.assets(positions.length).split(' ')[1] ? t.wallet.positions : t.wallet.positions}</span>
             <span className="asset-stat-value">{positions.length}</span>
           </div>
           <div className="asset-stat">
-            <span className="asset-stat-label">Valor total</span>
+            <span className="asset-stat-label">{t.wallet.currentValue}</span>
             <span className="asset-stat-value">{fmtBRL(totalCurrentValue)}</span>
           </div>
           <div className="asset-stat">
-            <span className="asset-stat-label">Rentabilidade</span>
+            <span className="asset-stat-label">{t.wallet.return}</span>
             <span className={`asset-stat-value asset-stat-value--${isUp ? 'up' : 'down'}`}>
               {fmtPct(pnlPercent)}
             </span>
           </div>
           <div className="asset-stat">
-            <span className="asset-stat-label">% na carteira</span>
+            <span className="asset-stat-label">% {t.nav.wallet}</span>
             <span className="asset-stat-value">{portfolioPercent.toFixed(1).replace('.', ',')}%</span>
           </div>
         </div>
 
-        <span className={`asset-card-chevron ${expanded ? 'asset-card-chevron--open' : ''}`}>
-          ▾
-        </span>
+        <span className={`asset-card-chevron ${expanded ? 'asset-card-chevron--open' : ''}`}>▾</span>
       </button>
 
       {expanded && (
@@ -114,14 +171,14 @@ export function AssetTypeCard({
           <table>
             <thead>
               <tr>
-                <th style={{ width: 160 }}>Ticker</th>
-                <th className="right" style={{ width: 60 }}>Qtd</th>
-                <th className="right" style={{ width: 110 }}>Preço médio</th>
-                <th className="right" style={{ width: 120 }}>Preço atual</th>
-                <th className="right" style={{ width: 120 }}>Investido</th>
-                <th className="right" style={{ width: 120 }}>Valor atual</th>
-                <th className="right" style={{ width: 120 }}>P&amp;L</th>
-                <th className="right" style={{ width: 100 }}>P&amp;L %</th>
+                <th style={{ width: 160 }}>{t.position.ticker}</th>
+                <th className="right" style={{ width: 60 }}>{t.position.qty}</th>
+                <th className="right" style={{ width: 110 }}>{t.position.avgPrice}</th>
+                <th className="right" style={{ width: 120 }}>{t.position.currentPrice}</th>
+                <th className="right" style={{ width: 120 }}>{t.position.invested}</th>
+                <th className="right" style={{ width: 120 }}>{t.position.currentValue}</th>
+                <th className="right" style={{ width: 120 }}>{t.position.pnl}</th>
+                <th className="right" style={{ width: 100 }}>{t.position.pnlPct}</th>
                 <th style={{ width: 30 }}></th>
               </tr>
             </thead>
