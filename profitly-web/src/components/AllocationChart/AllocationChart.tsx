@@ -111,10 +111,10 @@ export function AllocationChart({ positions, totalCurrentValue }: AllocationChar
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [
-                fmtBRL(value),
-                isClassMode && !drillClass ? assetTypeLabel(name) : name,
-              ]}
+              formatter={(value: unknown, name: unknown) => [
+                fmtBRL(Number(value)),
+                isClassMode && !drillClass ? assetTypeLabel(String(name)) : String(name),
+              ] as [string, string]}
               contentStyle={{
                 fontSize: 12,
                 borderRadius: 10,
