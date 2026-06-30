@@ -10,6 +10,7 @@ export interface WalletPositionSummary {
   id: string
   ticker: string
   logoUrl: string | null
+  assetType: string | null
   quantity: number
   averagePrice: number
   currentPrice: number
