@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { useStockQuotes } from '../../hooks/useStockQuotes'
+import { TickerSelect } from '../TickerSelect/TickerSelect'
 import type { WalletSummary } from '../../types/WalletSummary'
 import './AddPositionModal.css'
 
@@ -33,7 +34,6 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!ticker || !date || quantity <= 0 || price <= 0) return
-
     const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: price })
     if (updated) onSuccess(updated)
   }
@@ -52,19 +52,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="modal-field">
             <label className="modal-label">Ticker</label>
-            <select
-              className="modal-select"
-              value={ticker}
-              onChange={e => setTicker(e.target.value)}
-              required
-            >
-              <option value="">Select a stock...</option>
-              {stocks.map(s => (
-                <option key={s.symbol} value={s.symbol}>
-                  {s.symbol} — {s.longName}
-                </option>
-              ))}
-            </select>
+            <TickerSelect stocks={stocks} value={ticker} onChange={setTicker} />
           </div>
 
           <div className="modal-row">
@@ -119,7 +107,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             <button type="button" className="modal-btn-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="modal-btn-submit" disabled={loading}>
+            <button type="submit" className="modal-btn-submit" disabled={loading || !ticker}>
               {loading ? 'Adding...' : '+ Add entry'}
             </button>
           </div>
