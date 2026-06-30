@@ -76,13 +76,15 @@ export function Dashboard() {
   const advancingPct = tickers.length > 0 ? Math.round((advancing / tickers.length) * 100) : 0
   const decliningPct = tickers.length > 0 ? Math.round((declining / tickers.length) * 100) : 0
 
-  const topGainers = [...tickers]
-    .filter(tk => tk.changePercent != null)
+  // Minimum volume filter to exclude illiquid assets with unrealistic % swings
+  const MIN_VOLUME = 500_000
+  const liquid = tickers.filter(tk => (tk.volume ?? 0) >= MIN_VOLUME && tk.changePercent != null)
+
+  const topGainers = [...liquid]
     .sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0))
     .slice(0, 5)
 
-  const topLosers = [...tickers]
-    .filter(tk => tk.changePercent != null)
+  const topLosers = [...liquid]
     .sort((a, b) => (a.changePercent ?? 0) - (b.changePercent ?? 0))
     .slice(0, 5)
 
