@@ -10,14 +10,25 @@ interface PositionTableProps {
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   stock: 'Ações',
+  unit: 'Units',
   fii: 'FIIs',
+  etf: 'ETFs',
+  bdr: 'BDRs',
+  'fi-infra': 'FI-Infra',
+  'fi-agro': 'FI-Agro',
+  fip: 'FIPs',
+  fidc: 'FIDCs',
+  outros: 'Outros',
 }
 
 function labelFor(assetType: string): string {
   return ASSET_TYPE_LABELS[assetType.toLowerCase()] ?? assetType.toUpperCase()
 }
 
-const TYPE_ORDER: Record<string, number> = { stock: 0, fii: 1 }
+const TYPE_ORDER: Record<string, number> = {
+  stock: 0, unit: 1, fii: 2, etf: 3, bdr: 4,
+  'fi-infra': 5, 'fi-agro': 6, fip: 7, fidc: 8,
+}
 
 function sortOrder(assetType: string): number {
   return TYPE_ORDER[assetType.toLowerCase()] ?? 50
