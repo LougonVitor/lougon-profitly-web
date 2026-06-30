@@ -32,12 +32,12 @@ export function StockTable({ tickers, filter, onFilter }: StockTableProps) {
       <table>
         <thead>
           <tr>
-            <th style={{ width: 200 }}>{t.position.ticker}</th>
-            <th className="right" style={{ width: 100 }}>Price</th>
-            <th className="right" style={{ width: 110 }}>Change %</th>
-            <th className="right" style={{ width: 100 }}>Volume</th>
-            <th className="right" style={{ width: 120 }}>Market cap</th>
-            <th style={{ width: 90 }}>Type</th>
+            <th style={{ width: 220 }}>{t.position.ticker}</th>
+            <th className="right" style={{ width: 110 }}>{t.position.currentPrice}</th>
+            <th className="right" style={{ width: 110 }}>Variação</th>
+            <th className="right" style={{ width: 110 }}>Volume</th>
+            <th className="right" style={{ width: 130 }}>Mkt Cap</th>
+            <th style={{ width: 90 }}>Tipo</th>
           </tr>
         </thead>
         <tbody>
