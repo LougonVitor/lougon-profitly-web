@@ -1,13 +1,11 @@
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nContext'
 import { useTheme } from '../../i18n/ThemeContext'
+import { useTickers } from '../../hooks/useTickers'
 import type { Lang } from '../../i18n/translations'
+import type { Ticker } from '../../types/Ticker'
 import './Header.css'
-
-interface HeaderProps {
-  search?: string
-  onSearch?: (value: string) => void
-}
 
 const LANGS: { value: Lang; label: string }[] = [
   { value: 'pt', label: 'PT' },
@@ -15,16 +13,101 @@ const LANGS: { value: Lang; label: string }[] = [
   { value: 'es', label: 'ES' },
 ]
 
-export function Header({ search, onSearch }: HeaderProps) {
+function fmtBRL(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `R$ ${v.toFixed(2)}`
+}
+
+function fmtPct(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+}
+
+interface SearchResultProps {
+  ticker: Ticker
+  onSelect: () => void
+}
+
+function SearchResult({ ticker, onSelect }: SearchResultProps) {
+  const navigate = useNavigate()
+  const up = (ticker.changePercent ?? 0) >= 0
+
+  function handleClick() {
+    onSelect()
+    navigate(`/ticker/${ticker.symbol}`)
+  }
+
+  return (
+    <button className="search-result" onClick={handleClick}>
+      <div className="search-result-logo-wrap">
+        <img
+          className="search-result-logo"
+          src={ticker.logoUrl ?? ''}
+          alt={ticker.symbol}
+          onError={e => {
+            e.currentTarget.style.display = 'none'
+            const fb = e.currentTarget.nextElementSibling as HTMLElement
+            if (fb) fb.style.display = 'flex'
+          }}
+        />
+        <div className="search-result-logo-fallback">{ticker.symbol.slice(0, 2)}</div>
+      </div>
+      <div className="search-result-info">
+        <span className="search-result-symbol">{ticker.symbol}</span>
+        <span className="search-result-name">{ticker.longName ?? ticker.name}</span>
+      </div>
+      <div className="search-result-right">
+        <span className="search-result-price">{fmtBRL(ticker.lastPrice)}</span>
+        <span className={`search-result-change ${up ? 'search-result-change--up' : 'search-result-change--down'}`}>
+          {fmtPct(ticker.changePercent)}
+        </span>
+      </div>
+    </button>
+  )
+}
+
+export function Header() {
   const navigate = useNavigate()
   const { t, lang, setLang } = useI18n()
   const { theme, toggleTheme } = useTheme()
+  const { tickers } = useTickers()
   const username = localStorage.getItem('profitly_username')
+
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const results = search.trim().length >= 1
+    ? tickers.filter(tk =>
+        tk.symbol.toLowerCase().includes(search.toLowerCase()) ||
+        (tk.longName ?? tk.name ?? '').toLowerCase().includes(search.toLowerCase())
+      ).slice(0, 8)
+    : []
+
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('profitly_token')
     localStorage.removeItem('profitly_username')
     navigate('/login')
+  }
+
+  function handleSearchChange(v: string) {
+    setSearch(v)
+    setOpen(v.trim().length >= 1)
+  }
+
+  function handleClose() {
+    setSearch('')
+    setOpen(false)
   }
 
   return (
@@ -42,15 +125,40 @@ export function Header({ search, onSearch }: HeaderProps) {
       </div>
 
       <div className="header-right">
-        {onSearch !== undefined && (
-          <input
-            className="header-search"
-            type="text"
-            placeholder={t.header.search}
-            value={search ?? ''}
-            onChange={e => onSearch(e.target.value)}
-          />
-        )}
+        {/* Search */}
+        <div className="header-search-wrap" ref={wrapRef}>
+          <div className="header-search-box">
+            <svg className="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              className="header-search"
+              type="text"
+              placeholder={t.header.search}
+              value={search}
+              onChange={e => handleSearchChange(e.target.value)}
+              onFocus={() => search.trim().length >= 1 && setOpen(true)}
+            />
+            {search && (
+              <button className="header-search-clear" onClick={handleClose}>✕</button>
+            )}
+          </div>
+
+          {open && results.length > 0 && (
+            <div className="search-dropdown">
+              {results.map(tk => (
+                <SearchResult key={tk.symbol} ticker={tk} onSelect={handleClose} />
+              ))}
+            </div>
+          )}
+
+          {open && search.trim().length >= 1 && results.length === 0 && (
+            <div className="search-dropdown">
+              <div className="search-empty">Nenhum resultado para "{search}"</div>
+            </div>
+          )}
+        </div>
 
         <div className="header-lang">
           {LANGS.map(l => (
