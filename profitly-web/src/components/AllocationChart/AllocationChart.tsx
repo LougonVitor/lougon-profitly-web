@@ -40,7 +40,7 @@ function fmtBRL(v: number) {
 
 export function AllocationChart({ positions, totalCurrentValue }: AllocationChartProps) {
   const { t } = useI18n()
-  const [mode, setMode] = useState<Mode>('ticker')
+  const [mode, setMode] = useState<Mode>('class')
   const [drillClass, setDrillClass] = useState<string | null>(null)
 
   const isClassMode = mode === 'class'
