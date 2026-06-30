@@ -5,25 +5,42 @@ interface StockRowProps {
   stock: StockQuote
 }
 
-function fmtCap(v: number | null): string {
-  if (!v) return '—'
+function fmtBRL(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `R$ ${v.toFixed(2)}`
+}
+
+function fmtChange(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}`
+}
+
+function fmtPct(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
+}
+
+function fmtCap(v: number | null | undefined): string {
+  if (v == null) return '—'
   if (v >= 1e12) return `R$ ${(v / 1e12).toFixed(2)}T`
-  if (v >= 1e9) return `R$ ${(v / 1e9).toFixed(1)}B`
+  if (v >= 1e9)  return `R$ ${(v / 1e9).toFixed(1)}B`
   return `R$ ${(v / 1e6).toFixed(0)}M`
 }
 
-function fmtVol(v: number): string {
+function fmtVol(v: number | null | undefined): string {
+  if (v == null) return '—'
   if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`
   if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`
   return String(v)
 }
 
-function rangePos(price: number, low: number, high: number): string {
+function rangePos(price: number | null, low: number | null, high: number | null): string | null {
+  if (price == null || low == null || high == null || high === low) return null
   return Math.min(100, Math.max(0, ((price - low) / (high - low)) * 100)).toFixed(1)
 }
 
 export function StockRow({ stock }: StockRowProps) {
-  const up = stock.regularMarketChange >= 0
+  const up = (stock.regularMarketChange ?? 0) >= 0
   const pos = rangePos(stock.regularMarketPrice, stock.fiftyTwoWeekLow, stock.fiftyTwoWeekHigh)
 
   return (
@@ -32,7 +49,7 @@ export function StockRow({ stock }: StockRowProps) {
         <div className="stock-info">
           <img
             className="stock-logo"
-            src={stock.logoUrl}
+            src={stock.logoUrl ?? ''}
             alt={`${stock.symbol} logo`}
             width={28}
             height={28}
@@ -44,26 +61,32 @@ export function StockRow({ stock }: StockRowProps) {
           </div>
         </div>
       </td>
-      <td className="right"><strong>R$ {stock.regularMarketPrice.toFixed(2)}</strong></td>
+      <td className="right"><strong>{fmtBRL(stock.regularMarketPrice)}</strong></td>
       <td className={`right ${up ? 'positive' : 'negative'}`}>
-        {up ? '+' : ''}{stock.regularMarketChange.toFixed(2)}
+        {fmtChange(stock.regularMarketChange)}
       </td>
       <td className="right">
         <span className={`badge ${up ? 'badge--up' : 'badge--down'}`}>
-          {up ? '↑' : '↓'} {up ? '+' : ''}{stock.regularMarketChangePercent.toFixed(2)}%
+          {up ? '↑' : '↓'} {fmtPct(stock.regularMarketChangePercent)}
         </span>
       </td>
       <td className="right muted">{fmtVol(stock.regularMarketVolume)}</td>
       <td className="right muted">{fmtCap(stock.marketCap)}</td>
       <td>
-        <div className="range-price">R$ {stock.regularMarketPrice.toFixed(2)}</div>
-        <div className="range-bar">
-          <div className="range-fill" style={{ width: `${pos}%` }} />
-        </div>
-        <div className="range-labels">
-          <span>{stock.fiftyTwoWeekLow.toFixed(2)}</span>
-          <span>{stock.fiftyTwoWeekHigh.toFixed(2)}</span>
-        </div>
+        {pos != null ? (
+          <>
+            <div className="range-price">{fmtBRL(stock.regularMarketPrice)}</div>
+            <div className="range-bar">
+              <div className="range-fill" style={{ width: `${pos}%` }} />
+            </div>
+            <div className="range-labels">
+              <span>{stock.fiftyTwoWeekLow?.toFixed(2)}</span>
+              <span>{stock.fiftyTwoWeekHigh?.toFixed(2)}</span>
+            </div>
+          </>
+        ) : (
+          <span className="muted">—</span>
+        )}
       </td>
     </tr>
   )
