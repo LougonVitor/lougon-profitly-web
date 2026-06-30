@@ -1,18 +1,13 @@
-import type { StockQuote } from '../../types/StockQuote'
+import type { Ticker } from '../../types/Ticker'
 import './StockRow.css'
 
 interface StockRowProps {
-  stock: StockQuote
+  ticker: Ticker
 }
 
 function fmtBRL(v: number | null | undefined): string {
   if (v == null) return '—'
   return `R$ ${v.toFixed(2)}`
-}
-
-function fmtChange(v: number | null | undefined): string {
-  if (v == null) return '—'
-  return `${v >= 0 ? '+' : ''}${v.toFixed(2)}`
 }
 
 function fmtPct(v: number | null | undefined): string {
@@ -34,14 +29,8 @@ function fmtVol(v: number | null | undefined): string {
   return String(v)
 }
 
-function rangePos(price: number | null, low: number | null, high: number | null): string | null {
-  if (price == null || low == null || high == null || high === low) return null
-  return Math.min(100, Math.max(0, ((price - low) / (high - low)) * 100)).toFixed(1)
-}
-
-export function StockRow({ stock }: StockRowProps) {
-  const up = (stock.regularMarketChange ?? 0) >= 0
-  const pos = rangePos(stock.regularMarketPrice, stock.fiftyTwoWeekLow, stock.fiftyTwoWeekHigh)
+export function StockRow({ ticker }: StockRowProps) {
+  const up = (ticker.changePercent ?? 0) >= 0
 
   return (
     <tr className="stock-row">
@@ -49,45 +38,27 @@ export function StockRow({ stock }: StockRowProps) {
         <div className="stock-info">
           <img
             className="stock-logo"
-            src={stock.logoUrl ?? ''}
-            alt={`${stock.symbol} logo`}
+            src={ticker.logoUrl ?? ''}
+            alt={`${ticker.symbol} logo`}
             width={28}
             height={28}
             onError={e => (e.currentTarget.style.display = 'none')}
           />
           <div>
-            <div className="stock-symbol">{stock.symbol}</div>
-            <div className="stock-name">{stock.longName}</div>
+            <div className="stock-symbol">{ticker.symbol}</div>
+            <div className="stock-name">{ticker.longName ?? ticker.name}</div>
           </div>
         </div>
       </td>
-      <td className="right"><strong>{fmtBRL(stock.regularMarketPrice)}</strong></td>
-      <td className={`right ${up ? 'positive' : 'negative'}`}>
-        {fmtChange(stock.regularMarketChange)}
-      </td>
+      <td className="right"><strong>{fmtBRL(ticker.lastPrice)}</strong></td>
       <td className="right">
         <span className={`badge ${up ? 'badge--up' : 'badge--down'}`}>
-          {up ? '↑' : '↓'} {fmtPct(stock.regularMarketChangePercent)}
+          {up ? '↑' : '↓'} {fmtPct(ticker.changePercent)}
         </span>
       </td>
-      <td className="right muted">{fmtVol(stock.regularMarketVolume)}</td>
-      <td className="right muted">{fmtCap(stock.marketCap)}</td>
-      <td>
-        {pos != null ? (
-          <>
-            <div className="range-price">{fmtBRL(stock.regularMarketPrice)}</div>
-            <div className="range-bar">
-              <div className="range-fill" style={{ width: `${pos}%` }} />
-            </div>
-            <div className="range-labels">
-              <span>{stock.fiftyTwoWeekLow?.toFixed(2)}</span>
-              <span>{stock.fiftyTwoWeekHigh?.toFixed(2)}</span>
-            </div>
-          </>
-        ) : (
-          <span className="muted">—</span>
-        )}
-      </td>
+      <td className="right muted">{fmtVol(ticker.volume)}</td>
+      <td className="right muted">{fmtCap(ticker.marketCap)}</td>
+      <td className="muted">{ticker.subType ?? ticker.assetType ?? '—'}</td>
     </tr>
   )
 }
