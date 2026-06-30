@@ -81,19 +81,19 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
                 required
               />
             </div>
+          </div>
 
-            <div className="modal-field">
-              <label className="modal-label">{t.modal.paidPrice}</label>
-              <input
-                className="modal-input"
-                type="number"
-                min={0.01}
-                step={0.01}
-                value={price}
-                onChange={e => setPrice(Number(e.target.value))}
-                required
-              />
-            </div>
+          <div className="modal-field">
+            <label className="modal-label">{t.modal.paidPrice}</label>
+            <input
+              className="modal-input"
+              type="number"
+              min={0.01}
+              step={0.01}
+              value={price}
+              onChange={e => setPrice(Number(e.target.value))}
+              required
+            />
           </div>
 
           <div className="modal-total">
