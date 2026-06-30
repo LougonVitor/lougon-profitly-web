@@ -31,7 +31,7 @@
 .ticker-tape-track {
   display: flex;
   width: max-content;
-  animation: tape-scroll calc(var(--item-count, 18) * 2.8s) linear infinite;
+  animation: tape-scroll calc(var(--item-count, 18) * 5s) linear infinite;
 }
 
 .ticker-tape-track:hover {
