@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
+  BarChart, Bar, Cell, ReferenceLine,
 } from 'recharts'
 import { Header } from '../../components/Header/Header'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
@@ -182,27 +182,38 @@ function PriceChartSection({ symbol }: { symbol: string }) {
   )
 }
 
+const CURRENT_YEAR = new Date().getFullYear()
+
 const DIV_RANGES = [
-  { label: '1A',   years: 1 },
-  { label: '3A',   years: 3 },
-  { label: '5A',   years: 5 },
-  { label: '10A',  years: 10 },
-  { label: 'TODOS', years: 0 },
+  { label: String(CURRENT_YEAR), key: 'ytd' },
+  { label: '1A',   key: '1y' },
+  { label: '3A',   key: '3y' },
+  { label: '5A',   key: '5y' },
+  { label: 'MÁX',  key: 'max' },
 ]
 
+function divCutoff(key: string): Date | null {
+  const now = Date.now()
+  if (key === 'ytd') return new Date(CURRENT_YEAR, 0, 1)
+  if (key === '1y')  return new Date(now - 1   * 365.25 * 86400000)
+  if (key === '3y')  return new Date(now - 3   * 365.25 * 86400000)
+  if (key === '5y')  return new Date(now - 5   * 365.25 * 86400000)
+  return null
+}
+
 function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
-  const [divRange, setDivRange] = useState(5)
+  const [divRange, setDivRange] = useState('ytd')
 
   const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
 
-  const cutoff = divRange > 0
-    ? new Date(Date.now() - divRange * 365.25 * 24 * 60 * 60 * 1000)
-    : null
-
-  const dividends = (cutoff
+  const cutoff = divCutoff(divRange)
+  const dividends = cutoff
     ? all.filter(d => d.lastDatePrior && new Date(d.lastDatePrior) >= cutoff)
     : all
-  )
+
+  const avg = dividends.length > 0
+    ? dividends.reduce((s, d) => s + (d.rate ?? 0), 0) / dividends.length
+    : null
 
   if (all.length === 0) return null
 
@@ -213,18 +224,23 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
         <div className="ta-range-btns">
           {DIV_RANGES.map(r => (
             <button
-              key={r.years}
-              className={`ta-range-btn ${divRange === r.years ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setDivRange(r.years)}
+              key={r.key}
+              className={`ta-range-btn ${divRange === r.key ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setDivRange(r.key)}
             >
               {r.label}
             </button>
           ))}
         </div>
       </div>
+      {avg != null && (
+        <div className="ta-div-avg-label">
+          <span className="ta-div-avg-line" /> Média do período: <strong>R$ {avg.toFixed(4)}</strong>
+        </div>
+      )}
       <div className="ta-dividends-chart">
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={dividends} margin={{ top: 4, right: 0, bottom: 0, left: 0 }} barSize={14}>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={dividends} margin={{ top: 4, right: 16, bottom: 0, left: 0 }} barSize={14}>
             <XAxis
               dataKey="lastDatePrior"
               tickFormatter={d => d ? new Date(d).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : ''}
@@ -233,7 +249,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
               tickLine={false}
               interval="preserveStartEnd"
             />
-            <YAxis hide />
+            <YAxis hide domain={[0, 'auto']} />
             <Tooltip
               contentStyle={{
                 fontSize: 12,
@@ -247,9 +263,24 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
             />
             <Bar dataKey="rate" radius={[3, 3, 0, 0]}>
               {dividends.map((_, i) => (
-                <Cell key={i} fill="var(--accent)" opacity={0.75} />
+                <Cell key={i} fill="var(--accent)" opacity={0.8} />
               ))}
             </Bar>
+            {avg != null && (
+              <ReferenceLine
+                y={avg}
+                stroke="var(--text-up)"
+                strokeDasharray="5 3"
+                strokeWidth={1.5}
+                label={{
+                  value: `Média R$ ${avg.toFixed(4)}`,
+                  position: 'insideTopRight',
+                  fontSize: 10,
+                  fill: 'var(--text-up)',
+                  dy: -4,
+                }}
+              />
+            )}
           </BarChart>
         </ResponsiveContainer>
       </div>
