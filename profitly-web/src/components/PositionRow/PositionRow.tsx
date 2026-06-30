@@ -11,7 +11,8 @@ interface PositionRowProps {
   onWalletUpdate: (updated: WalletSummary) => void
 }
 
-function fmtBRL(value: number): string {
+function fmtBRL(value: number | null | undefined): string {
+  if (value == null) return '—'
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
@@ -76,7 +77,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
         </td>
         <td className="right">
           <span className={`badge ${up ? 'badge--up' : 'badge--down'}`}>
-            {up ? '↑' : '↓'} {up ? '+' : ''}{position.profitOrLossPercent.toFixed(2)}%
+            {up ? '↑' : '↓'} {up ? '+' : ''}{(position.profitOrLossPercent ?? 0).toFixed(2)}%
           </span>
         </td>
         <td className="right">

@@ -69,8 +69,8 @@ export function AssetTypeCard({
 }: AssetTypeCardProps) {
   const [expanded, setExpanded] = useState(true)
 
-  const totalCurrentValue = positions.reduce((s, p) => s + p.currentValue, 0)
-  const totalInvested = positions.reduce((s, p) => s + p.totalInvested, 0)
+  const totalCurrentValue = positions.reduce((s, p) => s + (p.currentValue ?? 0), 0)
+  const totalInvested = positions.reduce((s, p) => s + (p.totalInvested ?? 0), 0)
   const pnlPercent = totalInvested === 0 ? 0 : ((totalCurrentValue - totalInvested) / totalInvested) * 100
   const portfolioPercent = portfolioCurrentValue === 0 ? 0 : (totalCurrentValue / portfolioCurrentValue) * 100
   const isUp = pnlPercent >= 0
