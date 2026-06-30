@@ -44,7 +44,7 @@ export function TickerDetail() {
   if (loading) {
     return (
       <div className="ticker-detail">
-        <Header search="" onSearch={() => {}} />
+        <Header />
         <div className="ticker-detail-state">{t.dashboard.loading}</div>
       </div>
     )
@@ -53,7 +53,7 @@ export function TickerDetail() {
   if (!ticker) {
     return (
       <div className="ticker-detail">
-        <Header search="" onSearch={() => {}} />
+        <Header />
         <div className="ticker-detail-state">Ticker não encontrado: {symbol}</div>
       </div>
     )
@@ -61,7 +61,7 @@ export function TickerDetail() {
 
   return (
     <div className="ticker-detail">
-      <Header search="" onSearch={() => {}} />
+      <Header />
 
       {/* Breadcrumb */}
       <nav className="td-breadcrumb">
