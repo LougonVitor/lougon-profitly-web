@@ -1,29 +1,35 @@
 .summary-card {
-  background: #f9f9f9;
-  border-radius: 8px;
-  padding: 0.875rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .summary-label {
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
 }
 
 .summary-value {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
-.summary-value--positive { color: #1d9e75; }
-.summary-value--negative { color: #e24b4a; }
-.summary-value--default  { color: #222; }
+.summary-value--positive { color: var(--text-up); }
+.summary-value--negative { color: var(--text-down); }
 
 .summary-sub {
   font-size: 12px;
-  margin-top: 2px;
+  margin-top: 3px;
+  color: var(--text-muted);
 }
 
-.summary-sub--positive { color: #1d9e75; }
-.summary-sub--negative { color: #e24b4a; }
-.summary-sub--default  { color: #888; }
+.summary-sub--positive { color: var(--text-up); }
+.summary-sub--negative { color: var(--text-down); }
