@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -8,7 +8,7 @@ import { Header } from '../../components/Header/Header'
 import { api } from '../../lib/api'
 import './Finance.css'
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type ExpenseType = 'INVESTMENT'|'HOME'|'SIGNATURE'|'SPORT'|'LOCOMOTION'|
   'SUPERMARKET'|'LEISURE'|'CREDIT'|'MEDICINE'|'SEPARATE'|'EDUCATION'|'STYLE'
 type ExpenseStatus = 'PAID'|'PARTIAL'|'PENDING'|'OVERRUN'
@@ -21,6 +21,14 @@ interface Expense {
   status: ExpenseStatus
   type: ExpenseType
   createdAt: string
+  recurring: boolean
+}
+
+interface AdditionalIncome {
+  id: number
+  description: string
+  amount: number
+  createdAt: string
 }
 
 interface CurrentPeriod {
@@ -31,6 +39,15 @@ interface CurrentPeriod {
   totalEstimated: number
   balance: number
   resetDay: number
+  additionalIncomes: AdditionalIncome[]
+  totalIncome: number
+}
+
+interface RecurringExpense {
+  id: number
+  title: string
+  estimatedValue: number | null
+  type: ExpenseType
 }
 
 interface Settings { resetDay: number; netSalary: number | null; investmentTarget: number | null }
@@ -54,15 +71,14 @@ const TYPE_COLORS: Record<ExpenseType, string> = {
 const STATUS_LABELS: Record<ExpenseStatus, string> = {
   PAID:'Pago', PARTIAL:'Parcial', PENDING:'Pendente', OVERRUN:'Excedido',
 }
-
 const ALL_TYPES = Object.keys(TYPE_LABELS) as ExpenseType[]
 const ALL_STATUSES = ['PAID','PARTIAL','PENDING','OVERRUN'] as ExpenseStatus[]
+const INVEST_PCTS = [5,10,15,20,25,30,35,40]
 
 function fmtBRL(v: number | null | undefined) {
   if (v == null) return 'R$ —'
   return `R$ ${v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
 }
-
 function fmtMonth(ym: string) {
   const [y, m] = ym.split('-')
   const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
@@ -72,36 +88,71 @@ function fmtMonth(ym: string) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export function Finance() {
   const navigate = useNavigate()
-  const [tab, setTab] = useState<'current'|'history'>('current')
+  const [tab, setTab] = useState<'current'|'recurring'|'history'>('current')
   const [period, setPeriod] = useState<CurrentPeriod | null>(null)
+  const [recurringList, setRecurringList] = useState<RecurringExpense[]>([])
   const [history, setHistory] = useState<HistoryData | null>(null)
   const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null })
   const [loading, setLoading] = useState(true)
 
-  // Add expense form
+  // Salary editing
+  const [editingSalary, setEditingSalary] = useState(false)
+  const [salaryInput, setSalaryInput] = useState('')
+  const salaryRef = useRef<HTMLInputElement>(null)
+
+  // Add income
+  const [showAddIncome, setShowAddIncome] = useState(false)
+  const [incomeDesc, setIncomeDesc] = useState('')
+  const [incomeAmount, setIncomeAmount] = useState('')
+
+  // Add non-recurring expense
   const [showAdd, setShowAdd] = useState(false)
   const [addTitle, setAddTitle] = useState('')
-  const [addEstimated, setAddEstimated] = useState('')
   const [addReal, setAddReal] = useState('')
   const [addType, setAddType] = useState<ExpenseType>('LEISURE')
-  const [addStatus, setAddStatus] = useState<ExpenseStatus>('PENDING')
 
-  // Quick launch
-  const [qlTitle, setQlTitle] = useState('')
-  const [qlValue, setQlValue] = useState('')
-  const [qlLoading, setQlLoading] = useState(false)
+  // Add recurring config
+  const [showAddRecurring, setShowAddRecurring] = useState(false)
+  const [recTitle, setRecTitle] = useState('')
+  const [recEstimated, setRecEstimated] = useState('')
+  const [recType, setRecType] = useState<ExpenseType>('HOME')
 
-  // Settings form
-  const [showSettings, setShowSettings] = useState(false)
-  const [settingsSalary, setSettingsSalary] = useState('')
-  const [settingsInvestment, setSettingsInvestment] = useState('')
-  const [settingsResetDay, setSettingsResetDay] = useState('10')
+  // Inline cell editing
+  const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'} | null>(null)
+  const [editCellVal, setEditCellVal] = useState('')
+
+  // Investment % selector
+  const [investPct, setInvestPct] = useState<number>(25)
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
   const [histTo, setHistTo] = useState('')
 
+  // Settings
+  const [showSettings, setShowSettings] = useState(false)
+  const [settingsResetDay, setSettingsResetDay] = useState('10')
+
   useEffect(() => { loadAll() }, [])
+
+  useEffect(() => {
+    if (period?.netSalary && investmentExpense()?.estimatedValue) {
+      const pct = Math.round((investmentExpense()!.estimatedValue! / period.netSalary) * 100)
+      if (INVEST_PCTS.includes(pct)) setInvestPct(pct)
+    }
+  }, [period])
+
+  useEffect(() => {
+    if (editingSalary && salaryRef.current) salaryRef.current.focus()
+  }, [editingSalary])
+
+  useEffect(() => {
+    if (tab === 'history') loadHistory()
+    if (tab === 'recurring') loadRecurring()
+  }, [tab, histFrom, histTo])
+
+  function investmentExpense() {
+    return period?.expenses.find(e => e.type === 'INVESTMENT') ?? null
+  }
 
   async function loadAll() {
     setLoading(true)
@@ -112,9 +163,8 @@ export function Finance() {
       ])
       setPeriod(pRes.data)
       setSettings(sRes.data)
-      setSettingsSalary(sRes.data.netSalary?.toString() ?? '')
-      setSettingsInvestment(sRes.data.investmentTarget?.toString() ?? '')
       setSettingsResetDay(sRes.data.resetDay.toString())
+      setSalaryInput(sRes.data.netSalary?.toString() ?? '')
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       if (status === 401 || status === 403) navigate('/login')
@@ -129,36 +179,46 @@ export function Finance() {
     setHistory(res.data)
   }
 
-  useEffect(() => {
-    if (tab === 'history') loadHistory()
-  }, [tab, histFrom, histTo])
+  async function loadRecurring() {
+    const res = await api.get<RecurringExpense[]>('/api/finance/recurring')
+    setRecurringList(res.data)
+  }
 
-  async function handleAddExpense(e: React.FormEvent) {
-    e.preventDefault()
-    await api.post('/api/finance/expenses', {
-      title: addTitle,
-      estimatedValue: addEstimated ? parseFloat(addEstimated) : null,
-      realValue: addReal ? parseFloat(addReal) : 0,
-      status: addStatus,
-      type: addType,
+  async function handleSaveSalary() {
+    setEditingSalary(false)
+    const val = salaryInput ? parseFloat(salaryInput) : null
+    await api.put('/api/finance/settings', {
+      resetDay: settings.resetDay,
+      netSalary: val,
+      investmentTarget: settings.investmentTarget,
     })
-    setShowAdd(false)
-    setAddTitle(''); setAddEstimated(''); setAddReal('')
     await loadAll()
   }
 
-  async function handleQuickLaunch(e: React.FormEvent) {
+  async function handleAddIncome(e: React.FormEvent) {
     e.preventDefault()
-    if (!qlTitle || !qlValue) return
-    setQlLoading(true)
-    try {
-      await api.post('/api/finance/expenses/quick-launch', {
-        title: qlTitle, value: parseFloat(qlValue),
-      })
-      setQlValue('')
-      await loadAll()
-    } catch { alert('Lançamento não encontrado') }
-    finally { setQlLoading(false) }
+    await api.post('/api/finance/income', { description: incomeDesc, amount: parseFloat(incomeAmount) })
+    setIncomeDesc(''); setIncomeAmount(''); setShowAddIncome(false)
+    await loadAll()
+  }
+
+  async function handleDeleteIncome(id: number) {
+    await api.delete(`/api/finance/income/${id}`)
+    await loadAll()
+  }
+
+  async function handleAddExpense(e: React.FormEvent) {
+    e.preventDefault()
+    const real = parseFloat(addReal)
+    await api.post('/api/finance/expenses', {
+      title: addTitle,
+      estimatedValue: real,
+      realValue: real,
+      type: addType,
+      recurring: false,
+    })
+    setShowAdd(false); setAddTitle(''); setAddReal('')
+    await loadAll()
   }
 
   async function handleDelete(id: number) {
@@ -167,8 +227,60 @@ export function Finance() {
     await loadAll()
   }
 
-  async function handleStatusChange(expense: Expense, status: ExpenseStatus) {
-    await api.patch(`/api/finance/expenses/${expense.id}`, { status })
+  async function handleStatusChange(exp: Expense, status: ExpenseStatus) {
+    await api.patch(`/api/finance/expenses/${exp.id}`, { status })
+    await loadAll()
+  }
+
+  async function handleInvestPct(pct: number) {
+    setInvestPct(pct)
+    const inv = investmentExpense()
+    if (!inv || !period?.netSalary) return
+    const estimated = Math.round(period.netSalary * pct / 100 * 100) / 100
+    await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: estimated })
+    await loadAll()
+  }
+
+  async function handleInvestRealChange(val: string) {
+    const inv = investmentExpense()
+    if (!inv) return
+    await api.patch(`/api/finance/expenses/${inv.id}`, { realValue: parseFloat(val) || 0 })
+    await loadAll()
+  }
+
+  function startEdit(id: number, field: 'title'|'estimated'|'real', currentVal: string) {
+    setEditCell({ id, field })
+    setEditCellVal(currentVal)
+  }
+
+  async function commitEdit() {
+    if (!editCell) return
+    const { id, field } = editCell
+    const body: Record<string, string|number> = {}
+    if (field === 'title') body.title = editCellVal
+    else if (field === 'estimated') body.estimatedValue = parseFloat(editCellVal) || 0
+    else body.realValue = parseFloat(editCellVal) || 0
+    await api.patch(`/api/finance/expenses/${id}`, body)
+    setEditCell(null)
+    await loadAll()
+  }
+
+  async function handleAddRecurring(e: React.FormEvent) {
+    e.preventDefault()
+    await api.post('/api/finance/recurring', {
+      title: recTitle,
+      estimatedValue: recEstimated ? parseFloat(recEstimated) : null,
+      type: recType,
+    })
+    setRecTitle(''); setRecEstimated(''); setShowAddRecurring(false)
+    await loadRecurring()
+    await loadAll()
+  }
+
+  async function handleDeleteRecurring(id: number) {
+    if (!confirm('Remover gasto recorrente?')) return
+    await api.delete(`/api/finance/recurring/${id}`)
+    await loadRecurring()
     await loadAll()
   }
 
@@ -176,8 +288,8 @@ export function Finance() {
     e.preventDefault()
     await api.put('/api/finance/settings', {
       resetDay: parseInt(settingsResetDay),
-      netSalary: settingsSalary ? parseFloat(settingsSalary) : null,
-      investmentTarget: settingsInvestment ? parseFloat(settingsInvestment) : null,
+      netSalary: settings.netSalary,
+      investmentTarget: settings.investmentTarget,
     })
     setShowSettings(false)
     await loadAll()
@@ -196,9 +308,9 @@ export function Finance() {
     </div>
   )
 
-  const expensesByType = period ? [...new Map(
-    period.expenses.map(e => [e.type, e])
-  ).keys()] : []
+  const inv = investmentExpense()
+  const nonInvestmentRecurring = period?.expenses.filter(e => e.recurring && e.type !== 'INVESTMENT') ?? []
+  const nonRecurring = period?.expenses.filter(e => !e.recurring) ?? []
 
   return (
     <div className="fin-page">
@@ -210,51 +322,105 @@ export function Finance() {
           <button className={`fin-tab ${tab==='current'?'fin-tab--active':''}`} onClick={()=>setTab('current')}>
             Período Atual
           </button>
+          <button className={`fin-tab ${tab==='recurring'?'fin-tab--active':''}`} onClick={()=>setTab('recurring')}>
+            Recorrentes
+          </button>
           <button className={`fin-tab ${tab==='history'?'fin-tab--active':''}`} onClick={()=>setTab('history')}>
             Histórico
           </button>
           <div className="fin-tabs-actions">
-            <button className="fin-btn fin-btn--ghost" onClick={()=>setShowSettings(v=>!v)}>⚙ Configurações</button>
-            <button className="fin-btn fin-btn--danger" onClick={handleReset}>↺ Resetar período</button>
+            <button className="fin-btn fin-btn--ghost fin-btn--sm" onClick={()=>setShowSettings(v=>!v)}>⚙</button>
+            <button className="fin-btn fin-btn--ghost fin-btn--sm fin-btn--muted" onClick={handleReset}>↺ Resetar</button>
           </div>
         </div>
 
-        {/* ── Settings Panel ── */}
+        {/* ── Settings ── */}
         {showSettings && (
           <div className="fin-settings-panel fin-animate-in">
-            <form className="fin-settings-form" onSubmit={handleSaveSettings}>
-              <h3 className="fin-settings-title">Configurações do período</h3>
+            <form onSubmit={handleSaveSettings}>
+              <h3 className="fin-settings-title">Configurações</h3>
               <div className="fin-settings-row">
                 <div className="fin-field">
-                  <label>Salário líquido</label>
-                  <input type="number" step="0.01" value={settingsSalary}
-                    onChange={e=>setSettingsSalary(e.target.value)} placeholder="R$ 0,00" />
-                </div>
-                <div className="fin-field">
-                  <label>Meta de investimento</label>
-                  <input type="number" step="0.01" value={settingsInvestment}
-                    onChange={e=>setSettingsInvestment(e.target.value)} placeholder="R$ 0,00" />
-                </div>
-                <div className="fin-field">
                   <label>Dia de reset (1-28)</label>
-                  <input type="number" min="1" max="28" value={settingsResetDay}
-                    onChange={e=>setSettingsResetDay(e.target.value)} />
+                  <input className="fin-input" type="number" min="1" max="28"
+                    value={settingsResetDay} onChange={e=>setSettingsResetDay(e.target.value)} />
                 </div>
               </div>
               <div className="fin-settings-footer">
-                <button type="button" className="fin-btn fin-btn--ghost" onClick={()=>setShowSettings(false)}>Cancelar</button>
-                <button type="submit" className="fin-btn fin-btn--primary">Salvar</button>
+                <button type="button" className="fin-btn fin-btn--ghost fin-btn--sm" onClick={()=>setShowSettings(false)}>Cancelar</button>
+                <button type="submit" className="fin-btn fin-btn--primary fin-btn--sm">Salvar</button>
               </div>
             </form>
           </div>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════════ */}
         {tab === 'current' && period && (
           <>
+            {/* ── Income section ── */}
+            <div className="fin-income-section fin-animate-in">
+              <div className="fin-income-header">
+                <h3 className="fin-section-title">Entradas do mês</h3>
+                <button className="fin-link-btn" onClick={()=>setShowAddIncome(v=>!v)}>
+                  {showAddIncome ? '✕ fechar' : '+ renda adicional'}
+                </button>
+              </div>
+
+              <div className="fin-income-row">
+                {/* Salary card */}
+                <div className="fin-income-card fin-income-card--salary">
+                  <div className="fin-income-card-label">Salário Líquido</div>
+                  {editingSalary ? (
+                    <div className="fin-salary-edit">
+                      <span className="fin-salary-prefix">R$</span>
+                      <input
+                        ref={salaryRef}
+                        className="fin-salary-input"
+                        type="number"
+                        step="0.01"
+                        value={salaryInput}
+                        onChange={e=>setSalaryInput(e.target.value)}
+                        onBlur={handleSaveSalary}
+                        onKeyDown={e=>{ if(e.key==='Enter') handleSaveSalary(); if(e.key==='Escape') setEditingSalary(false) }}
+                      />
+                    </div>
+                  ) : (
+                    <button className="fin-income-value fin-income-value--editable" onClick={()=>setEditingSalary(true)} title="Clique para editar">
+                      {fmtBRL(period.netSalary)}
+                      <span className="fin-edit-hint">✎</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Additional incomes */}
+                {period.additionalIncomes.map(inc => (
+                  <div key={inc.id} className="fin-income-card fin-income-card--extra">
+                    <div className="fin-income-card-label">{inc.description}</div>
+                    <div className="fin-income-value">{fmtBRL(inc.amount)}</div>
+                    <button className="fin-income-del" onClick={()=>handleDeleteIncome(inc.id)} title="Remover">✕</button>
+                  </div>
+                ))}
+
+                {/* Total income */}
+                <div className="fin-income-card fin-income-card--total">
+                  <div className="fin-income-card-label">Total de Entradas</div>
+                  <div className="fin-income-value fin-income-value--strong">{fmtBRL(period.totalIncome)}</div>
+                </div>
+              </div>
+
+              {showAddIncome && (
+                <form className="fin-mini-form fin-animate-in" onSubmit={handleAddIncome}>
+                  <input className="fin-input" placeholder="Descrição (ex: Freelance)" value={incomeDesc}
+                    onChange={e=>setIncomeDesc(e.target.value)} required />
+                  <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
+                    value={incomeAmount} onChange={e=>setIncomeAmount(e.target.value)} required />
+                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
+                </form>
+              )}
+            </div>
+
             {/* ── Summary Cards ── */}
             <div className="fin-cards">
-              <SummaryCard label="Salário Líquido" value={period.netSalary} color="blue" icon="💰" />
-              <SummaryCard label="Investimento" value={period.investmentTarget} color="green" icon="📈" />
               <SummaryCard label="Total Gasto" value={period.totalReal} color="orange" icon="💳" />
               <SummaryCard
                 label="Saldo"
@@ -262,64 +428,30 @@ export function Finance() {
                 color={period.balance >= 0 ? 'green' : 'red'}
                 icon={period.balance >= 0 ? '✅' : '⚠️'}
               />
-            </div>
-
-            {/* ── Quick Launch ── */}
-            <div className="fin-quick fin-animate-in">
-              <h3 className="fin-section-title">⚡ Lançamento Rápido</h3>
-              <form className="fin-quick-form" onSubmit={handleQuickLaunch}>
-                <select
-                  className="fin-input"
-                  value={qlTitle}
-                  onChange={e=>setQlTitle(e.target.value)}
-                  required
-                >
-                  <option value="">Selecione um lançamento</option>
-                  {period.expenses.map(e => (
-                    <option key={e.id} value={e.title}>{e.title}</option>
-                  ))}
-                </select>
-                <input
-                  className="fin-input"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="Valor (R$)"
-                  value={qlValue}
-                  onChange={e=>setQlValue(e.target.value)}
-                  required
-                />
-                <button className="fin-btn fin-btn--primary" type="submit" disabled={qlLoading}>
-                  {qlLoading ? '...' : 'Lançar'}
-                </button>
-              </form>
+              <SummaryCard label="Estimado" value={period.totalEstimated} color="blue" icon="📋" />
             </div>
 
             {/* ── Expense Table ── */}
             <div className="fin-table-section fin-animate-in">
               <div className="fin-table-header">
-                <h3 className="fin-section-title">Lançamentos do período</h3>
-                <button className="fin-btn fin-btn--primary" onClick={()=>setShowAdd(v=>!v)}>
-                  {showAdd ? '✕ Fechar' : '+ Novo lançamento'}
+                <h3 className="fin-section-title">Lançamentos</h3>
+                <button className="fin-link-btn" onClick={()=>setShowAdd(v=>!v)}>
+                  {showAdd ? '✕ fechar' : '+ novo gasto'}
                 </button>
               </div>
 
               {showAdd && (
                 <form className="fin-add-form fin-animate-in" onSubmit={handleAddExpense}>
-                  <div className="fin-add-row">
+                  <div className="fin-add-row-simple">
                     <input className="fin-input" placeholder="Título" value={addTitle}
                       onChange={e=>setAddTitle(e.target.value)} required />
-                    <input className="fin-input" type="number" step="0.01" placeholder="Estimado (R$)"
-                      value={addEstimated} onChange={e=>setAddEstimated(e.target.value)} />
-                    <input className="fin-input" type="number" step="0.01" placeholder="Real (R$)"
-                      value={addReal} onChange={e=>setAddReal(e.target.value)} />
-                    <select className="fin-input" value={addType} onChange={e=>setAddType(e.target.value as ExpenseType)}>
-                      {ALL_TYPES.map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                    <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
+                      value={addReal} onChange={e=>setAddReal(e.target.value)} required />
+                    <select className="fin-input fin-input--short" value={addType}
+                      onChange={e=>setAddType(e.target.value as ExpenseType)}>
+                      {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                     </select>
-                    <select className="fin-input" value={addStatus} onChange={e=>setAddStatus(e.target.value as ExpenseStatus)}>
-                      {ALL_STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                    </select>
-                    <button className="fin-btn fin-btn--primary" type="submit">Adicionar</button>
+                    <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
                   </div>
                 </form>
               )}
@@ -337,33 +469,107 @@ export function Finance() {
                     </tr>
                   </thead>
                   <tbody>
-                    {period.expenses.length === 0 && (
-                      <tr><td colSpan={6} className="fin-empty">Nenhum lançamento ainda</td></tr>
-                    )}
-                    {period.expenses.map(exp => (
-                      <tr key={exp.id} className="fin-row fin-animate-row">
-                        <td className="fin-cell-title">{exp.title}</td>
-                        <td>{fmtBRL(exp.estimatedValue)}</td>
-                        <td className="fin-cell-real">{fmtBRL(exp.realValue)}</td>
+                    {/* Investment row */}
+                    {inv && (
+                      <tr className="fin-row fin-row--investment fin-animate-row">
+                        <td className="fin-cell-title">
+                          <span className="fin-invest-badge">📈</span> Investimento
+                        </td>
                         <td>
-                          <span className="fin-type-badge" style={{background: TYPE_COLORS[exp.type] + '22', color: TYPE_COLORS[exp.type]}}>
-                            {TYPE_LABELS[exp.type]}
+                          <div className="fin-invest-est">
+                            <span>{fmtBRL(inv.estimatedValue)}</span>
+                            <div className="fin-pct-selector">
+                              {INVEST_PCTS.map(p => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  className={`fin-pct-btn ${investPct===p?'fin-pct-btn--active':''} ${p===25?'fin-pct-btn--rec':''}`}
+                                  onClick={()=>handleInvestPct(p)}
+                                  title={p===25?'Recomendado: mínimo 25%':''}
+                                  disabled={!period.netSalary}
+                                >
+                                  {p}%
+                                </button>
+                              ))}
+                            </div>
+                            {!period.netSalary && <span className="fin-pct-hint">Configure o salário para usar %</span>}
+                          </div>
+                        </td>
+                        <td>
+                          <InlineNumberCell
+                            value={inv.realValue}
+                            editing={editCell?.id===inv.id && editCell.field==='real'}
+                            editVal={editCellVal}
+                            onStart={()=>startEdit(inv.id,'real',inv.realValue.toString())}
+                            onChange={setEditCellVal}
+                            onCommit={commitEdit}
+                            onCancel={()=>setEditCell(null)}
+                          />
+                        </td>
+                        <td>
+                          <span className="fin-type-badge" style={{background:'#378add22',color:'#378add'}}>
+                            Investimento
                           </span>
                         </td>
                         <td>
-                          <select
-                            className={`fin-status fin-status--${exp.status.toLowerCase()}`}
-                            value={exp.status}
-                            onChange={e=>handleStatusChange(exp, e.target.value as ExpenseStatus)}
-                          >
+                          <select className={`fin-status fin-status--${inv.status.toLowerCase()}`}
+                            value={inv.status} onChange={e=>handleStatusChange(inv, e.target.value as ExpenseStatus)}>
                             {ALL_STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                           </select>
                         </td>
-                        <td>
-                          <button className="fin-del-btn" onClick={()=>handleDelete(exp.id)} title="Remover">✕</button>
+                        <td></td>
+                      </tr>
+                    )}
+
+                    {/* Recurring section */}
+                    {nonInvestmentRecurring.length > 0 && (
+                      <tr className="fin-section-divider">
+                        <td colSpan={6}>
+                          <span className="fin-divider-label">↻ Recorrentes</span>
                         </td>
                       </tr>
+                    )}
+                    {nonInvestmentRecurring.map(exp => (
+                      <ExpenseRow
+                        key={exp.id}
+                        exp={exp}
+                        editCell={editCell}
+                        editCellVal={editCellVal}
+                        onStartEdit={startEdit}
+                        onEditChange={setEditCellVal}
+                        onCommit={commitEdit}
+                        onCancelEdit={()=>setEditCell(null)}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleDelete}
+                      />
                     ))}
+
+                    {/* Non-recurring section */}
+                    {nonRecurring.length > 0 && (
+                      <tr className="fin-section-divider">
+                        <td colSpan={6}>
+                          <span className="fin-divider-label">Avulsos</span>
+                        </td>
+                      </tr>
+                    )}
+                    {nonRecurring.map(exp => (
+                      <ExpenseRow
+                        key={exp.id}
+                        exp={exp}
+                        editCell={editCell}
+                        editCellVal={editCellVal}
+                        onStartEdit={startEdit}
+                        onEditChange={setEditCellVal}
+                        onCommit={commitEdit}
+                        onCancelEdit={()=>setEditCell(null)}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+
+                    {period.expenses.length === 0 && (
+                      <tr><td colSpan={6} className="fin-empty">Nenhum lançamento ainda</td></tr>
+                    )}
                   </tbody>
                   {period.expenses.length > 0 && (
                     <tfoot>
@@ -379,27 +585,19 @@ export function Finance() {
               </div>
             </div>
 
-            {/* ── Period Chart ── */}
-            {period.expenses.length > 0 && (
+            {/* ── Charts ── */}
+            {period.expenses.length > 1 && (
               <div className="fin-chart-section fin-animate-in">
                 <h3 className="fin-section-title">Distribuição por categoria</h3>
                 <div className="fin-charts-row">
                   <ResponsiveContainer width="60%" height={260}>
-                    <BarChart data={period.expenses.reduce((acc, e) => {
-                      const found = acc.find(a => a.type === e.type)
-                      if (found) found.real += e.realValue
-                      else acc.push({ type: TYPE_LABELS[e.type], real: e.realValue, color: TYPE_COLORS[e.type] })
-                      return acc
-                    }, [] as {type:string;real:number;color:string}[])}>
+                    <BarChart data={buildChartData(period.expenses)}>
                       <XAxis dataKey="type" tick={{fontSize:11}} />
                       <YAxis tick={{fontSize:11}} />
                       <Tooltip formatter={(v:number) => fmtBRL(v)} />
                       <Bar dataKey="real" radius={[4,4,0,0]}>
-                        {period.expenses.reduce((acc, e) => {
-                          if (!acc.find(a => a.type === e.type)) acc.push(e)
-                          return acc
-                        }, [] as Expense[]).map((e, i) => (
-                          <Cell key={i} fill={TYPE_COLORS[e.type]} />
+                        {buildChartData(period.expenses).map((d, i) => (
+                          <Cell key={i} fill={d.color} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -407,24 +605,15 @@ export function Finance() {
                   <ResponsiveContainer width="40%" height={260}>
                     <PieChart>
                       <Pie
-                        data={period.expenses.reduce((acc, e) => {
-                          const found = acc.find(a => a.name === TYPE_LABELS[e.type])
-                          if (found) found.value += e.realValue
-                          else acc.push({ name: TYPE_LABELS[e.type], value: e.realValue, color: TYPE_COLORS[e.type] })
-                          return acc
-                        }, [] as {name:string;value:number;color:string}[])}
+                        data={buildPieData(period.expenses)}
                         dataKey="value"
-                        cx="50%"
-                        cy="50%"
+                        cx="50%" cy="50%"
                         outerRadius={90}
                         label={({name, percent}) => `${name} ${(percent*100).toFixed(0)}%`}
                         labelLine={false}
                       >
-                        {period.expenses.reduce((acc, e) => {
-                          if (!acc.find(a => a.type === e.type)) acc.push(e)
-                          return acc
-                        }, [] as Expense[]).map((e, i) => (
-                          <Cell key={i} fill={TYPE_COLORS[e.type]} />
+                        {buildPieData(period.expenses).map((d, i) => (
+                          <Cell key={i} fill={d.color} />
                         ))}
                       </Pie>
                     </PieChart>
@@ -435,6 +624,75 @@ export function Finance() {
           </>
         )}
 
+        {/* ════════════════════════════════════════════════════════════════════ */}
+        {tab === 'recurring' && (
+          <div className="fin-recurring fin-animate-in">
+            <div className="fin-table-header">
+              <h3 className="fin-section-title">Gastos Recorrentes</h3>
+              <button className="fin-link-btn" onClick={()=>setShowAddRecurring(v=>!v)}>
+                {showAddRecurring ? '✕ fechar' : '+ novo recorrente'}
+              </button>
+            </div>
+            <p className="fin-recurring-desc">
+              Gastos configurados aqui são adicionados automaticamente a cada período.
+            </p>
+
+            {showAddRecurring && (
+              <form className="fin-add-form fin-animate-in" onSubmit={handleAddRecurring}>
+                <div className="fin-add-row-simple">
+                  <input className="fin-input" placeholder="Título (ex: Aluguel)" value={recTitle}
+                    onChange={e=>setRecTitle(e.target.value)} required />
+                  <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Estimado (R$)"
+                    value={recEstimated} onChange={e=>setRecEstimated(e.target.value)} />
+                  <select className="fin-input fin-input--short" value={recType}
+                    onChange={e=>setRecType(e.target.value as ExpenseType)}>
+                    {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                  </select>
+                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
+                </div>
+              </form>
+            )}
+
+            {recurringList.length === 0 ? (
+              <div className="fin-empty-state">
+                <span>↻</span>
+                <p>Nenhum gasto recorrente configurado.<br/>Adicione gastos que se repetem todo mês, como aluguel, assinaturas e plano de saúde.</p>
+              </div>
+            ) : (
+              <div className="fin-table-wrap">
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Título</th>
+                      <th>Estimado</th>
+                      <th>Tipo</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recurringList.map(r => (
+                      <tr key={r.id} className="fin-row fin-row--recurring fin-animate-row">
+                        <td className="fin-cell-title">{r.title}</td>
+                        <td>{fmtBRL(r.estimatedValue)}</td>
+                        <td>
+                          <span className="fin-type-badge"
+                            style={{background:TYPE_COLORS[r.type]+'22', color:TYPE_COLORS[r.type]}}>
+                            {TYPE_LABELS[r.type]}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="fin-del-btn" onClick={()=>handleDeleteRecurring(r.id)} title="Remover">✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════════ */}
         {tab === 'history' && (
           <div className="fin-history fin-animate-in">
             <div className="fin-history-filters">
@@ -460,11 +718,10 @@ export function Finance() {
             {!history || history.months.length === 0 ? (
               <div className="fin-empty-state">
                 <span>📊</span>
-                <p>Nenhum histórico disponível ainda.<br />O histórico é gerado automaticamente ao resetar o período.</p>
+                <p>Nenhum histórico disponível ainda.<br />O histórico é gerado ao resetar o período.</p>
               </div>
             ) : (
               <>
-                {/* ── History Bar Chart ── */}
                 <div className="fin-chart-section">
                   <h4 className="fin-subsection-title">Total gasto por mês</h4>
                   <ResponsiveContainer width="100%" height={280}>
@@ -477,7 +734,6 @@ export function Finance() {
                   </ResponsiveContainer>
                 </div>
 
-                {/* ── Stacked by type ── */}
                 <div className="fin-chart-section">
                   <h4 className="fin-subsection-title">Gastos por categoria ao longo do tempo</h4>
                   <ResponsiveContainer width="100%" height={300}>
@@ -497,7 +753,6 @@ export function Finance() {
                   </ResponsiveContainer>
                 </div>
 
-                {/* ── Month cards ── */}
                 <div className="fin-history-cards">
                   {[...history.months].reverse().map(month => (
                     <div key={month.yearMonth} className="fin-month-card fin-animate-in">
@@ -526,6 +781,7 @@ export function Finance() {
   )
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
 function SummaryCard({ label, value, color, icon }: { label: string; value: number|null; color: string; icon: string }) {
   return (
     <div className={`fin-card fin-card--${color} fin-animate-in`}>
@@ -536,4 +792,125 @@ function SummaryCard({ label, value, color, icon }: { label: string; value: numb
       </div>
     </div>
   )
+}
+
+interface ExpenseRowProps {
+  exp: Expense
+  editCell: {id:number; field:'title'|'estimated'|'real'} | null
+  editCellVal: string
+  onStartEdit: (id:number, field:'title'|'estimated'|'real', val:string) => void
+  onEditChange: (v:string) => void
+  onCommit: () => void
+  onCancelEdit: () => void
+  onStatusChange: (exp:Expense, s:ExpenseStatus) => void
+  onDelete: (id:number) => void
+}
+
+function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onStatusChange, onDelete }: ExpenseRowProps) {
+  const isEditingTitle = editCell?.id === exp.id && editCell.field === 'title'
+  const isEditingEst   = editCell?.id === exp.id && editCell.field === 'estimated'
+  const isEditingReal  = editCell?.id === exp.id && editCell.field === 'real'
+
+  return (
+    <tr className={`fin-row ${exp.recurring?'fin-row--recurring':''} fin-animate-row`}>
+      <td className="fin-cell-title">
+        {isEditingTitle ? (
+          <InlineTextCell val={editCellVal} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
+        ) : (
+          <span className="fin-editable-cell" onClick={()=>onStartEdit(exp.id,'title',exp.title)} title="Clique para editar">
+            {exp.title}
+          </span>
+        )}
+      </td>
+      <td>
+        {isEditingEst ? (
+          <InlineNumberCell value={exp.estimatedValue} editing={true} editVal={editCellVal}
+            onStart={()=>{}} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
+        ) : (
+          <span className="fin-editable-cell" onClick={()=>onStartEdit(exp.id,'estimated',(exp.estimatedValue??'').toString())} title="Clique para editar">
+            {fmtBRL(exp.estimatedValue)}
+          </span>
+        )}
+      </td>
+      <td className="fin-cell-real">
+        {isEditingReal ? (
+          <InlineNumberCell value={exp.realValue} editing={true} editVal={editCellVal}
+            onStart={()=>{}} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
+        ) : (
+          <span className="fin-editable-cell fin-editable-cell--real" onClick={()=>onStartEdit(exp.id,'real',exp.realValue.toString())} title="Clique para editar">
+            {fmtBRL(exp.realValue)}
+          </span>
+        )}
+      </td>
+      <td>
+        <span className="fin-type-badge" style={{background:TYPE_COLORS[exp.type]+'22', color:TYPE_COLORS[exp.type]}}>
+          {TYPE_LABELS[exp.type]}
+        </span>
+      </td>
+      <td>
+        <select className={`fin-status fin-status--${exp.status.toLowerCase()}`}
+          value={exp.status} onChange={e=>onStatusChange(exp, e.target.value as ExpenseStatus)}>
+          {ALL_STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+        </select>
+      </td>
+      <td>
+        <button className="fin-del-btn" onClick={()=>onDelete(exp.id)} title="Remover">✕</button>
+      </td>
+    </tr>
+  )
+}
+
+function InlineTextCell({ val, onChange, onCommit, onCancel }: {
+  val: string; onChange:(v:string)=>void; onCommit:()=>void; onCancel:()=>void
+}) {
+  return (
+    <input
+      className="fin-inline-input"
+      autoFocus
+      value={val}
+      onChange={e=>onChange(e.target.value)}
+      onBlur={onCommit}
+      onKeyDown={e=>{ if(e.key==='Enter') onCommit(); if(e.key==='Escape') onCancel() }}
+    />
+  )
+}
+
+function InlineNumberCell({ value, editing, editVal, onStart, onChange, onCommit, onCancel }: {
+  value: number|null; editing: boolean; editVal: string;
+  onStart:()=>void; onChange:(v:string)=>void; onCommit:()=>void; onCancel:()=>void
+}) {
+  if (!editing) return (
+    <span className="fin-editable-cell" onClick={onStart} title="Clique para editar">
+      {fmtBRL(value)}
+    </span>
+  )
+  return (
+    <input
+      className="fin-inline-input fin-inline-input--number"
+      autoFocus
+      type="number"
+      step="0.01"
+      value={editVal}
+      onChange={e=>onChange(e.target.value)}
+      onBlur={onCommit}
+      onKeyDown={e=>{ if(e.key==='Enter') onCommit(); if(e.key==='Escape') onCancel() }}
+    />
+  )
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function buildChartData(expenses: Expense[]) {
+  const map = new Map<ExpenseType, number>()
+  for (const e of expenses) map.set(e.type, (map.get(e.type)??0) + e.realValue)
+  return Array.from(map.entries()).map(([type, real]) => ({
+    type: TYPE_LABELS[type], real, color: TYPE_COLORS[type],
+  }))
+}
+
+function buildPieData(expenses: Expense[]) {
+  const map = new Map<ExpenseType, number>()
+  for (const e of expenses) map.set(e.type, (map.get(e.type)??0) + e.realValue)
+  return Array.from(map.entries()).map(([type, value]) => ({
+    name: TYPE_LABELS[type], value, color: TYPE_COLORS[type],
+  }))
 }
