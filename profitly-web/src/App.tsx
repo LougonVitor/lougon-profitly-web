@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Dashboard } from './pages/Dashboard/Dashboard'
 import { Wallet } from './pages/Wallet/Wallet'
+import { Finance } from './pages/Finance/Finance'
 import { Login } from './pages/Login/Login'
 import { Register } from './pages/Register/Register'
 import { TickerAnalysis } from './pages/TickerAnalysis/TickerAnalysis'
@@ -29,6 +30,7 @@ function App() {
               <Route path="/ticker/:symbol" element={<TickerAnalysis />} />
               {/* Protected routes — require login */}
               <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
+              <Route path="/finance" element={<PrivateRoute><Finance /></PrivateRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

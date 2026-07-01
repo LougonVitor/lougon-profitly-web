@@ -121,6 +121,9 @@ export function Header() {
           <NavLink to="/wallet" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
             {t.nav.wallet}
           </NavLink>
+          <NavLink to="/finance" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
+            Finanças
+          </NavLink>
         </nav>
       </div>
 
