@@ -115,8 +115,10 @@ export function Finance() {
       setSettingsSalary(sRes.data.netSalary?.toString() ?? '')
       setSettingsInvestment(sRes.data.investmentTarget?.toString() ?? '')
       setSettingsResetDay(sRes.data.resetDay.toString())
-    } catch { navigate('/login') }
-    finally { setLoading(false) }
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 401 || status === 403) navigate('/login')
+    } finally { setLoading(false) }
   }
 
   async function loadHistory() {
