@@ -176,11 +176,13 @@ export function Header() {
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
 
-        {username && (
+        {username ? (
           <div className="header-user">
             <div className="header-avatar">{username[0].toUpperCase()}</div>
             <button className="header-logout" onClick={handleLogout}>{t.header.logout}</button>
           </div>
+        ) : (
+          <button className="header-login-btn" onClick={() => navigate('/login')}>Entrar</button>
         )}
       </div>
     </header>

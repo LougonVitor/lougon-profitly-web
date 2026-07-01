@@ -309,3 +309,19 @@
   color: var(--text-down);
   border-color: var(--text-down);
 }
+
+.header-login-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #378add;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.header-login-btn:hover {
+  background: #2563b0;
+}
