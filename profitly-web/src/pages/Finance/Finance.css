@@ -435,27 +435,21 @@
 /* Investment row */
 .fin-invest-badge { font-size: 14px; margin-right: 2px; }
 .fin-invest-est { display: flex; flex-direction: column; gap: 6px; }
-.fin-pct-selector {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.fin-pct-btn {
-  padding: 2px 7px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
+.fin-pct-row { display: flex; align-items: center; gap: 8px; }
+.fin-pct-select {
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 7px;
   border: 1px solid var(--border);
-  background: none;
-  color: var(--text-muted);
+  background: var(--bg-main);
+  color: var(--text-main);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  outline: none;
+  transition: border-color 0.15s;
 }
-.fin-pct-btn:hover { border-color: #378add; color: #378add; }
-.fin-pct-btn--active { background: #378add; color: #fff; border-color: #378add; }
-.fin-pct-btn--rec { border-color: #22c55e; color: #16a34a; }
-.fin-pct-btn--rec.fin-pct-btn--active { background: #22c55e; border-color: #22c55e; color: #fff; }
-.fin-pct-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.fin-pct-select:focus { border-color: #378add; }
+.fin-pct-select:disabled { opacity: 0.4; cursor: not-allowed; }
 .fin-pct-hint { font-size: 11px; color: var(--text-muted); }
 
 .fin-type-badge {

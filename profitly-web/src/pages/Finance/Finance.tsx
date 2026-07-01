@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { Header } from '../../components/Header/Header'
 import { api } from '../../lib/api'
@@ -72,7 +71,7 @@ const STATUS_LABELS: Record<ExpenseStatus, string> = {
   PAID:'Pago', PARTIAL:'Parcial', PENDING:'Pendente', OVERRUN:'Excedido',
 }
 const ALL_TYPES = Object.keys(TYPE_LABELS) as ExpenseType[]
-const INVEST_PCTS = [5,10,15,20,25,30,35,40]
+const INVEST_PCTS = Array.from({length: 101}, (_, i) => i)
 
 function fmtBRL(v: number | null | undefined) {
   if (v == null) return 'R$ —'
@@ -483,21 +482,20 @@ export function Finance() {
                         <td>
                           <div className="fin-invest-est">
                             <span>{fmtBRL(inv.estimatedValue)}</span>
-                            <div className="fin-pct-selector">
-                              {INVEST_PCTS.map(p => (
-                                <button
-                                  key={p}
-                                  type="button"
-                                  className={`fin-pct-btn ${investPct===p?'fin-pct-btn--active':''} ${p===25?'fin-pct-btn--rec':''}`}
-                                  onClick={()=>handleInvestPct(p)}
-                                  title={p===25?'Recomendado: mínimo 25%':''}
-                                  disabled={!period.netSalary}
-                                >
-                                  {p}%
-                                </button>
-                              ))}
+                            <div className="fin-pct-row">
+                              <select
+                                className="fin-pct-select"
+                                value={investPct}
+                                disabled={!period.netSalary}
+                                onChange={e=>handleInvestPct(parseInt(e.target.value))}
+                                title={!period.netSalary ? 'Configure o salário para usar %' : 'Selecione a % do salário'}
+                              >
+                                {INVEST_PCTS.map(p => (
+                                  <option key={p} value={p}>{p}%{p===25?' (recomendado)':''}</option>
+                                ))}
+                              </select>
+                              {!period.netSalary && <span className="fin-pct-hint">Configure o salário para usar %</span>}
                             </div>
-                            {!period.netSalary && <span className="fin-pct-hint">Configure o salário para usar %</span>}
                           </div>
                         </td>
                         <td>
@@ -590,37 +588,40 @@ export function Finance() {
             {/* ── Charts ── */}
             {period.expenses.length > 1 && (
               <div className="fin-chart-section fin-animate-in">
-                <h3 className="fin-section-title">Distribuição por categoria</h3>
-                <div className="fin-charts-row">
-                  <ResponsiveContainer width="60%" height={260}>
-                    <BarChart data={buildChartData(period.expenses)}>
-                      <XAxis dataKey="type" tick={{fontSize:11}} />
-                      <YAxis tick={{fontSize:11}} />
-                      <Tooltip formatter={(v:number) => fmtBRL(v)} />
-                      <Bar dataKey="real" radius={[4,4,0,0]}>
-                        {buildChartData(period.expenses).map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <ResponsiveContainer width="40%" height={260}>
-                    <PieChart>
-                      <Pie
-                        data={buildPieData(period.expenses)}
-                        dataKey="value"
-                        cx="50%" cy="50%"
-                        outerRadius={90}
-                        label={({name, percent}) => `${name} ${(percent*100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {buildPieData(period.expenses).map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <h3 className="fin-section-title" style={{marginBottom:'1rem'}}>Gastos por categoria</h3>
+                <ResponsiveContainer width="100%" height={buildGroupedData(period.expenses).length * 56 + 40}>
+                  <BarChart
+                    layout="vertical"
+                    data={buildGroupedData(period.expenses)}
+                    margin={{top:0, right:80, left:10, bottom:0}}
+                    barCategoryGap="30%"
+                    barGap={3}
+                  >
+                    <XAxis
+                      type="number"
+                      tick={{fontSize:11}}
+                      tickFormatter={(v:number) => fmtBRL(v)}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="type"
+                      tick={{fontSize:12}}
+                      width={100}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                    <Legend
+                      formatter={(value) => value === 'estimated' ? 'Valor Estimado' : 'Valor Real'}
+                    />
+                    <Bar dataKey="estimated" name="estimated" fill="#4b5563" radius={[0,4,4,0]}
+                      label={{position:'right', fontSize:11, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                    <Bar dataKey="real" name="real" fill="#e85d5d" radius={[0,4,4,0]}
+                      label={{position:'right', fontSize:11, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
           </>
@@ -917,18 +918,17 @@ function InlineNumberCell({ value, editing, editVal, onStart, onChange, onCommit
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function buildChartData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, number>()
-  for (const e of expenses) map.set(e.type, (map.get(e.type)??0) + e.realValue)
-  return Array.from(map.entries()).map(([type, real]) => ({
-    type: TYPE_LABELS[type], real, color: TYPE_COLORS[type],
-  }))
-}
-
-function buildPieData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, number>()
-  for (const e of expenses) map.set(e.type, (map.get(e.type)??0) + e.realValue)
-  return Array.from(map.entries()).map(([type, value]) => ({
-    name: TYPE_LABELS[type], value, color: TYPE_COLORS[type],
+function buildGroupedData(expenses: Expense[]) {
+  const map = new Map<ExpenseType, {estimated: number; real: number}>()
+  for (const e of expenses) {
+    const cur = map.get(e.type) ?? {estimated: 0, real: 0}
+    cur.estimated += e.estimatedValue ?? 0
+    cur.real += e.realValue
+    map.set(e.type, cur)
+  }
+  return Array.from(map.entries()).map(([type, vals]) => ({
+    type: TYPE_LABELS[type],
+    estimated: vals.estimated,
+    real: vals.real,
   }))
 }
