@@ -336,9 +336,13 @@ export function Finance() {
               <h3 className="fin-settings-title">Configurações</h3>
               <div className="fin-settings-row">
                 <div className="fin-field">
-                  <label>Dia de reset (1-28)</label>
+                  <label>Dia de reset (1–28)</label>
                   <input className="fin-input" type="number" min="1" max="28"
                     value={settingsResetDay} onChange={e=>setSettingsResetDay(e.target.value)} />
+                  <span className="fin-field-hint">
+                    No dia {settingsResetDay} de cada mês, às 00:00, os lançamentos do período atual serão
+                    movidos automaticamente para o histórico e a planilha será reiniciada.
+                  </span>
                 </div>
               </div>
               <div className="fin-settings-footer">
@@ -418,12 +422,18 @@ export function Finance() {
             <div className="fin-cards">
               <SummaryCard label="Total Gasto" value={period.totalReal} color="orange" icon="💳" />
               <SummaryCard
-                label="Saldo"
+                label="Saldo Atual"
                 value={period.balance}
                 color={period.balance >= 0 ? 'green' : 'red'}
                 icon={period.balance >= 0 ? '✅' : '⚠️'}
               />
-              <SummaryCard label="Estimado" value={period.totalEstimated} color="blue" icon="📋" />
+              <SummaryCard label="Gastos Estimados" value={period.totalEstimated} color="blue" icon="📋" />
+              <SummaryCard
+                label="Saldo Final Estimado"
+                value={period.totalIncome - period.totalEstimated}
+                color={(period.totalIncome - period.totalEstimated) >= 0 ? 'green' : 'red'}
+                icon="🎯"
+              />
             </div>
 
             {/* ── Expense Table ── */}
@@ -458,8 +468,8 @@ export function Finance() {
                       <th>Título</th>
                       <th>Estimado</th>
                       <th>Real</th>
-                      <th>Tipo</th>
-                      <th>Status</th>
+                      <th className="fin-th--center">Tipo</th>
+                      <th className="fin-th--center">Status</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -501,12 +511,12 @@ export function Finance() {
                             onCancel={()=>setEditCell(null)}
                           />
                         </td>
-                        <td>
+                        <td className="fin-td--center">
                           <span className="fin-type-badge" style={{background:'#378add22',color:'#378add'}}>
                             Investimento
                           </span>
                         </td>
-                        <td>
+                        <td className="fin-td--center">
                           <span className={`fin-status-badge fin-status-badge--${inv.status.toLowerCase()}`}>
                             {STATUS_LABELS[inv.status]}
                           </span>
@@ -834,7 +844,7 @@ function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onC
           </span>
         )}
       </td>
-      <td>
+      <td className="fin-td--center">
         {isEditingType ? (
           <select
             className="fin-inline-select"
@@ -856,7 +866,7 @@ function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onC
           </span>
         )}
       </td>
-      <td>
+      <td className="fin-td--center">
         <span className={`fin-status-badge fin-status-badge--${exp.status.toLowerCase()}`}>
           {STATUS_LABELS[exp.status]}
         </span>
