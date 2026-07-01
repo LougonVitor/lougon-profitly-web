@@ -7,6 +7,16 @@ interface AuthResponse {
   username: string
 }
 
+interface RegisterData {
+  username: string
+  email: string
+  phone: string
+  password: string
+  confirmPassword: string
+  emailConsent: boolean
+  smsConsent: boolean
+}
+
 export function useAuth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,25 +29,42 @@ export function useAuth() {
       const res = await api.post<AuthResponse>('/api/auth/login', { username, password })
       localStorage.setItem('profitly_token', res.data.token)
       localStorage.setItem('profitly_username', res.data.username)
-      navigate('/wallet')
-    } catch {
-      setError('Invalid username or password')
+      navigate('/')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setError(msg ?? 'Usuário ou senha inválidos')
     } finally {
       setLoading(false)
     }
   }
 
-  async function register(username: string, email: string, password: string) {
+  async function googleLogin(credential: string) {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.post<AuthResponse>('/api/auth/register', { username, email, password })
+      const res = await api.post<AuthResponse>('/api/auth/google', { credential })
       localStorage.setItem('profitly_token', res.data.token)
       localStorage.setItem('profitly_username', res.data.username)
-      navigate('/wallet')
+      navigate('/')
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: string } })?.response?.data
-      setError(typeof msg === 'string' ? msg : 'Registration failed')
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setError(msg ?? 'Falha ao entrar com Google')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function register(data: RegisterData) {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.post<AuthResponse>('/api/auth/register', data)
+      localStorage.setItem('profitly_token', res.data.token)
+      localStorage.setItem('profitly_username', res.data.username)
+      navigate('/')
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setError(msg ?? 'Falha ao criar conta')
     } finally {
       setLoading(false)
     }
@@ -57,5 +84,5 @@ export function useAuth() {
     return !!localStorage.getItem('profitly_token')
   }
 
-  return { login, register, logout, getUsername, isAuthenticated, loading, error }
+  return { login, register, googleLogin, logout, getUsername, isAuthenticated, loading, error }
 }
