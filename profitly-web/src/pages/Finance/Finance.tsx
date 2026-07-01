@@ -72,7 +72,6 @@ const STATUS_LABELS: Record<ExpenseStatus, string> = {
   PAID:'Pago', PARTIAL:'Parcial', PENDING:'Pendente', OVERRUN:'Excedido',
 }
 const ALL_TYPES = Object.keys(TYPE_LABELS) as ExpenseType[]
-const ALL_STATUSES = ['PAID','PARTIAL','PENDING','OVERRUN'] as ExpenseStatus[]
 const INVEST_PCTS = [5,10,15,20,25,30,35,40]
 
 function fmtBRL(v: number | null | undefined) {
@@ -118,7 +117,7 @@ export function Finance() {
   const [recType, setRecType] = useState<ExpenseType>('HOME')
 
   // Inline cell editing
-  const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'} | null>(null)
+  const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'|'type'} | null>(null)
   const [editCellVal, setEditCellVal] = useState('')
 
   // Investment % selector
@@ -227,11 +226,6 @@ export function Finance() {
     await loadAll()
   }
 
-  async function handleStatusChange(exp: Expense, status: ExpenseStatus) {
-    await api.patch(`/api/finance/expenses/${exp.id}`, { status })
-    await loadAll()
-  }
-
   async function handleInvestPct(pct: number) {
     setInvestPct(pct)
     const inv = investmentExpense()
@@ -248,7 +242,7 @@ export function Finance() {
     await loadAll()
   }
 
-  function startEdit(id: number, field: 'title'|'estimated'|'real', currentVal: string) {
+  function startEdit(id: number, field: 'title'|'estimated'|'real'|'type', currentVal: string) {
     setEditCell({ id, field })
     setEditCellVal(currentVal)
   }
@@ -259,7 +253,8 @@ export function Finance() {
     const body: Record<string, string|number> = {}
     if (field === 'title') body.title = editCellVal
     else if (field === 'estimated') body.estimatedValue = parseFloat(editCellVal) || 0
-    else body.realValue = parseFloat(editCellVal) || 0
+    else if (field === 'real') body.realValue = parseFloat(editCellVal) || 0
+    else body.type = editCellVal
     await api.patch(`/api/finance/expenses/${id}`, body)
     setEditCell(null)
     await loadAll()
@@ -512,10 +507,9 @@ export function Finance() {
                           </span>
                         </td>
                         <td>
-                          <select className={`fin-status fin-status--${inv.status.toLowerCase()}`}
-                            value={inv.status} onChange={e=>handleStatusChange(inv, e.target.value as ExpenseStatus)}>
-                            {ALL_STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                          </select>
+                          <span className={`fin-status-badge fin-status-badge--${inv.status.toLowerCase()}`}>
+                            {STATUS_LABELS[inv.status]}
+                          </span>
                         </td>
                         <td></td>
                       </tr>
@@ -539,7 +533,6 @@ export function Finance() {
                         onEditChange={setEditCellVal}
                         onCommit={commitEdit}
                         onCancelEdit={()=>setEditCell(null)}
-                        onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                       />
                     ))}
@@ -562,7 +555,6 @@ export function Finance() {
                         onEditChange={setEditCellVal}
                         onCommit={commitEdit}
                         onCancelEdit={()=>setEditCell(null)}
-                        onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                       />
                     ))}
@@ -796,20 +788,20 @@ function SummaryCard({ label, value, color, icon }: { label: string; value: numb
 
 interface ExpenseRowProps {
   exp: Expense
-  editCell: {id:number; field:'title'|'estimated'|'real'} | null
+  editCell: {id:number; field:'title'|'estimated'|'real'|'type'} | null
   editCellVal: string
-  onStartEdit: (id:number, field:'title'|'estimated'|'real', val:string) => void
+  onStartEdit: (id:number, field:'title'|'estimated'|'real'|'type', val:string) => void
   onEditChange: (v:string) => void
   onCommit: () => void
   onCancelEdit: () => void
-  onStatusChange: (exp:Expense, s:ExpenseStatus) => void
   onDelete: (id:number) => void
 }
 
-function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onStatusChange, onDelete }: ExpenseRowProps) {
+function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onDelete }: ExpenseRowProps) {
   const isEditingTitle = editCell?.id === exp.id && editCell.field === 'title'
   const isEditingEst   = editCell?.id === exp.id && editCell.field === 'estimated'
   const isEditingReal  = editCell?.id === exp.id && editCell.field === 'real'
+  const isEditingType  = editCell?.id === exp.id && editCell.field === 'type'
 
   return (
     <tr className={`fin-row ${exp.recurring?'fin-row--recurring':''} fin-animate-row`}>
@@ -843,15 +835,31 @@ function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onC
         )}
       </td>
       <td>
-        <span className="fin-type-badge" style={{background:TYPE_COLORS[exp.type]+'22', color:TYPE_COLORS[exp.type]}}>
-          {TYPE_LABELS[exp.type]}
-        </span>
+        {isEditingType ? (
+          <select
+            className="fin-inline-select"
+            autoFocus
+            value={editCellVal}
+            onChange={e=>onEditChange(e.target.value)}
+            onBlur={onCommit}
+            onKeyDown={e=>{ if(e.key==='Enter') onCommit(); if(e.key==='Escape') onCancelEdit() }}
+          >
+            {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+          </select>
+        ) : (
+          <span className="fin-type-badge fin-editable-cell"
+            style={{background:TYPE_COLORS[exp.type]+'22', color:TYPE_COLORS[exp.type]}}
+            onClick={()=>onStartEdit(exp.id,'type',exp.type)}
+            title="Clique para alterar"
+          >
+            {TYPE_LABELS[exp.type]}
+          </span>
+        )}
       </td>
       <td>
-        <select className={`fin-status fin-status--${exp.status.toLowerCase()}`}
-          value={exp.status} onChange={e=>onStatusChange(exp, e.target.value as ExpenseStatus)}>
-          {ALL_STATUSES.map(s=><option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-        </select>
+        <span className={`fin-status-badge fin-status-badge--${exp.status.toLowerCase()}`}>
+          {STATUS_LABELS[exp.status]}
+        </span>
       </td>
       <td>
         <button className="fin-del-btn" onClick={()=>onDelete(exp.id)} title="Remover">✕</button>

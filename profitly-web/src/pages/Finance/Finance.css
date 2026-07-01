@@ -461,19 +461,31 @@
   white-space: nowrap;
 }
 
-.fin-status {
-  font-size: 12px;
+.fin-status-badge {
+  display: inline-block;
+  font-size: 11px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  outline: none;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
 }
-.fin-status--paid    { background: #dcfce7; color: #16a34a; }
-.fin-status--partial { background: #fef9c3; color: #ca8a04; }
-.fin-status--pending { background: #f1f5f9; color: #64748b; }
-.fin-status--overrun { background: #fee2e2; color: #dc2626; }
+.fin-status-badge--paid    { background: #dcfce7; color: #16a34a; }
+.fin-status-badge--partial { background: #fef9c3; color: #ca8a04; }
+.fin-status-badge--pending { background: #f1f5f9; color: #64748b; }
+.fin-status-badge--overrun { background: #fee2e2; color: #dc2626; }
+
+.fin-inline-select {
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #378add;
+  border-radius: 6px;
+  background: var(--bg-main);
+  color: var(--text-main);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(55,138,221,0.15);
+  cursor: pointer;
+}
 
 .fin-del-btn {
   background: none;
