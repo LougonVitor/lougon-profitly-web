@@ -24,10 +24,10 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              {/* Ticker analysis is public — no login required */}
+              {/* Public routes */}
+              <Route path="/" element={<Dashboard />} />
               <Route path="/ticker/:symbol" element={<TickerAnalysis />} />
-              {/* Protected routes */}
-              <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              {/* Protected routes — require login */}
               <Route path="/wallet" element={<PrivateRoute><Wallet /></PrivateRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
