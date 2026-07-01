@@ -419,20 +419,10 @@ export function Finance() {
 
             {/* ── Summary Cards ── */}
             <div className="fin-cards">
-              <SummaryCard label="Total Gasto" value={period.totalReal} color="orange" icon="💳" />
-              <SummaryCard
-                label="Saldo Atual"
-                value={period.balance}
-                color={period.balance >= 0 ? 'green' : 'red'}
-                icon={period.balance >= 0 ? '✅' : '⚠️'}
-              />
-              <SummaryCard label="Gastos Estimados" value={period.totalEstimated} color="blue" icon="📋" />
-              <SummaryCard
-                label="Saldo Final Estimado"
-                value={period.totalIncome - period.totalEstimated}
-                color={(period.totalIncome - period.totalEstimated) >= 0 ? 'green' : 'red'}
-                icon="🎯"
-              />
+              <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
+              <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'} />
+              <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
+              <SummaryCard label="Saldo Final Estimado" value={period.totalIncome - period.totalEstimated} icon="🎯" />
             </div>
 
             {/* ── Expense Table ── */}
@@ -571,16 +561,6 @@ export function Finance() {
                       <tr><td colSpan={6} className="fin-empty">Nenhum lançamento ainda</td></tr>
                     )}
                   </tbody>
-                  {period.expenses.length > 0 && (
-                    <tfoot>
-                      <tr className="fin-total-row">
-                        <td>Total</td>
-                        <td>{fmtBRL(period.totalEstimated)}</td>
-                        <td>{fmtBRL(period.totalReal)}</td>
-                        <td colSpan={3}></td>
-                      </tr>
-                    </tfoot>
-                  )}
                 </table>
               </div>
             </div>
@@ -785,9 +765,9 @@ export function Finance() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-function SummaryCard({ label, value, color, icon }: { label: string; value: number|null; color: string; icon: string }) {
+function SummaryCard({ label, value, icon }: { label: string; value: number|null; icon: string }) {
   return (
-    <div className={`fin-card fin-card--${color} fin-animate-in`}>
+    <div className="fin-card fin-animate-in">
       <span className="fin-card-icon">{icon}</span>
       <div>
         <div className="fin-card-label">{label}</div>
