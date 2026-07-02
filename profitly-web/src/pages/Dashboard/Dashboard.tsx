@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
+  AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import { TickerTape } from '../../components/TickerTape/TickerTape'
 import { useTickers } from '../../hooks/useTickers'
@@ -17,27 +18,6 @@ function fmtBRL(v: number | null | undefined): string {
 function fmtPct(v: number | null | undefined): string {
   if (v == null) return '—'
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
-}
-
-function buildDistribution(tickers: Ticker[]) {
-  const buckets = [
-    { label: '< -5%', min: -Infinity, max: -5 },
-    { label: '-5 a -3%', min: -5, max: -3 },
-    { label: '-3 a -1%', min: -3, max: -1 },
-    { label: '-1 a 0%', min: -1, max: 0 },
-    { label: '0 a +1%', min: 0, max: 1 },
-    { label: '+1 a +3%', min: 1, max: 3 },
-    { label: '+3 a +5%', min: 3, max: 5 },
-    { label: '> +5%', min: 5, max: Infinity },
-  ]
-  return buckets.map(b => ({
-    label: b.label,
-    count: tickers.filter(t => {
-      const p = t.changePercent ?? 0
-      return p >= b.min && p < b.max
-    }).length,
-    positive: b.min >= 0,
-  }))
 }
 
 // ── Rankings ──────────────────────────────────────────────────────────────────
@@ -147,6 +127,144 @@ function RankingsSection() {
   )
 }
 
+// ── Ibovespa ─────────────────────────────────────────────────────────────────
+
+interface IbovPoint { date: number; close: number }
+interface IbovData {
+  currentPrice: number
+  changePercent: number
+  previousClose: number
+  open: number
+  points: IbovPoint[]
+}
+
+const IBOV_RANGES = ['1d', '7d', '1mo', '6mo', '1y', '5y'] as const
+const IBOV_LABELS: Record<string, string> = { '1d': '1 D', '7d': '7 D', '1mo': '30 D', '6mo': '6 M', '1y': '1 A', '5y': '5 A' }
+
+function fmtIbovDate(ts: number, range: string) {
+  const d = new Date(ts * 1000)
+  if (range === '1d') return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function IbovespaCard() {
+  const [range, setRange] = useState('1d')
+  const [data, setData] = useState<IbovData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    api.get<IbovData>(`/api/ibovespa?range=${range}`)
+      .then(r => { setData(r.data); setUpdatedAt(new Date()) })
+      .catch(() => setData(null))
+      .finally(() => setLoading(false))
+  }, [range])
+
+  const up = (data?.changePercent ?? 0) >= 0
+  const chartColor = up ? '#22c55e' : '#ef4444'
+  const chartPoints = (data?.points ?? []).map(p => ({ date: p.date, close: p.close }))
+
+  // Reduce tick density for large datasets
+  const tickInterval = chartPoints.length > 60 ? Math.floor(chartPoints.length / 6) : 'preserveStartEnd'
+
+  return (
+    <div className="ibov-card">
+      <div className="ibov-header">
+        <h3 className="ibov-title">Ibovespa</h3>
+      </div>
+
+      {loading ? (
+        <div className="ibov-loading">Carregando…</div>
+      ) : data && data.currentPrice > 0 ? (
+        <>
+          <div className="ibov-price-row">
+            <span className="ibov-price">
+              {data.currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} pontos
+            </span>
+            <span className={`ibov-badge ${up ? 'ibov-badge--up' : 'ibov-badge--down'}`}>
+              {up ? '▲' : '▼'} {Math.abs(data.changePercent).toFixed(2)}%
+            </span>
+          </div>
+          <div className="ibov-meta">
+            Fechamento anterior: {data.previousClose.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            &nbsp;•&nbsp;
+            Abertura: {data.open.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+
+          <div className="ibov-range-tabs">
+            {IBOV_RANGES.map(r => (
+              <button
+                key={r}
+                className={`ibov-range-tab ${range === r ? 'ibov-range-tab--active' : ''}`}
+                onClick={() => setRange(r)}
+              >
+                {IBOV_LABELS[r]}
+              </button>
+            ))}
+          </div>
+
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={chartPoints} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="ibovGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={ts => fmtIbovDate(ts as number, range)}
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                interval={tickInterval as never}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
+                width={42}
+              />
+              <Tooltip
+                labelFormatter={ts => fmtIbovDate(ts as number, range)}
+                formatter={(v: number) => [v.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 'Pontos']}
+                contentStyle={{
+                  fontSize: 12,
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="close"
+                stroke={chartColor}
+                strokeWidth={2}
+                fill="url(#ibovGrad)"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {updatedAt && (
+            <div className="ibov-updated">
+              ⏱ Atualizado em {updatedAt.toLocaleDateString('pt-BR')} às {updatedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}h.
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="ibov-empty">Dados indisponíveis.</div>
+      )}
+    </div>
+  )
+}
+
 interface MoverRowProps {
   rank: number
   ticker: Ticker
@@ -195,8 +313,6 @@ export function Dashboard() {
   const topLosers = [...liquid]
     .sort((a, b) => (a.changePercent ?? 0) - (b.changePercent ?? 0))
     .slice(0, 5)
-
-  const distribution = buildDistribution(tickers)
 
   if (loading) return <div className="dashboard-state">{t.dashboard.loading}</div>
   if (error) return <div className="dashboard-state dashboard-state--error">Error: {error}</div>
@@ -282,48 +398,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="dist-card">
-            <div className="dist-header">
-              <div className="dist-title">{t.dashboard.distribution}</div>
-              <div className="dist-sub">{t.dashboard.distributionSub}</div>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={distribution} margin={{ top: 4, right: 8, bottom: 0, left: -24 }} barSize={24}>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'var(--bg-subtle)' }}
-                  contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 10,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'var(--shadow-sm)',
-                  }}
-                  formatter={(value: unknown) => [String(value), 'ativos']}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {distribution.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={entry.positive ? 'var(--text-up)' : 'var(--text-down)'}
-                      opacity={0.8}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <IbovespaCard />
 
           <div className="movers-card">
             <div className="movers-card-header movers-card-header--down">

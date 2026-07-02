@@ -540,3 +540,92 @@
   .rankings-grid { grid-template-columns: 1fr; }
   .rankings-header { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Ibovespa Card ──────────────────────────────────────── */
+
+.ibov-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ibov-header { display: flex; align-items: center; justify-content: space-between; }
+
+.ibov-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.ibov-price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ibov-price {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ibov-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.ibov-badge--up { background: rgba(34,197,94,0.12); color: #22c55e; }
+.ibov-badge--down { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+.ibov-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ibov-range-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0.25rem 0;
+}
+
+.ibov-range-tab {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ibov-range-tab:hover { background: var(--bg-subtle); }
+
+.ibov-range-tab--active {
+  background: var(--text-primary);
+  color: var(--bg-card);
+  border-color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ibov-updated {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.ibov-loading, .ibov-empty {
+  text-align: center;
+  padding: 2rem;
+  font-size: 13px;
+  color: var(--text-muted);
+}
