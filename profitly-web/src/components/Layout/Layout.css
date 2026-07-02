@@ -1,11 +1,15 @@
 .layout-content {
-  padding-top: 68px;
+  padding-top: 56px; /* header height */
+}
+
+.layout-body {
+  padding-top: 0;
 }
 
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1.5rem 3rem;
+  padding: 1.5rem 1.5rem 3rem;
   width: 100%;
   box-sizing: border-box;
 }

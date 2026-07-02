@@ -3,7 +3,6 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid,
 } from 'recharts'
-import { TickerTape } from '../../components/TickerTape/TickerTape'
 import { useTickers } from '../../hooks/useTickers'
 import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
@@ -319,7 +318,6 @@ export function Dashboard() {
 
   return (
     <div className="dashboard-wrap">
-      <TickerTape />
       <div className="page-container dashboard">
         {/* Market Pulse */}
         <section className="market-pulse">
