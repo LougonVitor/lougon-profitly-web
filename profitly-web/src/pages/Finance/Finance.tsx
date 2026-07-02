@@ -4,7 +4,6 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { Header } from '../../components/Header/Header'
 import { api } from '../../lib/api'
 import './Finance.css'
 
@@ -128,9 +127,9 @@ export function Finance() {
   const [histFrom, setHistFrom] = useState('')
   const [histTo, setHistTo] = useState('')
 
-  // Settings
-  const [showSettings, setShowSettings] = useState(false)
-  const [settingsResetDay, setSettingsResetDay] = useState('10')
+  // Reset modal
+  const [resetModal, setResetModal] = useState<{ show: boolean; hasConflict: boolean; confirmed: boolean }>({ show: false, hasConflict: false, confirmed: false })
+
 
   useEffect(() => { loadAll() }, [])
 
@@ -171,6 +170,18 @@ export function Finance() {
     } finally { setLoading(false) }
   }
 
+  async function refreshPeriod() {
+    const res = await api.get<CurrentPeriod>('/api/finance/current')
+    setPeriod(res.data)
+  }
+
+  async function refreshSettings() {
+    const res = await api.get<Settings>('/api/finance/settings')
+    setSettings(res.data)
+    setSettingsResetDay(res.data.resetDay.toString())
+    setSalaryInput(res.data.netSalary?.toString() ?? '')
+  }
+
   async function loadHistory() {
     const params: Record<string, string> = {}
     if (histFrom) params.from = histFrom
@@ -192,19 +203,19 @@ export function Finance() {
       netSalary: val,
       investmentTarget: settings.investmentTarget,
     })
-    await loadAll()
+    await Promise.all([refreshSettings(), refreshPeriod()])
   }
 
   async function handleAddIncome(e: React.FormEvent) {
     e.preventDefault()
     await api.post('/api/finance/income', { description: incomeDesc, amount: parseFloat(incomeAmount) })
     setIncomeDesc(''); setIncomeAmount(''); setShowAddIncome(false)
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleDeleteIncome(id: number) {
     await api.delete(`/api/finance/income/${id}`)
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleAddExpense(e: React.FormEvent) {
@@ -218,19 +229,19 @@ export function Finance() {
       recurring: false,
     })
     setShowAdd(false); setAddTitle(''); setAddReal('')
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleDelete(id: number) {
     if (!confirm('Remover este lançamento?')) return
     await api.delete(`/api/finance/expenses/${id}`)
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleMarkPaid(exp: Expense) {
     if (exp.estimatedValue == null) return
     await api.patch(`/api/finance/expenses/${exp.id}`, { realValue: exp.estimatedValue })
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleInvestPct(pct: number) {
@@ -240,7 +251,7 @@ export function Finance() {
     const estimated = Math.round(period.netSalary * pct / 100 * 100) / 100
     await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: estimated })
     setInvestManual('')
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleInvestManual() {
@@ -248,14 +259,14 @@ export function Finance() {
     if (!inv || !investManual) return
     await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: parseFloat(investManual) })
     setInvestManual('')
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleInvestRealChange(val: string) {
     const inv = investmentExpense()
     if (!inv) return
     await api.patch(`/api/finance/expenses/${inv.id}`, { realValue: parseFloat(val) || 0 })
-    await loadAll()
+    await refreshPeriod()
   }
 
   function startEdit(id: number, field: 'title'|'estimated'|'real'|'type', currentVal: string) {
@@ -273,7 +284,7 @@ export function Finance() {
     else body.type = editCellVal
     await api.patch(`/api/finance/expenses/${id}`, body)
     setEditCell(null)
-    await loadAll()
+    await refreshPeriod()
   }
 
   async function handleAddRecurring(e: React.FormEvent) {
@@ -284,37 +295,28 @@ export function Finance() {
       type: recType,
     })
     setRecTitle(''); setRecEstimated(''); setShowAddRecurring(false)
-    await loadRecurring()
-    await loadAll()
+    await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
   async function handleDeleteRecurring(id: number) {
     if (!confirm('Remover gasto recorrente?')) return
     await api.delete(`/api/finance/recurring/${id}`)
-    await loadRecurring()
-    await loadAll()
-  }
-
-  async function handleSaveSettings(e: React.FormEvent) {
-    e.preventDefault()
-    await api.put('/api/finance/settings', {
-      resetDay: parseInt(settingsResetDay),
-      netSalary: settings.netSalary,
-      investmentTarget: settings.investmentTarget,
-    })
-    setShowSettings(false)
-    await loadAll()
+    await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
   async function handleReset() {
-    if (!confirm('Resetar o período atual? Os dados irão para o histórico.')) return
+    const { data: hasConflict } = await api.get<boolean>('/api/finance/reset/check')
+    setResetModal({ show: true, hasConflict, confirmed: false })
+  }
+
+  async function confirmReset() {
+    setResetModal(m => ({ ...m, show: false }))
     await api.post('/api/finance/reset')
-    await loadAll()
+    await refreshPeriod()
   }
 
   if (loading) return (
     <div className="fin-page">
-      <Header />
       <div className="fin-loading"><span className="fin-spinner" />Carregando...</div>
     </div>
   )
@@ -325,8 +327,6 @@ export function Finance() {
 
   return (
     <div className="fin-page">
-      <Header />
-
       <div className="fin-container">
         {/* ── Tabs ── */}
         <div className="fin-tabs">
@@ -340,34 +340,11 @@ export function Finance() {
             Histórico
           </button>
           <div className="fin-tabs-actions">
-            <button className="fin-btn fin-btn--ghost fin-btn--sm" onClick={()=>setShowSettings(v=>!v)}>⚙</button>
-            <button className="fin-btn fin-btn--ghost fin-btn--sm fin-btn--muted" onClick={handleReset}>↺ Resetar</button>
+            <button className="fin-btn fin-btn--ghost fin-btn--sm fin-btn--muted" onClick={handleReset}>
+              ↺ Fechar período
+            </button>
           </div>
         </div>
-
-        {/* ── Settings ── */}
-        {showSettings && (
-          <div className="fin-settings-panel fin-animate-in">
-            <form onSubmit={handleSaveSettings}>
-              <h3 className="fin-settings-title">Configurações</h3>
-              <div className="fin-settings-row">
-                <div className="fin-field">
-                  <label>Dia de reset (1–28)</label>
-                  <input className="fin-input" type="number" min="1" max="28"
-                    value={settingsResetDay} onChange={e=>setSettingsResetDay(e.target.value)} />
-                  <span className="fin-field-hint">
-                    No dia {settingsResetDay} de cada mês, às 00:00, os lançamentos do período atual serão
-                    movidos automaticamente para o histórico e a planilha será reiniciada.
-                  </span>
-                </div>
-              </div>
-              <div className="fin-settings-footer">
-                <button type="button" className="fin-btn fin-btn--ghost fin-btn--sm" onClick={()=>setShowSettings(false)}>Cancelar</button>
-                <button type="submit" className="fin-btn fin-btn--primary fin-btn--sm">Salvar</button>
-              </div>
-            </form>
-          </div>
-        )}
 
         {/* ════════════════════════════════════════════════════════════════════ */}
         {tab === 'current' && period && (
@@ -616,7 +593,7 @@ export function Finance() {
                   <BarChart
                     layout="vertical"
                     data={buildGroupedData(period.expenses)}
-                    margin={{top:0, right:80, left:10, bottom:0}}
+                    margin={{top:0, right:10, left:10, bottom:0}}
                     barCategoryGap="30%"
                     barGap={3}
                   >
@@ -640,9 +617,9 @@ export function Finance() {
                       formatter={(value) => value === 'estimated' ? 'Valor Estimado' : 'Valor Real'}
                     />
                     <Bar dataKey="estimated" name="estimated" fill="#4b5563" radius={[0,4,4,0]}
-                      label={{position:'right', fontSize:11, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                      label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
                     <Bar dataKey="real" name="real" fill="#e85d5d" radius={[0,4,4,0]}
-                      label={{position:'right', fontSize:11, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                      label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -828,6 +805,42 @@ export function Finance() {
           </div>
         )}
       </div>
+
+      {/* ── Reset modal ── */}
+      {resetModal.show && (
+        <div className="fin-modal-overlay" onClick={() => setResetModal(m => ({ ...m, show: false }))}>
+          <div className="fin-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="fin-modal-title">Fechar período</h3>
+            <p className="fin-modal-body">
+              Os lançamentos do período atual serão enviados para o histórico e a planilha será reiniciada.
+            </p>
+            {resetModal.hasConflict && (
+              <label className="fin-modal-conflict">
+                <input
+                  type="checkbox"
+                  checked={resetModal.confirmed}
+                  onChange={e => setResetModal(m => ({ ...m, confirmed: e.target.checked }))}
+                />
+                <span>
+                  Já existe histórico salvo para este período. Entendo que os dados existentes serão substituídos.
+                </span>
+              </label>
+            )}
+            <div className="fin-modal-footer">
+              <button className="fin-btn fin-btn--ghost fin-btn--sm" onClick={() => setResetModal(m => ({ ...m, show: false }))}>
+                Cancelar
+              </button>
+              <button
+                className="fin-btn fin-btn--danger fin-btn--sm"
+                onClick={confirmReset}
+                disabled={resetModal.hasConflict && !resetModal.confirmed}
+              >
+                Fechar período
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

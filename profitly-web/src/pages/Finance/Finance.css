@@ -106,11 +106,73 @@
 }
 
 .fin-btn--danger {
-  background: none;
-  color: #e24b4a;
-  border: 1px solid #e24b4a22;
+  background: #e24b4a;
+  color: #fff;
+  border: none;
 }
-.fin-btn--danger:hover { background: #fcebeb; }
+.fin-btn--danger:hover:not(:disabled) { background: #c53030; }
+
+/* ── Reset modal ── */
+.fin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fin-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.fin-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem;
+}
+
+.fin-modal-body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.fin-modal-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff8e1;
+  border: 1px solid #f59e0b44;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  cursor: pointer;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.45;
+}
+
+.fin-modal-conflict input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #f59e0b;
+}
+
+.fin-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
 
 /* Subtle text-link button */
 .fin-link-btn {
@@ -559,6 +621,7 @@
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  overflow: hidden;
 }
 .fin-charts-row {
   display: flex;
