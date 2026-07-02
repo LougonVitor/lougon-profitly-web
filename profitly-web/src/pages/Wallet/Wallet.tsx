@@ -101,6 +101,7 @@ export function Wallet() {
   const [addPositionWalletId, setAddPositionWalletId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const activeWalletId = selectedId ?? wallets[0]?.id ?? null
   const activeWallet = wallets.find(w => w.id === activeWalletId) ?? null
@@ -127,7 +128,6 @@ export function Wallet() {
 
   if (loading) return (
     <div className="page-container wallet-page">
-
       <div className="wallet-skeleton">
         <div className="skeleton-tabs" />
         <div className="skeleton-card" />
@@ -138,7 +138,6 @@ export function Wallet() {
 
   if (error) return (
     <div className="page-container wallet-page">
-
       <div className="wallet-state wallet-state--error">Failed to load wallets: {error}</div>
     </div>
   )
@@ -146,22 +145,70 @@ export function Wallet() {
   return (
     <div className="page-container wallet-page">
 
-
-      <div className="wallet-nav-row">
-        <div className="wallet-tabs">
-          {wallets.map(w => (
-            <button
-              key={w.id}
-              className={`wallet-tab ${w.id === activeWalletId ? 'wallet-tab--active' : ''}`}
-              onClick={() => setSelectedId(w.id)}
-            >
-              {w.name}
-            </button>
-          ))}
-        </div>
-        <button className="wallet-new-btn" onClick={() => setShowCreateModal(true)}>
-          {t.wallet.newWallet}
+      {/* ── Wallet selector dropdown ── */}
+      <div className="wdd-wrap">
+        <button
+          className="wdd-trigger"
+          onClick={() => setDropdownOpen(v => !v)}
+          aria-expanded={dropdownOpen}
+        >
+          <span className="wdd-trigger-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zM4 11a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4z" />
+            </svg>
+          </span>
+          <span className="wdd-trigger-name">{activeWallet?.name ?? 'Carteiras'}</span>
+          <span className={`wdd-chevron ${dropdownOpen ? 'wdd-chevron--open' : ''}`}>
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </span>
         </button>
+
+        {dropdownOpen && (
+          <>
+            <div className="wdd-backdrop" onClick={() => setDropdownOpen(false)} />
+            <div className="wdd-menu">
+              <div className="wdd-menu-label">Minhas carteiras</div>
+              {wallets.map(w => (
+                <div
+                  key={w.id}
+                  className={`wdd-item ${w.id === activeWalletId ? 'wdd-item--active' : ''}`}
+                  onClick={() => { setSelectedId(w.id); setDropdownOpen(false) }}
+                >
+                  <span className="wdd-item-icon">
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                      <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zM4 11a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4z" />
+                    </svg>
+                  </span>
+                  <span className="wdd-item-name">{w.name}</span>
+                  {w.id === activeWalletId && (
+                    <span className="wdd-item-check">✓</span>
+                  )}
+                  <button
+                    className="wdd-item-del"
+                    title="Excluir carteira"
+                    onClick={e => { e.stopPropagation(); setDropdownOpen(false); setDeletingId(w.id) }}
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+
+              <div className="wdd-divider" />
+
+              <button
+                className="wdd-new-item"
+                onClick={() => { setDropdownOpen(false); setShowCreateModal(true) }}
+              >
+                <span className="wdd-new-icon">+</span>
+                Nova carteira
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {wallets.length === 0 ? (
@@ -185,9 +232,6 @@ export function Wallet() {
                 </button>
               ))}
             </div>
-            <button className="wallet-delete-btn" onClick={() => setDeletingId(activeWallet.id)}>
-              {t.wallet.deleteWallet}
-            </button>
           </div>
 
           {walletView === 'positions' && (
