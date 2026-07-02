@@ -295,7 +295,7 @@
 .prov-input {
   padding: 7px 10px; font-size: 13px;
   border: 1px solid var(--border); border-radius: 8px;
-  background: var(--bg-main); color: var(--text-primary); outline: none;
+  background: var(--bg); color: var(--text-primary); outline: none;
   transition: border-color .15s;
 }
 .prov-input:focus { border-color: #378add; }
