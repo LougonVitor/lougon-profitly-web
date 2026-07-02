@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts'
 import { Header } from '../../components/Header/Header'
 import { api } from '../../lib/api'
@@ -646,6 +647,31 @@ export function Finance() {
                 </ResponsiveContainer>
               </div>
             )}
+
+            {/* ── Pie Chart: Estimated % ── */}
+            {period.expenses.some(e => (e.estimatedValue ?? 0) > 0) && (
+              <div className="fin-chart-section fin-animate-in">
+                <h3 className="fin-section-title" style={{marginBottom:'1.5rem'}}>Gastos Estimados em %</h3>
+                <ResponsiveContainer width="100%" height={420}>
+                  <PieChart>
+                    <Pie
+                      data={buildPieData(period.expenses)}
+                      dataKey="value"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={170}
+                      labelLine={{stroke:'#94a3b8', strokeWidth:1}}
+                      label={({name, percent}) => `${name}\n${(percent*100).toFixed(1)}%`}
+                    >
+                      {buildPieData(period.expenses).map((d, i) => (
+                        <Cell key={i} fill={d.color} fillOpacity={0.75} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </>
         )}
 
@@ -946,6 +972,17 @@ function InlineNumberCell({ value, editing, editVal, onStart, onChange, onCommit
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+function buildPieData(expenses: Expense[]) {
+  const map = new Map<ExpenseType, number>()
+  for (const e of expenses) {
+    const v = e.estimatedValue ?? 0
+    if (v > 0) map.set(e.type, (map.get(e.type) ?? 0) + v)
+  }
+  return Array.from(map.entries()).map(([type, value]) => ({
+    name: TYPE_LABELS[type], value, color: TYPE_COLORS[type],
+  }))
+}
+
 function buildGroupedData(expenses: Expense[]) {
   const map = new Map<ExpenseType, {estimated: number; real: number}>()
   for (const e of expenses) {
