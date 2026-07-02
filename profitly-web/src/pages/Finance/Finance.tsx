@@ -225,6 +225,12 @@ export function Finance() {
     await loadAll()
   }
 
+  async function handleMarkPaid(exp: Expense) {
+    if (exp.estimatedValue == null) return
+    await api.patch(`/api/finance/expenses/${exp.id}`, { realValue: exp.estimatedValue })
+    await loadAll()
+  }
+
   async function handleInvestPct(pct: number) {
     setInvestPct(pct)
     const inv = investmentExpense()
@@ -456,7 +462,7 @@ export function Finance() {
                     <tr>
                       <th>Título</th>
                       <th>Estimado</th>
-                      <th>Real</th>
+                      <th className="fin-th--center">Real</th>
                       <th className="fin-th--center">Tipo</th>
                       <th className="fin-th--center">Status</th>
                       <th></th>
@@ -488,16 +494,21 @@ export function Finance() {
                             </div>
                           </div>
                         </td>
-                        <td>
-                          <InlineNumberCell
-                            value={inv.realValue}
-                            editing={editCell?.id===inv.id && editCell.field==='real'}
-                            editVal={editCellVal}
-                            onStart={()=>startEdit(inv.id,'real',inv.realValue.toString())}
-                            onChange={setEditCellVal}
-                            onCommit={commitEdit}
-                            onCancel={()=>setEditCell(null)}
-                          />
+                        <td className="fin-td--center">
+                          <div className="fin-real-cell">
+                            <InlineNumberCell
+                              value={inv.realValue}
+                              editing={editCell?.id===inv.id && editCell.field==='real'}
+                              editVal={editCellVal}
+                              onStart={()=>startEdit(inv.id,'real',inv.realValue.toString())}
+                              onChange={setEditCellVal}
+                              onCommit={commitEdit}
+                              onCancel={()=>setEditCell(null)}
+                            />
+                            {inv.estimatedValue != null && inv.realValue < inv.estimatedValue && (
+                              <button className="fin-pay-btn" onClick={()=>handleMarkPaid(inv)} title="Marcar como pago (preencher valor estimado)">✓</button>
+                            )}
+                          </div>
                         </td>
                         <td className="fin-td--center">
                           <span className="fin-type-badge" style={{background:'#378add22',color:'#378add'}}>
@@ -531,6 +542,7 @@ export function Finance() {
                         onEditChange={setEditCellVal}
                         onCommit={commitEdit}
                         onCancelEdit={()=>setEditCell(null)}
+                        onMarkPaid={handleMarkPaid}
                         onDelete={handleDelete}
                       />
                     ))}
@@ -553,6 +565,7 @@ export function Finance() {
                         onEditChange={setEditCellVal}
                         onCommit={commitEdit}
                         onCancelEdit={()=>setEditCell(null)}
+                        onMarkPaid={handleMarkPaid}
                         onDelete={handleDelete}
                       />
                     ))}
@@ -785,10 +798,11 @@ interface ExpenseRowProps {
   onEditChange: (v:string) => void
   onCommit: () => void
   onCancelEdit: () => void
+  onMarkPaid: (exp:Expense) => void
   onDelete: (id:number) => void
 }
 
-function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onDelete }: ExpenseRowProps) {
+function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onDelete }: ExpenseRowProps) {
   const isEditingTitle = editCell?.id === exp.id && editCell.field === 'title'
   const isEditingEst   = editCell?.id === exp.id && editCell.field === 'estimated'
   const isEditingReal  = editCell?.id === exp.id && editCell.field === 'real'
@@ -815,15 +829,20 @@ function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onC
           </span>
         )}
       </td>
-      <td className="fin-cell-real">
-        {isEditingReal ? (
-          <InlineNumberCell value={exp.realValue} editing={true} editVal={editCellVal}
-            onStart={()=>{}} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
-        ) : (
-          <span className="fin-editable-cell fin-editable-cell--real" onClick={()=>onStartEdit(exp.id,'real',exp.realValue.toString())} title="Clique para editar">
-            {fmtBRL(exp.realValue)}
-          </span>
-        )}
+      <td className="fin-cell-real fin-td--center">
+        <div className="fin-real-cell">
+          {isEditingReal ? (
+            <InlineNumberCell value={exp.realValue} editing={true} editVal={editCellVal}
+              onStart={()=>{}} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
+          ) : (
+            <span className="fin-editable-cell fin-editable-cell--real" onClick={()=>onStartEdit(exp.id,'real',exp.realValue.toString())} title="Clique para editar">
+              {fmtBRL(exp.realValue)}
+            </span>
+          )}
+          {exp.estimatedValue != null && exp.realValue < exp.estimatedValue && (
+            <button className="fin-pay-btn" onClick={()=>onMarkPaid(exp)} title="Marcar como pago (preencher valor estimado)">✓</button>
+          )}
+        </div>
       </td>
       <td className="fin-td--center">
         {isEditingType ? (
