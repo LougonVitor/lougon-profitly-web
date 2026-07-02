@@ -119,8 +119,9 @@ export function Finance() {
   const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'|'type'} | null>(null)
   const [editCellVal, setEditCellVal] = useState('')
 
-  // Investment % selector
+  // Investment % selector and manual entry
   const [investPct, setInvestPct] = useState<number>(25)
+  const [investManual, setInvestManual] = useState('')
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
@@ -237,6 +238,15 @@ export function Finance() {
     if (!inv || !period?.netSalary) return
     const estimated = Math.round(period.netSalary * pct / 100 * 100) / 100
     await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: estimated })
+    setInvestManual('')
+    await loadAll()
+  }
+
+  async function handleInvestManual() {
+    const inv = investmentExpense()
+    if (!inv || !investManual) return
+    await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: parseFloat(investManual) })
+    setInvestManual('')
     await loadAll()
   }
 
@@ -424,12 +434,20 @@ export function Finance() {
             </div>
 
             {/* ── Summary Cards ── */}
-            <div className="fin-cards">
-              <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
-              <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'} />
-              <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
-              <SummaryCard label="Saldo Final Estimado" value={period.totalIncome - period.totalEstimated} icon="🎯" />
-            </div>
+            {(() => {
+              // If investment has no estimatedValue yet, fall back to investmentTarget from settings
+              const invEst = inv?.estimatedValue ?? period.investmentTarget ?? 0
+              const extraInvDeduction = inv?.estimatedValue == null ? invEst : 0
+              const saldoFinalEstimado = period.totalIncome - period.totalEstimated - extraInvDeduction
+              return (
+                <div className="fin-cards">
+                  <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
+                  <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'} />
+                  <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
+                  <SummaryCard label="Saldo Final Estimado" value={saldoFinalEstimado} icon="🎯" />
+                </div>
+              )
+            })()}
 
             {/* ── Expense Table ── */}
             <div className="fin-table-section fin-animate-in">
@@ -478,7 +496,7 @@ export function Finance() {
                         <td>
                           <div className="fin-invest-est">
                             <span>{fmtBRL(inv.estimatedValue)}</span>
-                            <div className="fin-pct-row">
+                            <div className="fin-invest-inputs">
                               <select
                                 className="fin-pct-select"
                                 value={investPct}
@@ -487,10 +505,21 @@ export function Finance() {
                                 title={!period.netSalary ? 'Configure o salário para usar %' : 'Selecione a % do salário'}
                               >
                                 {INVEST_PCTS.map(p => (
-                                  <option key={p} value={p}>{p}%{p===25?' (recomendado)':''}</option>
+                                  <option key={p} value={p}>{p}%{p===25?' (rec.)':''}</option>
                                 ))}
                               </select>
-                              {!period.netSalary && <span className="fin-pct-hint">Configure o salário para usar %</span>}
+                              <span className="fin-or">ou</span>
+                              <input
+                                className="fin-invest-manual"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="Valor exato"
+                                value={investManual}
+                                onChange={e=>setInvestManual(e.target.value)}
+                                onBlur={handleInvestManual}
+                                onKeyDown={e=>{ if(e.key==='Enter') handleInvestManual() }}
+                              />
                             </div>
                           </div>
                         </td>

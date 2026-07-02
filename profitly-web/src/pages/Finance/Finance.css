@@ -432,6 +432,21 @@
 /* Investment row */
 .fin-invest-badge { font-size: 14px; margin-right: 2px; }
 .fin-invest-est { display: flex; flex-direction: column; gap: 6px; }
+.fin-invest-inputs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fin-or { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+.fin-invest-manual {
+  width: 90px;
+  padding: 3px 7px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-main);
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.fin-invest-manual:focus { border-color: #378add; box-shadow: 0 0 0 2px rgba(55,138,221,0.1); }
+.fin-invest-manual::placeholder { color: var(--text-muted); font-size: 11px; }
 .fin-pct-row { display: flex; align-items: center; gap: 8px; }
 .fin-pct-select {
   padding: 3px 8px;
