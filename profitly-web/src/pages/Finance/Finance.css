@@ -10,13 +10,13 @@
   min-height: 100vh;
   background: var(--bg-main);
   color: var(--text-main);
-  overflow-x: hidden;
 }
 
 .fin-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  overflow-x: hidden;
 }
 
 .fin-loading {
