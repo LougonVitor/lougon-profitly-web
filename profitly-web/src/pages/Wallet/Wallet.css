@@ -4,9 +4,7 @@
 }
 
 .wallet-page {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 1rem 3rem;
+  width: 100%;
 }
 
 .wallet-nav-row {

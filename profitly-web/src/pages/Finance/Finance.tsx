@@ -317,7 +317,9 @@ export function Finance() {
 
   if (loading) return (
     <div className="fin-page">
-      <div className="fin-loading"><span className="fin-spinner" />Carregando...</div>
+      <div className="page-container fin-container">
+        <div className="fin-loading"><span className="fin-spinner" />Carregando...</div>
+      </div>
     </div>
   )
 
@@ -327,7 +329,7 @@ export function Finance() {
 
   return (
     <div className="fin-page">
-      <div className="fin-container">
+      <div className="page-container fin-container">
         {/* ── Tabs ── */}
         <div className="fin-tabs">
           <button className={`fin-tab ${tab==='current'?'fin-tab--active':''}`} onClick={()=>setTab('current')}>

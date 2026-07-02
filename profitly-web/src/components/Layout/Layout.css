@@ -1,0 +1,11 @@
+.layout-content {
+  padding-top: 68px;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+}

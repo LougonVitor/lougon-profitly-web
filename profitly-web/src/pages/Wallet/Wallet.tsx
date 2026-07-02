@@ -126,7 +126,7 @@ export function Wallet() {
   }
 
   if (loading) return (
-    <div className="wallet-page">
+    <div className="page-container wallet-page">
 
       <div className="wallet-skeleton">
         <div className="skeleton-tabs" />
@@ -137,14 +137,14 @@ export function Wallet() {
   )
 
   if (error) return (
-    <div className="wallet-page">
+    <div className="page-container wallet-page">
 
       <div className="wallet-state wallet-state--error">Failed to load wallets: {error}</div>
     </div>
   )
 
   return (
-    <div className="wallet-page">
+    <div className="page-container wallet-page">
 
 
       <div className="wallet-nav-row">

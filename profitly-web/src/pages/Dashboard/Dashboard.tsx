@@ -320,7 +320,7 @@ export function Dashboard() {
   return (
     <div className="dashboard-wrap">
       <TickerTape />
-      <div className="dashboard">
+      <div className="page-container dashboard">
         {/* Market Pulse */}
         <section className="market-pulse">
           <div className="pulse-header">

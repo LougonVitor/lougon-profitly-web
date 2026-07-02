@@ -13,9 +13,8 @@
 }
 
 .fin-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
+  width: 100%;
+  padding: 2rem 0;
   overflow-x: hidden;
 }
 
