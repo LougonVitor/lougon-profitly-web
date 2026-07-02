@@ -264,12 +264,22 @@
 
 .prov-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
 
+.prov-actions { display: flex; gap: 8px; align-items: center; }
+
 .prov-add-btn {
   font-size: 12px; font-weight: 600; color: #fff;
   background: #378add; border: none; border-radius: 8px;
   padding: 6px 14px; cursor: pointer; transition: background .15s;
 }
 .prov-add-btn:hover { background: #2563b0; }
+
+.prov-sync-btn {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 14px; cursor: pointer; transition: background .15s, color .15s;
+}
+.prov-sync-btn:hover:not(:disabled) { background: var(--bg-accent); color: var(--text-accent); }
+.prov-sync-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .prov-empty { text-align: center; padding: 2rem; font-size: 13px; color: var(--text-muted); }
 

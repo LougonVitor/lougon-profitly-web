@@ -357,6 +357,7 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
 function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletSummary }) {
   const [dividends, setDividends] = useState<Dividend[]>([])
   const [showAdd, setShowAdd] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [form, setForm] = useState({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
 
   useEffect(() => { load() }, [walletId])
@@ -389,6 +390,16 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
     if (!confirm('Remover este provento?')) return
     await api.delete(`/api/wallets/${walletId}/dividends/${id}`)
     await load()
+  }
+
+  async function handleSync() {
+    setSyncing(true)
+    try {
+      await api.post(`/api/wallets/${walletId}/dividends/sync`)
+      await load()
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const received = dividends.filter(d => d.received)
@@ -443,7 +454,12 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
         <div className="prov-chart-wrap">
           <div className="prov-chart-header">
             <span className="pat-section-title">Evolução de Proventos</span>
-            <button className="prov-add-btn" onClick={() => setShowAdd(v => !v)}>+ Lançar</button>
+            <div className="prov-actions">
+              <button className="prov-sync-btn" onClick={handleSync} disabled={syncing}>
+                {syncing ? 'Sincronizando…' : '⟳ Sincronizar'}
+              </button>
+              <button className="prov-add-btn" onClick={() => setShowAdd(v => !v)}>+ Lançar</button>
+            </div>
           </div>
           {evolution.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
