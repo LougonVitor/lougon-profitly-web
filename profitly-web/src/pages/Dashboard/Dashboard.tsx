@@ -1,10 +1,11 @@
+import { useState, useEffect } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-import { Header } from '../../components/Header/Header'
 import { TickerTape } from '../../components/TickerTape/TickerTape'
 import { useTickers } from '../../hooks/useTickers'
 import { useI18n } from '../../i18n/I18nContext'
+import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
 import './Dashboard.css'
 
@@ -37,6 +38,113 @@ function buildDistribution(tickers: Ticker[]) {
     }).length,
     positive: b.min >= 0,
   }))
+}
+
+// ── Rankings ──────────────────────────────────────────────────────────────────
+
+interface RankingItem { symbol: string; name: string; logoUrl: string | null; value: number }
+interface Rankings { dividendYield: RankingItem[]; marketCap: RankingItem[]; revenue: RankingItem[] }
+
+const ASSET_TYPE_TABS = [
+  { label: 'Ações', value: 'stock' },
+  { label: 'FIIs', value: 'fund' },
+  { label: 'Stocks', value: 'bdr' },
+  { label: 'Criptomoedas', value: 'crypto' },
+]
+
+function fmtCompact(v: number): string {
+  if (v >= 1e12) return `R$ ${(v / 1e12).toFixed(2)} T`
+  if (v >= 1e9) return `R$ ${(v / 1e9).toFixed(2)} B`
+  if (v >= 1e6) return `R$ ${(v / 1e6).toFixed(2)} M`
+  return `R$ ${v.toFixed(0)}`
+}
+
+function RankingsSection() {
+  const [assetType, setAssetType] = useState('stock')
+  const [rankings, setRankings] = useState<Rankings | null>(null)
+
+  useEffect(() => {
+    api.get<Rankings>(`/api/rankings?assetType=${assetType}`)
+      .then(r => setRankings(r.data))
+      .catch(() => setRankings(null))
+  }, [assetType])
+
+  const cols: { title: string; icon: string; items: RankingItem[]; fmt: (v: number) => string }[] = [
+    {
+      title: 'Maiores Dividend Yield',
+      icon: '◎',
+      items: rankings?.dividendYield ?? [],
+      fmt: v => `${(v * 100).toFixed(2)}%`,
+    },
+    {
+      title: 'Maiores Valor de Mercado',
+      icon: '▦',
+      items: rankings?.marketCap ?? [],
+      fmt: fmtCompact,
+    },
+    {
+      title: 'Maiores Receitas',
+      icon: '↗',
+      items: rankings?.revenue ?? [],
+      fmt: fmtCompact,
+    },
+  ]
+
+  return (
+    <section className="rankings-section">
+      <div className="rankings-header">
+        <h2 className="rankings-title">🏅 Rankings de Ativos</h2>
+        <div className="rankings-tabs">
+          {ASSET_TYPE_TABS.map(tab => (
+            <button
+              key={tab.value}
+              className={`rankings-tab ${assetType === tab.value ? 'rankings-tab--active' : ''}`}
+              onClick={() => setAssetType(tab.value)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rankings-grid">
+        {cols.map(col => (
+          <div key={col.title} className="rankings-card">
+            <div className="rankings-card-header">
+              <span className="rankings-card-icon">{col.icon}</span>
+              <span className="rankings-card-title">{col.title}</span>
+            </div>
+            <div className="rankings-list">
+              {col.items.length === 0 ? (
+                <div className="rankings-empty">Sem dados disponíveis</div>
+              ) : col.items.map((item, i) => (
+                <div key={item.symbol} className="rankings-row">
+                  <span className="rankings-rank">#{i + 1}</span>
+                  {item.logoUrl ? (
+                    <img
+                      className="rankings-logo"
+                      src={item.logoUrl}
+                      alt={item.symbol}
+                      onError={e => (e.currentTarget.style.display = 'none')}
+                    />
+                  ) : (
+                    <div className="rankings-logo-placeholder">{item.symbol[0]}</div>
+                  )}
+                  <div className="rankings-info">
+                    <span className="rankings-symbol">{item.symbol}</span>
+                    <span className="rankings-name">{item.name}</span>
+                  </div>
+                  <span className="rankings-value">{col.fmt(item.value)}</span>
+                  <span className="rankings-arrow">›</span>
+                </div>
+              ))}
+            </div>
+            <button className="rankings-view-btn">Ver Rankings</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 interface MoverRowProps {
@@ -95,11 +203,7 @@ export function Dashboard() {
 
   return (
     <div className="dashboard-wrap">
-      <div className="dashboard-header-area">
-        <Header />
-        <TickerTape />
-      </div>
-
+      <TickerTape />
       <div className="dashboard">
         {/* Market Pulse */}
         <section className="market-pulse">
@@ -236,6 +340,8 @@ export function Dashboard() {
             </div>
           </div>
         </div>
+
+        <RankingsSection />
       </div>
     </div>
   )
