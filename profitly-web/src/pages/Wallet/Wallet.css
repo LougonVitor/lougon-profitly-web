@@ -70,7 +70,157 @@
 
 .wallet-section-header {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* View tabs (Posições / Patrimônio) */
+.wallet-view-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-subtle);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.wallet-view-tab {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wallet-view-tab:hover { color: var(--text-primary); }
+
+.wallet-view-tab--active {
+  background: var(--bg-card);
+  color: var(--text-accent);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ── Patrimônio view ── */
+.pat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.pat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid #378add;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pat-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pat-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pat-up { color: var(--text-up); }
+.pat-down { color: var(--text-down); }
+
+.pat-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.pat-card-badge--up { background: var(--bg-badge-up); color: var(--text-up); }
+.pat-card-badge--down { background: var(--bg-badge-down); color: var(--text-down); }
+
+.pat-chart-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  overflow: hidden;
+}
+
+.pat-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem;
+}
+
+/* Breakdown layout */
+.pat-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.pat-legend {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pat-legend-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.pat-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pat-legend-name { color: var(--text-primary); font-weight: 500; }
+.pat-legend-value { color: var(--text-secondary); font-size: 12px; }
+.pat-legend-pct { color: var(--text-muted); font-size: 12px; min-width: 40px; text-align: right; }
+
+.pat-legend-bar-wrap {
+  grid-column: 2 / -1;
+  height: 4px;
+  background: var(--bg-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pat-legend-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
 }
 
 .wallet-delete-btn {
