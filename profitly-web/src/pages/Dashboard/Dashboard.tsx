@@ -7,6 +7,7 @@ import { useTickers } from '../../hooks/useTickers'
 import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
+import { TickerTape } from '../../components/TickerTape/TickerTape'
 import './Dashboard.css'
 
 function fmtBRL(v: number | null | undefined): string {
@@ -318,6 +319,7 @@ export function Dashboard() {
 
   return (
     <div className="dashboard-wrap">
+      <TickerTape />
       <div className="page-container dashboard">
         {/* Market Pulse */}
         <section className="market-pulse">

@@ -1,5 +1,4 @@
 import { Header } from '../Header/Header'
-import { TickerTape } from '../TickerTape/TickerTape'
 import './Layout.css'
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -7,10 +6,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       <div className="layout-content">
-        <TickerTape />
-        <div className="layout-body">
-          {children}
-        </div>
+        {children}
       </div>
     </>
   )
