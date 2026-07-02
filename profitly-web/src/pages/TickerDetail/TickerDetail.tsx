@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTickers } from '../../hooks/useTickers'
 import { useI18n } from '../../i18n/I18nContext'
-import { Header } from '../../components/Header/Header'
 import './TickerDetail.css'
 
 function fmtBRL(v: number | null | undefined): string {
@@ -44,7 +43,7 @@ export function TickerDetail() {
   if (loading) {
     return (
       <div className="ticker-detail">
-        <Header />
+  
         <div className="ticker-detail-state">{t.dashboard.loading}</div>
       </div>
     )
@@ -53,7 +52,7 @@ export function TickerDetail() {
   if (!ticker) {
     return (
       <div className="ticker-detail">
-        <Header />
+  
         <div className="ticker-detail-state">Ticker não encontrado: {symbol}</div>
       </div>
     )
@@ -61,7 +60,7 @@ export function TickerDetail() {
 
   return (
     <div className="ticker-detail">
-      <Header />
+
 
       {/* Breadcrumb */}
       <nav className="td-breadcrumb">

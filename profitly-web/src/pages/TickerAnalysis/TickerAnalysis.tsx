@@ -4,7 +4,6 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceLine,
 } from 'recharts'
-import { Header } from '../../components/Header/Header'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
@@ -321,7 +320,7 @@ export function TickerAnalysis() {
   if (loading) {
     return (
       <div className="ta-page">
-        <Header />
+
         <div className="ta-state">Carregando análise...</div>
       </div>
     )
@@ -330,7 +329,7 @@ export function TickerAnalysis() {
   if (error || !analysis) {
     return (
       <div className="ta-page">
-        <Header />
+
         <div className="ta-state ta-state--error">{error ?? 'Ticker não encontrado'}</div>
       </div>
     )
@@ -343,8 +342,6 @@ export function TickerAnalysis() {
 
   return (
     <div className="ta-page">
-      <Header />
-
       {/* Breadcrumb */}
       <nav className="ta-breadcrumb">
         <button className="ta-breadcrumb-btn" onClick={() => navigate('/')}>{t.nav.tickers}</button>
