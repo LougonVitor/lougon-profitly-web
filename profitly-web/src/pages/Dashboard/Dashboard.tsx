@@ -28,7 +28,6 @@ interface Rankings { dividendYield: RankingItem[]; marketCap: RankingItem[]; rev
 const ASSET_TYPE_TABS = [
   { label: 'Ações', value: 'stock' },
   { label: 'FIIs', value: 'fund' },
-  { label: 'Stocks', value: 'bdr' },
   { label: 'Criptomoedas', value: 'crypto' },
 ]
 
