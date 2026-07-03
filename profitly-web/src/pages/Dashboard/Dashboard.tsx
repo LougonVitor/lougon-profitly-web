@@ -56,7 +56,7 @@ function RankingsSection() {
       title: 'Maiores Dividendos Médios',
       icon: '◎',
       items: rankings?.dividendYield ?? [],
-      fmt: v => `R$ ${v.toFixed(2)}/ano`,
+      fmt: v => `${(v * 100).toFixed(2)}%`,
     },
     {
       title: 'Maiores Valor de Mercado',
