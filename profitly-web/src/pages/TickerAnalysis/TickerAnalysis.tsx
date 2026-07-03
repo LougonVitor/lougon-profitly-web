@@ -278,8 +278,8 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
           }))
           .filter(d => d.display > 0)
       })()
-    : dividends.map(d => ({
-        key: d.lastDatePrior ?? String(Math.random()),
+    : dividends.map((d, i) => ({
+        key: d.lastDatePrior ?? d.paymentDate ?? String(i),
         display: d.rate ?? 0,
       }))
 
@@ -386,7 +386,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
           </thead>
           <tbody>
             {dividends.map((d, i) => (
-              <tr key={i}>
+              <tr key={d.lastDatePrior ?? d.paymentDate ?? i}>
                 <td>{fmtDate(d.lastDatePrior)}</td>
                 <td>{fmtDate(d.paymentDate)}</td>
                 <td><span className="ta-div-badge">{d.label ?? '—'}</span></td>
@@ -511,6 +511,9 @@ export function TickerAnalysis() {
             <div className="ta-info-row"><span>Valor de Mercado</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
             <div className="ta-info-row"><span>Valor Patrimonial</span><strong>{fmtBRL(analysis.bookValue)}</strong></div>
             <div className="ta-info-row"><span>Ações em circulação</span><strong>{fmtShares(analysis.sharesOutstanding)}</strong></div>
+            {analysis.floatShares != null && (
+              <div className="ta-info-row"><span>Free float</span><strong>{fmtShares(analysis.floatShares)}</strong></div>
+            )}
             <div className="ta-info-row"><span>Enterprise Value</span><strong>{fmtCap(analysis.enterpriseValue)}</strong></div>
           </div>
         </div>

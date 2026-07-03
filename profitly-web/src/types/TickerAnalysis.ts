@@ -5,6 +5,8 @@ export interface DividendItem {
   relatedTo: string | null
   label: string | null
   lastDatePrior: string | null
+  approvedOn: string | null
+  remarks: string | null
 }
 
 export interface TickerAnalysis {
@@ -34,6 +36,7 @@ export interface TickerAnalysis {
   weekChange52: number | null
   profitMargins: number | null
   sharesOutstanding: number | null
+  floatShares: number | null
   lastDividendValue: number | null
   lastDividendDate: string | null
 
