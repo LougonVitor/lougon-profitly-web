@@ -219,8 +219,30 @@ function divCutoff(key: string): Date | null {
   return null
 }
 
+function divTickLabel(d: string, range: string): string {
+  try {
+    const date = new Date(d)
+    if (range === 'ytd' || range === '1y')
+      return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+  } catch { return '' }
+}
+
+function divComputeTicks(data: { lastDatePrior?: string | null }[], range: string): string[] {
+  const valid = data.filter(d => d.lastDatePrior) as { lastDatePrior: string }[]
+  if (valid.length === 0) return []
+  const n = { ytd: 4, '1y': 4, '3y': 4, '5y': 5, max: 5 }[range] ?? 5
+  if (valid.length <= n) return valid.map(d => d.lastDatePrior)
+  const step = Math.floor((valid.length - 1) / (n - 1))
+  return Array.from({ length: n }, (_, i) => valid[Math.min(i * step, valid.length - 1)].lastDatePrior)
+}
+
 function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const [divRange, setDivRange] = useState('ytd')
+  const [viewMode, setViewMode] = useState<'value' | 'pct'>('value')
+
+  const price = analysis.lastPrice ?? 0
+  const isPct = viewMode === 'pct' && price > 0
 
   const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
 
@@ -229,43 +251,68 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
     ? all.filter(d => d.lastDatePrior && new Date(d.lastDatePrior) >= cutoff)
     : all
 
-  const avg = dividends.length > 0
-    ? dividends.reduce((s, d) => s + (d.rate ?? 0), 0) / dividends.length
+  // chartData adds a `display` field: rate in R$ or as % of current price
+  const chartData = dividends.map(d => ({
+    ...d,
+    display: isPct ? ((d.rate ?? 0) / price) * 100 : (d.rate ?? 0),
+  }))
+
+  const avg = chartData.length > 0
+    ? chartData.reduce((s, d) => s + d.display, 0) / chartData.length
     : null
 
+  const fmtDisplay = (v: number) =>
+    isPct ? `${v.toFixed(2)}%` : `R$ ${v.toFixed(4)}`
+
   if (all.length === 0) return null
+
+  const divTicks = divComputeTicks(dividends, divRange)
 
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
         <div className="ta-section-title">Histórico de Dividendos</div>
-        <div className="ta-range-btns">
-          {DIV_RANGES.map(r => (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="ta-range-btns">
             <button
-              key={r.key}
-              className={`ta-range-btn ${divRange === r.key ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setDivRange(r.key)}
-            >
-              {r.label}
-            </button>
-          ))}
+              className={`ta-range-btn ${viewMode === 'value' ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setViewMode('value')}
+            >R$</button>
+            <button
+              className={`ta-range-btn ${viewMode === 'pct' ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setViewMode('pct')}
+              title="DY por dividendo = valor / preço atual"
+            >%</button>
+          </div>
+          <div className="ta-range-btns">
+            {DIV_RANGES.map(r => (
+              <button
+                key={r.key}
+                className={`ta-range-btn ${divRange === r.key ? 'ta-range-btn--active' : ''}`}
+                onClick={() => setDivRange(r.key)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {avg != null && (
         <div className="ta-div-avg-label">
-          <span className="ta-div-avg-line" /> Média do período: <strong>R$ {avg.toFixed(4)}</strong>
+          <span className="ta-div-avg-line" /> Média do período: <strong>{fmtDisplay(avg)}</strong>
         </div>
       )}
       <div className="ta-dividends-chart">
         <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={dividends} margin={{ top: 4, right: 16, bottom: 0, left: 0 }} barSize={14}>
+          <BarChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }} barSize={14}>
             <XAxis
               dataKey="lastDatePrior"
-              tickFormatter={d => d ? new Date(d).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) : ''}
+              ticks={divTicks}
+              tickFormatter={d => d ? divTickLabel(d, divRange) : ''}
               tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
-              interval="preserveStartEnd"
+              interval={0}
             />
             <YAxis hide domain={[0, 'auto']} />
             <Tooltip
@@ -276,11 +323,11 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
                 background: 'var(--bg-card)',
                 color: 'var(--text-primary)',
               }}
-              formatter={(v: unknown) => [`R$ ${Number(v).toFixed(4)}`, 'Valor']}
+              formatter={(v: unknown) => [fmtDisplay(Number(v)), isPct ? 'DY' : 'Valor']}
               labelFormatter={d => d ? new Date(d).toLocaleDateString('pt-BR') : ''}
             />
-            <Bar dataKey="rate" radius={[3, 3, 0, 0]}>
-              {dividends.map((_, i) => (
+            <Bar dataKey="display" radius={[3, 3, 0, 0]}>
+              {chartData.map((_, i) => (
                 <Cell key={i} fill="var(--accent)" opacity={0.8} />
               ))}
             </Bar>
@@ -291,7 +338,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
                 strokeDasharray="5 3"
                 strokeWidth={1.5}
                 label={{
-                  value: `Média R$ ${avg.toFixed(4)}`,
+                  value: `Média ${fmtDisplay(avg)}`,
                   position: 'insideTopRight',
                   fontSize: 10,
                   fill: 'var(--text-up)',
@@ -309,17 +356,17 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
               <th>Data com</th>
               <th>Pagamento</th>
               <th>Tipo</th>
-              <th className="right">Valor (R$)</th>
+              <th className="right">{isPct ? 'DY (%)' : 'Valor (R$)'}</th>
               <th>Ref.</th>
             </tr>
           </thead>
           <tbody>
-            {dividends.map((d, i) => (
+            {chartData.map((d, i) => (
               <tr key={i}>
                 <td>{fmtDate(d.lastDatePrior)}</td>
                 <td>{fmtDate(d.paymentDate)}</td>
                 <td><span className="ta-div-badge">{d.label ?? '—'}</span></td>
-                <td className="right ta-div-value">{d.rate != null ? d.rate.toFixed(4) : '—'}</td>
+                <td className="right ta-div-value">{fmtDisplay(d.display)}</td>
                 <td className="muted">{d.relatedTo ?? '—'}</td>
               </tr>
             ))}
