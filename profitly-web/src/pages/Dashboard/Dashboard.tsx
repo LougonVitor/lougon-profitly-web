@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
 import { TickerTape } from '../../components/TickerTape/TickerTape'
+import { NewsSection } from './NewsSection'
 import './Dashboard.css'
 
 function fmtBRL(v: number | null | undefined): string {
@@ -417,6 +418,7 @@ export function Dashboard() {
         </div>
 
         <RankingsSection />
+        <NewsSection />
       </div>
     </div>
   )
