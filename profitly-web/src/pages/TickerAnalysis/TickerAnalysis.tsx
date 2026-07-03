@@ -75,6 +75,27 @@ function MetricCard({ label, value, sub, variant }: {
   )
 }
 
+/** Pick ~5 evenly-spaced ticks from the data that best represent the selected range. */
+function computeTicks(data: { date: string | number }[], range: string): (string | number)[] {
+  if (data.length === 0) return []
+  const n = { '1m': 4, '3m': 3, '6m': 6, '1y': 4, '2y': 4, '5y': 5, '10y': 5, 'max': 5 }[range] ?? 5
+  if (data.length <= n) return data.map(d => d.date)
+  const step = Math.floor((data.length - 1) / (n - 1))
+  return Array.from({ length: n }, (_, i) => data[Math.min(i * step, data.length - 1)].date)
+}
+
+/** Format a tick date label according to the selected range. */
+function tickLabel(d: string | number, range: string): string {
+  try {
+    const date = new Date(d)
+    if (['1m', '3m'].includes(range))
+      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    if (['6m', '1y', '2y'].includes(range))
+      return date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+  } catch { return '' }
+}
+
 function PriceChartSection({ symbol }: { symbol: string }) {
   const [range, setRange] = useState('1y')
   const { history, loading } = usePriceHistory(symbol, range)
@@ -133,14 +154,12 @@ function PriceChartSection({ symbol }: { symbol: string }) {
               </defs>
               <XAxis
                 dataKey="date"
-                tickFormatter={d => {
-                  try { return new Date(d).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) }
-                  catch { return '' }
-                }}
+                ticks={computeTicks(data, range)}
+                tickFormatter={d => tickLabel(d, range)}
                 tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
                 axisLine={false}
                 tickLine={false}
-                interval="preserveStartEnd"
+                interval={0}
               />
               <YAxis
                 domain={['auto', 'auto']}
