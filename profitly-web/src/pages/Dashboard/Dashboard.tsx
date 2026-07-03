@@ -53,7 +53,7 @@ function RankingsSection() {
 
   const cols: { title: string; icon: string; items: RankingItem[]; fmt: (v: number) => string }[] = [
     {
-      title: 'Maiores Dividendos Médios',
+      title: 'Maiores Dividend Yield',
       icon: '◎',
       items: rankings?.dividendYield ?? [],
       fmt: v => `${(v * 100).toFixed(2)}%`,
