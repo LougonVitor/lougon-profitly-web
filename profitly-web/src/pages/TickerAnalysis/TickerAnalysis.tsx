@@ -260,14 +260,23 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const chartData: { key: string; display: number }[] = isPct
     ? (() => {
         // Get distinct years in range from dividends, then look up pre-computed DY
-        const yearsInRange = [...new Set(
-          dividends
-            .filter(d => d.lastDatePrior && d.lastDatePrior.length >= 4)
-            .map(d => d.lastDatePrior!.substring(0, 4))
-        )].sort()
-        return yearsInRange
-          .filter(yr => historicalDy[yr] != null)
-          .map(yr => ({ key: yr, display: historicalDy[yr] }))
+        // Sum dividends per year from filtered list
+        const sumByYear: Record<string, number> = {}
+        for (const d of dividends) {
+          if (!d.lastDatePrior || d.lastDatePrior.length < 4) continue
+          const yr = d.lastDatePrior.substring(0, 4)
+          sumByYear[yr] = (sumByYear[yr] ?? 0) + (d.rate ?? 0)
+        }
+        return Object.entries(sumByYear)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([yr, total]) => ({
+            key: yr,
+            // Prefer pre-computed DY using historical price; fall back to current price
+            display: historicalDy[yr] != null
+              ? historicalDy[yr]
+              : price > 0 ? (total / price) * 100 : 0,
+          }))
+          .filter(d => d.display > 0)
       })()
     : dividends.map(d => ({
         key: d.lastDatePrior ?? String(Math.random()),
