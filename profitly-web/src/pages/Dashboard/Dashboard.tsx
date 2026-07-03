@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid,
@@ -39,6 +40,7 @@ function fmtCompact(v: number): string {
 }
 
 function RankingsSection() {
+  const navigate = useNavigate()
   const [assetType, setAssetType] = useState('stock')
   const [rankings, setRankings] = useState<Rankings | null>(null)
 
@@ -97,7 +99,7 @@ function RankingsSection() {
               {col.items.length === 0 ? (
                 <div className="rankings-empty">Sem dados disponíveis</div>
               ) : col.items.map((item, i) => (
-                <div key={item.symbol} className="rankings-row">
+                <div key={item.symbol} className="rankings-row" onClick={() => navigate(`/ticker/${item.symbol}`)}>
                   <span className="rankings-rank">#{i + 1}</span>
                   {item.logoUrl ? (
                     <img
@@ -118,7 +120,6 @@ function RankingsSection() {
                 </div>
               ))}
             </div>
-            <button className="rankings-view-btn">Ver Rankings</button>
           </div>
         ))}
       </div>
