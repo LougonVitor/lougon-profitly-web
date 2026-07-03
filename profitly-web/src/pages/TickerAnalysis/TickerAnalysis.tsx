@@ -242,6 +242,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const [viewMode, setViewMode] = useState<'value' | 'pct'>('pct')
 
   const isPct = viewMode === 'pct'
+  const price = analysis.lastPrice ?? 0
   const historicalDy = analysis.historicalDyByYear ?? {}
 
   const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
