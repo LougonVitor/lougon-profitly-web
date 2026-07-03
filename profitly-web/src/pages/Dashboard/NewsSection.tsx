@@ -53,19 +53,25 @@ export function NewsSection() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {item.imageUrl && (
-                <div className="news-card-img-wrap">
+              <div className="news-card-img-wrap">
+                {item.imageUrl ? (
                   <img
                     className="news-card-img"
                     src={item.imageUrl}
                     alt=""
                     loading="lazy"
                     onError={e => {
-                      e.currentTarget.parentElement!.style.display = 'none'
+                      const wrap = e.currentTarget.parentElement!
+                      wrap.classList.add('news-card-img-placeholder')
+                      e.currentTarget.style.display = 'none'
                     }}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="news-card-img-placeholder-inner">
+                    <span className="news-card-placeholder-source">{item.source ?? 'Notícias'}</span>
+                  </div>
+                )}
+              </div>
               <div className="news-card-body">
                 <div className="news-card-meta">
                   {item.source && <span className="news-card-source">{item.source}</span>}

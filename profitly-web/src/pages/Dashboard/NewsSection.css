@@ -73,6 +73,27 @@
   transform: scale(1.04);
 }
 
+.news-card-img-placeholder {
+  background: linear-gradient(135deg, #1a2744 0%, #0f1c38 50%, #162040 100%);
+}
+
+.news-card-img-placeholder-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1a2744 0%, #0f1c38 50%, #162040 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.news-card-placeholder-source {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .news-card-body {
   padding: 1rem;
   display: flex;
