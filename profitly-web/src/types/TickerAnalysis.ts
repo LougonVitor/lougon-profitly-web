@@ -38,6 +38,8 @@ export interface TickerAnalysis {
   lastDividendDate: string | null
 
   dividends: DividendItem[]
+  /** year → annual DY% computed from actual historical prices. Null = no price data for that year. */
+  historicalDyByYear: Record<string, number> | null
   syncedAt: string
 }
 

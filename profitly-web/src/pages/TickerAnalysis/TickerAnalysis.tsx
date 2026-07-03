@@ -241,8 +241,8 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const [divRange, setDivRange] = useState('5y')
   const [viewMode, setViewMode] = useState<'value' | 'pct'>('pct')
 
-  const price = analysis.lastPrice ?? 0
-  const isPct = viewMode === 'pct' && price > 0
+  const isPct = viewMode === 'pct'
+  const historicalDy = analysis.historicalDyByYear ?? {}
 
   const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
 
@@ -254,28 +254,23 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const fmtDisplay = (v: number) =>
     isPct ? `${v.toFixed(2)}%` : `R$ ${v.toFixed(4)}`
 
-  // In % mode: aggregate by year → annual DY = sum(rates in year) / price
+  // In % mode: one bar per year using historically-accurate DY from backend (price_history)
   // In R$ mode: individual payments
-  const chartData: { key: string; display: number; label: string }[] = isPct
+  const chartData: { key: string; display: number }[] = isPct
     ? (() => {
-        const byYear: Record<string, number> = {}
-        for (const d of dividends) {
-          if (!d.lastDatePrior) continue
-          const yr = d.lastDatePrior.substring(0, 4)
-          byYear[yr] = (byYear[yr] ?? 0) + (d.rate ?? 0)
-        }
-        return Object.entries(byYear)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([yr, total]) => ({
-            key: yr,
-            display: (total / price) * 100,
-            label: yr,
-          }))
+        // Get distinct years in range from dividends, then look up pre-computed DY
+        const yearsInRange = [...new Set(
+          dividends
+            .filter(d => d.lastDatePrior && d.lastDatePrior.length >= 4)
+            .map(d => d.lastDatePrior!.substring(0, 4))
+        )].sort()
+        return yearsInRange
+          .filter(yr => historicalDy[yr] != null)
+          .map(yr => ({ key: yr, display: historicalDy[yr] }))
       })()
     : dividends.map(d => ({
         key: d.lastDatePrior ?? String(Math.random()),
         display: d.rate ?? 0,
-        label: d.lastDatePrior ?? '',
       }))
 
   const avg = chartData.length > 0
