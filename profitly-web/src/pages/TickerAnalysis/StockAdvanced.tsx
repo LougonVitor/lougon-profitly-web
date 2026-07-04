@@ -223,6 +223,9 @@ export function CompanyProfileSection({ profile }: { profile: StockAnalysisFull[
 interface StatementConfig {
   type: StatementType
   label: string
+  /** snapshot statements (balance sheet) can't be summed across quarters —
+   *  the extra bar shows the latest quarterly position instead of TTM/YTD sums */
+  snapshot?: boolean
   /** fallbacks: alternative fields used when the primary is null (e.g. banks report
    *  netIncomeFromContinuingOps instead of netIncome) */
   rows: { field: string; label: string; fallbacks?: string[] }[]
@@ -252,6 +255,7 @@ const STATEMENTS: StatementConfig[] = [
   {
     type: 'balance_sheet',
     label: 'Balanço Patrimonial',
+    snapshot: true,
     rows: [
       { field: 'totalAssets', label: 'Ativo Total' },
       { field: 'totalCurrentAssets', label: 'Ativo Circulante' },
@@ -320,20 +324,65 @@ function StatementContent({ symbol, config }: { symbol: string; config: Statemen
 
   const yearly = useMemo(
     () => rows
-      .filter(r => r.type === 'yearly' || r.type === 'YEARLY')
+      .filter(r => (r.type ?? '').toLowerCase() === 'yearly')
       .sort((a, b) => b.endDate.localeCompare(a.endDate))
       .slice(0, 6),
     [rows],
   )
 
-  const chartData = useMemo(
-    () => [...yearly].reverse().map(r => {
+  const quarterly = useMemo(
+    () => rows
+      .filter(r => (r.type ?? '').toLowerCase() === 'quarterly')
+      .sort((a, b) => b.endDate.localeCompare(a.endDate)),
+    [rows],
+  )
+
+  const chartData = useMemo(() => {
+    const base: Record<string, unknown>[] = [...yearly].reverse().map(r => {
       const entry: Record<string, unknown> = { year: r.endDate.slice(0, 4) }
       for (const c of config.chart) entry[c.field] = num(r, c.field, c.fallbacks)
       return entry
-    }),
-    [yearly, config],
-  )
+    })
+
+    const currentYear = String(new Date().getFullYear())
+
+    if (config.snapshot) {
+      // Balance sheet: values are point-in-time — show the latest quarterly position
+      const latest = quarterly[0]
+      if (latest && !yearly.some(y => y.endDate >= latest.endDate)) {
+        const entry: Record<string, unknown> = { year: 'Atual' }
+        for (const c of config.chart) entry[c.field] = num(latest, c.field, c.fallbacks)
+        base.push(entry)
+      }
+      return base
+    }
+
+    // Últimos 12 meses: sum of the last 4 quarters (only when all 4 report the field)
+    const last4 = quarterly.slice(0, 4)
+    if (last4.length === 4) {
+      const entry: Record<string, unknown> = { year: '12M' }
+      for (const c of config.chart) {
+        const vals = last4.map(q => num(q, c.field, c.fallbacks))
+        entry[c.field] = vals.every(v => v != null)
+          ? (vals as number[]).reduce((s, v) => s + v, 0)
+          : null
+      }
+      base.push(entry)
+    }
+
+    // Ano atual: sum of the current year's reported quarters (partial year)
+    const ytd = quarterly.filter(q => q.endDate.startsWith(currentYear))
+    if (ytd.length > 0) {
+      const entry: Record<string, unknown> = { year: 'Atual' }
+      for (const c of config.chart) {
+        const vals = ytd.map(q => num(q, c.field, c.fallbacks)).filter((v): v is number => v != null)
+        entry[c.field] = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) : null
+      }
+      base.push(entry)
+    }
+
+    return base
+  }, [yearly, quarterly, config])
 
   if (loading) return <div className="ta-statement-empty">Carregando…</div>
   if (yearly.length === 0) return <div className="ta-statement-empty">Sem dados disponíveis para este demonstrativo.</div>
@@ -358,6 +407,11 @@ function StatementContent({ symbol, config }: { symbol: string; config: Statemen
               ))}
             </BarChart>
           </ResponsiveContainer>
+          {!config.snapshot && (
+            <div className="ta-sector-note" style={{ padding: '0.25rem 0.25rem 0' }}>
+              12M: soma dos últimos 4 trimestres · Atual: trimestres acumulados de {new Date().getFullYear()}
+            </div>
+          )}
         </div>
       )}
 
