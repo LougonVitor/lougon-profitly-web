@@ -97,6 +97,74 @@ export function FinancialHighlights({ financials }: { financials: StockFinancial
   )
 }
 
+// ── key indicators grid (Investidor10-style) ─────────────────────────────────
+
+interface KeyIndicatorDef {
+  key: string
+  label: string
+  desc: string
+  kind: 'num' | 'pct' | 'brl'
+}
+
+const KEY_INDICATORS: KeyIndicatorDef[] = [
+  { key: 'pl',              label: 'P/L',              desc: 'Preço / Lucro por ação',            kind: 'num' },
+  { key: 'psr',             label: 'P/Receita (PSR)',  desc: 'Valor de mercado / Receita',        kind: 'num' },
+  { key: 'pvp',             label: 'P/VP',             desc: 'Preço / Valor patrimonial',         kind: 'num' },
+  { key: 'dividendYield',   label: 'Dividend Yield',   desc: 'Dividendos 12M / Preço',            kind: 'pct' },
+  { key: 'payout',          label: 'Payout',           desc: 'Dividendos 12M / Lucro por ação',   kind: 'pct' },
+  { key: 'margemLiquida',   label: 'Margem Líquida',   desc: 'Lucro líquido / Receita',           kind: 'pct' },
+  { key: 'margemBruta',     label: 'Margem Bruta',     desc: 'Lucro bruto / Receita',             kind: 'pct' },
+  { key: 'margemEbit',      label: 'Margem EBIT',      desc: 'EBIT / Receita',                    kind: 'pct' },
+  { key: 'evEbit',          label: 'EV/EBIT',          desc: 'Enterprise Value / EBIT',           kind: 'num' },
+  { key: 'pEbit',           label: 'P/EBIT',           desc: 'Valor de mercado / EBIT',           kind: 'num' },
+  { key: 'pAtivo',          label: 'P/Ativo',          desc: 'Valor de mercado / Ativo total',    kind: 'num' },
+  { key: 'pCapGiro',        label: 'P/Cap. Giro',      desc: 'Valor de mercado / Capital de giro', kind: 'num' },
+  { key: 'pAtivoCircLiq',   label: 'P/Ativo Circ. Liq.', desc: 'Valor de mercado / ACL',          kind: 'num' },
+  { key: 'vpa',             label: 'VPA',              desc: 'Valor patrimonial por ação',        kind: 'brl' },
+  { key: 'lpa',             label: 'LPA',              desc: 'Lucro por ação',                    kind: 'brl' },
+  { key: 'giroAtivos',      label: 'Giro Ativos',      desc: 'Receita / Ativo total',             kind: 'num' },
+  { key: 'roe',             label: 'ROE',              desc: 'Retorno sobre patrimônio',          kind: 'pct' },
+  { key: 'roic',            label: 'ROIC',             desc: 'Retorno sobre capital investido',   kind: 'pct' },
+  { key: 'roa',             label: 'ROA',              desc: 'Retorno sobre ativos',              kind: 'pct' },
+  { key: 'patrimonioAtivos', label: 'Patrimônio/Ativos', desc: 'Patrimônio líquido / Ativos',     kind: 'num' },
+  { key: 'passivosAtivos',  label: 'Passivos/Ativos',  desc: 'Passivo total / Ativos',            kind: 'num' },
+  { key: 'liquidezCorrente', label: 'Liquidez Corrente', desc: 'Ativo circ. / Passivo circ.',     kind: 'num' },
+  { key: 'cagrReceitas5a',  label: 'CAGR Receitas 5A', desc: 'Cresc. anual da receita (5 anos)',  kind: 'pct' },
+  { key: 'cagrLucros5a',    label: 'CAGR Lucros 5A',   desc: 'Cresc. anual do lucro (5 anos)',    kind: 'pct' },
+]
+
+function fmtIndicator(v: number, kind: KeyIndicatorDef['kind']): string {
+  if (kind === 'pct') return `${fmt(v * 100)}%`
+  if (kind === 'brl') return `R$ ${fmt(v)}`
+  return fmt(v)
+}
+
+export function KeyIndicatorsSection({ indicators }: { indicators: Record<string, number | null> | null }) {
+  if (!indicators) return null
+  const available = KEY_INDICATORS.filter(d => indicators[d.key] != null)
+  if (available.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Indicadores</div>
+      <div className="ta-key-grid">
+        {available.map(d => {
+          const v = indicators[d.key] as number
+          return (
+            <div key={d.key} className="ta-key-card" title={d.desc}>
+              <div className="ta-key-label">{d.label}</div>
+              <div className={`ta-key-value ${v < 0 ? 'ta-key-value--neg' : ''}`}>
+                {fmtIndicator(v, d.kind)}
+              </div>
+              <div className="ta-key-desc">{d.desc}</div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── sector comparison ────────────────────────────────────────────────────────
 
 interface IndicatorConfig {

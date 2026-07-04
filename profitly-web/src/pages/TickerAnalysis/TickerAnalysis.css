@@ -541,3 +541,37 @@
 .ta-statement-table tr:last-child td { border-bottom: none; }
 .ta-statement-table .right { text-align: right; }
 .ta-statement-neg { color: var(--text-down); }
+
+/* ── Key indicators grid ───────────────────────── */
+.ta-key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 0.65rem;
+  padding: 0.9rem 1.25rem 1.1rem;
+}
+.ta-key-card {
+  background: var(--bg-subtle, transparent);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 10px);
+  padding: 0.65rem 0.8rem;
+  cursor: default;
+  transition: border-color 0.15s;
+}
+.ta-key-card:hover { border-color: var(--accent); }
+.ta-key-label {
+  font-size: 10.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ta-key-value {
+  font-size: 17px; font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+.ta-key-value--neg { color: var(--text-down); }
+.ta-key-desc {
+  font-size: 10px; color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

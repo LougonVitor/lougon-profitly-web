@@ -8,7 +8,7 @@ import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysi
 import { useStockAnalysis } from '../../hooks/useStockAnalysis'
 import {
   FiftyTwoWeekRange, FinancialHighlights, SectorComparisonSection,
-  CompanyProfileSection, StatementsSection,
+  CompanyProfileSection, StatementsSection, KeyIndicatorsSection,
 } from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
@@ -705,6 +705,9 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 
       {/* 52-week range */}
       <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
+
+      {/* Investidor10-style fundamental indicator grid */}
+      <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
 
       {/* Profitability, margins, debt and cash */}
       <FinancialHighlights financials={advanced?.financials ?? null} />

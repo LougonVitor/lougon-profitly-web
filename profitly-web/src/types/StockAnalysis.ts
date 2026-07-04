@@ -99,6 +99,7 @@ export interface StockAnalysisFull {
   financials: StockFinancials | null
   dividends: DividendAnalysis | null
   sectorComparison: SectorComparison | null
+  keyIndicators: Record<string, number | null> | null
 }
 
 /** Statement rows keep every field brapi returns; endDate/type are always present. */
