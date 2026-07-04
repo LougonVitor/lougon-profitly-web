@@ -695,7 +695,8 @@ export function TickerAnalysis() {
       </div>
 
       {/* FII-specific sections */}
-      {(analysis.assetType === 'FII' || analysis.subType === 'FII') && (
+      {(['fii'].includes((analysis.assetType ?? '').toLowerCase()) ||
+        ['fii'].includes((analysis.subType ?? '').toLowerCase())) && (
         <>
           <FiiIndicatorsSection symbol={analysis.symbol} />
           <FiiHistorySection symbol={analysis.symbol} />
