@@ -5,6 +5,11 @@ import {
   BarChart, Bar, Cell, ReferenceLine, LineChart, Line, CartesianGrid,
 } from 'recharts'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
+import { useStockAnalysis } from '../../hooks/useStockAnalysis'
+import {
+  FiftyTwoWeekRange, FinancialHighlights, SectorComparisonSection,
+  CompanyProfileSection, StatementsSection,
+} from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useFundIndicator } from '../../hooks/useFundIndicator'
@@ -644,6 +649,7 @@ function CryptoAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 /** Full stock analysis page layout */
 function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   const up = (analysis.changePercent ?? 0) >= 0
+  const { data: advanced } = useStockAnalysis(analysis.symbol)
 
   return (
     <>
@@ -704,8 +710,23 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
         </div>
       </div>
 
+      {/* 52-week range */}
+      <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
+
+      {/* Profitability, margins, debt and cash */}
+      <FinancialHighlights financials={advanced?.financials ?? null} />
+
+      {/* Company vs sector average */}
+      <SectorComparisonSection comparison={advanced?.sectorComparison ?? null} />
+
       {/* Dividends */}
       <DividendSection analysis={analysis} />
+
+      {/* Financial statements: DRE, balance sheet, cash flow, DVA */}
+      <StatementsSection symbol={analysis.symbol} />
+
+      {/* About the company */}
+      <CompanyProfileSection profile={advanced?.profile ?? null} />
     </>
   )
 }
