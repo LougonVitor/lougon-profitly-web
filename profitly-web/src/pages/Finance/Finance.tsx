@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
@@ -85,7 +84,6 @@ function fmtMonth(ym: string) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function Finance() {
-  const navigate = useNavigate()
   const [tab, setTab] = useState<'current'|'recurring'|'history'>('current')
   const [period, setPeriod] = useState<CurrentPeriod | null>(null)
   const [recurringList, setRecurringList] = useState<RecurringExpense[]>([])
@@ -165,8 +163,7 @@ export function Finance() {
       setSettingsResetDay(sRes.data.resetDay.toString())
       setSalaryInput(sRes.data.netSalary?.toString() ?? '')
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status
-      if (status === 401 || status === 403) navigate('/login')
+      // 401/403 handled by PrivateRoute — no redirect needed here
     } finally { setLoading(false) }
   }
 
