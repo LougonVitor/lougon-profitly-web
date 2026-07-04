@@ -29,7 +29,7 @@ interface Rankings { dividendYield: RankingItem[]; marketCap: RankingItem[]; rev
 
 const ASSET_TYPE_TABS = [
   { label: 'Ações', value: 'stock' },
-  { label: 'FIIs', value: 'fund' },
+  { label: 'FIIs', value: 'FII' },
   { label: 'Criptomoedas', value: 'crypto' },
 ]
 
@@ -51,24 +51,27 @@ function RankingsSection() {
       .catch(() => setRankings(null))
   }, [assetType])
 
+  const isFii = assetType === 'FII'
+
   const cols: { title: string; icon: string; items: RankingItem[]; fmt: (v: number) => string }[] = [
     {
       title: 'Maiores Dividend Yield',
       icon: '◎',
       items: rankings?.dividendYield ?? [],
-      fmt: v => `${(v * 100).toFixed(2)}%`,
+      // FII DY already comes as % (e.g. 12.5 = 12.5%). Stocks come as decimal (0.12 = 12%).
+      fmt: isFii ? v => `${v.toFixed(2)}%` : v => `${(v * 100).toFixed(2)}%`,
     },
     {
-      title: 'Maiores Valor de Mercado',
+      title: isFii ? 'Maiores Patrimônios' : 'Maiores Valor de Mercado',
       icon: '▦',
       items: rankings?.marketCap ?? [],
       fmt: fmtCompact,
     },
     {
-      title: 'Maiores Receitas',
-      icon: '↗',
+      title: isFii ? 'Mais Cotistas' : 'Maiores Receitas',
+      icon: isFii ? '👥' : '↗',
       items: rankings?.revenue ?? [],
-      fmt: fmtCompact,
+      fmt: isFii ? v => `${(v / 1000).toFixed(0)}k` : fmtCompact,
     },
   ]
 

@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, ReferenceLine,
+  BarChart, Bar, Cell, ReferenceLine, LineChart, Line, CartesianGrid,
 } from 'recharts'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
+import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import './TickerAnalysis.css'
@@ -237,6 +238,65 @@ function divComputeTicks(data: { lastDatePrior?: string | null }[], range: strin
   return Array.from({ length: n }, (_, i) => valid[Math.min(i * step, valid.length - 1)].lastDatePrior)
 }
 
+function DividendTable({ dividends, isPct, price }: {
+  dividends: TickerAnalysis['dividends']
+  isPct: boolean
+  price: number
+}) {
+  const [page, setPage] = useState(0)
+  const total = dividends.length
+  const pages = Math.ceil(total / DIVIDEND_PAGE_SIZE)
+  const slice = dividends.slice(page * DIVIDEND_PAGE_SIZE, (page + 1) * DIVIDEND_PAGE_SIZE)
+
+  return (
+    <div className="ta-dividends-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Data com</th>
+            <th>Pagamento</th>
+            <th>Tipo</th>
+            <th className="right">Valor (R$)</th>
+            {isPct && <th className="right">DY (%)</th>}
+            <th>Ref.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {slice.map((d, i) => (
+            <tr key={d.lastDatePrior ?? d.paymentDate ?? i}>
+              <td>{fmtDate(d.lastDatePrior)}</td>
+              <td>{fmtDate(d.paymentDate)}</td>
+              <td><span className="ta-div-badge">{d.label ?? '—'}</span></td>
+              <td className="right ta-div-value">R$ {(d.rate ?? 0).toFixed(4)}</td>
+              {isPct && (
+                <td className="right ta-div-value">
+                  {price > 0 ? `${(((d.rate ?? 0) / price) * 100).toFixed(2)}%` : '—'}
+                </td>
+              )}
+              <td className="muted">{d.relatedTo ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {pages > 1 && (
+        <div className="ta-div-pagination">
+          <button
+            className="ta-div-page-btn"
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0}
+          >‹ Anterior</button>
+          <span className="ta-div-page-info">{page + 1} / {pages}</span>
+          <button
+            className="ta-div-page-btn"
+            onClick={() => setPage(p => Math.min(pages - 1, p + 1))}
+            disabled={page === pages - 1}
+          >Próximo ›</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const [divRange, setDivRange] = useState('5y')
   const [viewMode, setViewMode] = useState<'value' | 'pct'>('pct')
@@ -372,39 +432,138 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="ta-dividends-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Data com</th>
-              <th>Pagamento</th>
-              <th>Tipo</th>
-              <th className="right">Valor (R$)</th>
-              {isPct && <th className="right">DY (%)</th>}
-              <th>Ref.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dividends.map((d, i) => (
-              <tr key={d.lastDatePrior ?? d.paymentDate ?? i}>
-                <td>{fmtDate(d.lastDatePrior)}</td>
-                <td>{fmtDate(d.paymentDate)}</td>
-                <td><span className="ta-div-badge">{d.label ?? '—'}</span></td>
-                <td className="right ta-div-value">R$ {(d.rate ?? 0).toFixed(4)}</td>
-                {isPct && (
-                  <td className="right ta-div-value">
-                    {price > 0 ? `${(((d.rate ?? 0) / price) * 100).toFixed(2)}%` : '—'}
-                  </td>
-                )}
-                <td className="muted">{d.relatedTo ?? '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <DividendTable dividends={dividends} isPct={isPct} price={price} />
+    </div>
+  )
+}
+
+const SEGMENT_LABEL: Record<string, string> = {
+  papel: 'Papel', tijolo: 'Tijolo', hibrido: 'Híbrido', fof: 'FoF',
+}
+
+function fmtInvestors(v: number | null | undefined): string {
+  if (v == null) return '—'
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k`
+  return String(v)
+}
+
+function FiiIndicatorsSection({ symbol }: { symbol: string }) {
+  const { indicator, loading } = useFiiIndicator(symbol)
+
+  if (loading) return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Indicadores FII</div>
+      <div className="ta-chart-loading">Carregando...</div>
+    </div>
+  )
+  if (!indicator) return null
+
+  const pvp = indicator.priceToNav
+  const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Indicadores do Fundo</div>
+      <div className="ta-fii-indicators-grid">
+        <MetricCard label="P/VP" value={fmt(pvp)} sub="Preço / Val. Patrim." variant={pvpVariant} />
+        <MetricCard label="DY 12m" value={indicator.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'} sub="Dividend Yield anual" variant={indicator.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined} />
+        <MetricCard label="DY 1m" value={indicator.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'} sub="Dividend Yield mensal" />
+        <MetricCard label="Ret. mensal" value={indicator.monthlyReturn != null ? `${indicator.monthlyReturn.toFixed(2)}%` : '—'} sub="Retorno mês" variant={indicator.monthlyReturn != null ? (indicator.monthlyReturn >= 0 ? 'up' : 'down') : undefined} />
+        <MetricCard label="Cotistas" value={fmtInvestors(indicator.totalInvestors)} sub="Total de investidores" />
+        <MetricCard label="Patrimônio" value={fmtCap(indicator.equity)} sub="Patrimônio Líquido" />
+        <MetricCard label="Ativo Total" value={fmtCap(indicator.totalAssets)} sub="Total de ativos" />
+        <MetricCard label="Segmento" value={SEGMENT_LABEL[indicator.segmentType?.toLowerCase() ?? ''] ?? (indicator.segmentType ?? '—')} sub="Tipo de fundo" />
+      </div>
+      {indicator.adminName && (
+        <div className="ta-fii-admin">
+          Administrador: <strong>{indicator.adminName}</strong>
+          {indicator.adminCnpj && <span className="muted"> · CNPJ {indicator.adminCnpj}</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const FII_HISTORY_METRICS = [
+  { key: 'priceToNav',       label: 'P/VP',       fmt: (v: number) => v.toFixed(3) },
+  { key: 'dividendYield12m', label: 'DY 12m (%)', fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'dividendYield1m',  label: 'DY 1m (%)',  fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'equity',           label: 'Patrimônio', fmt: (v: number) => fmtCap(v) },
+]
+
+function FiiHistorySection({ symbol }: { symbol: string }) {
+  const { history, loading } = useFiiIndicatorHistory(symbol)
+  const [metric, setMetric] = useState(FII_HISTORY_METRICS[0])
+
+  if (loading) return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Indicadores Históricos</div>
+      <div className="ta-chart-loading">Carregando...</div>
+    </div>
+  )
+  if (history.length === 0) return null
+
+  const chartData = history
+    .filter(h => h[metric.key as keyof typeof h] != null)
+    .map(h => ({
+      date: h.referenceDate.substring(0, 7), // YYYY-MM
+      value: h[metric.key as keyof typeof h] as number,
+    }))
+
+  const ticks = (() => {
+    if (chartData.length <= 6) return chartData.map(d => d.date)
+    const n = 6
+    const step = Math.floor((chartData.length - 1) / (n - 1))
+    return Array.from({ length: n }, (_, i) => chartData[Math.min(i * step, chartData.length - 1)].date)
+  })()
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Indicadores Históricos</div>
+        <div className="ta-range-btns">
+          {FII_HISTORY_METRICS.map(m => (
+            <button
+              key={m.key}
+              className={`ta-range-btn ${metric.key === m.key ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setMetric(m)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="ta-chart-body" style={{ marginTop: '0.75rem' }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              ticks={ticks}
+              tickFormatter={d => { try { return new Date(d + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) } catch { return d } }}
+              tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+              axisLine={false} tickLine={false} interval={0}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+              axisLine={false} tickLine={false} width={55}
+              tickFormatter={v => metric.fmt(v)}
+            />
+            <Tooltip
+              contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+              labelFormatter={d => { try { return new Date(d + '-01').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) } catch { return d } }}
+              formatter={(v: unknown) => [metric.fmt(Number(v)), metric.label]}
+            />
+            <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )
 }
+
+const DIVIDEND_PAGE_SIZE = 10
 
 export function TickerAnalysis() {
   const { symbol } = useParams<{ symbol: string }>()
@@ -534,6 +693,14 @@ export function TickerAnalysis() {
           </div>
         </div>
       </div>
+
+      {/* FII-specific sections */}
+      {(analysis.assetType === 'FII' || analysis.subType === 'FII') && (
+        <>
+          <FiiIndicatorsSection symbol={analysis.symbol} />
+          <FiiHistorySection symbol={analysis.symbol} />
+        </>
+      )}
 
       {/* Dividends */}
       <DividendSection analysis={analysis} />
