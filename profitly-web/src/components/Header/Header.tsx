@@ -77,11 +77,24 @@ export function Header() {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  const results = search.trim().length >= 1
-    ? tickers.filter(tk =>
-        tk.symbol.toLowerCase().includes(search.toLowerCase()) ||
-        (tk.longName ?? tk.name ?? '').toLowerCase().includes(search.toLowerCase())
-      ).slice(0, 8)
+  const q = search.trim().toLowerCase()
+  const results = q.length >= 1
+    ? tickers
+        .map(tk => {
+          const symbol = tk.symbol.toLowerCase()
+          const name = (tk.longName ?? tk.name ?? '').toLowerCase()
+          let score = -1
+          if (symbol === q) score = 0
+          else if (symbol.startsWith(q)) score = 1
+          else if (name.startsWith(q)) score = 2
+          else if (symbol.includes(q)) score = 3
+          else if (name.includes(q)) score = 4
+          return { tk, score }
+        })
+        .filter(r => r.score >= 0)
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 8)
+        .map(r => r.tk)
     : []
 
   useEffect(() => {
