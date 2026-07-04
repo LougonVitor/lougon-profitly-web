@@ -223,8 +223,10 @@ export function CompanyProfileSection({ profile }: { profile: StockAnalysisFull[
 interface StatementConfig {
   type: StatementType
   label: string
-  rows: { field: string; label: string }[]
-  chart: { field: string; label: string; color: string }[]
+  /** fallbacks: alternative fields used when the primary is null (e.g. banks report
+   *  netIncomeFromContinuingOps instead of netIncome) */
+  rows: { field: string; label: string; fallbacks?: string[] }[]
+  chart: { field: string; label: string; color: string; fallbacks?: string[] }[]
 }
 
 const STATEMENTS: StatementConfig[] = [
@@ -235,15 +237,16 @@ const STATEMENTS: StatementConfig[] = [
       { field: 'totalRevenue', label: 'Receita Total' },
       { field: 'costOfRevenue', label: 'Custos' },
       { field: 'grossProfit', label: 'Lucro Bruto' },
-      { field: 'ebit', label: 'EBIT' },
+      { field: 'ebit', label: 'EBIT', fallbacks: ['cleanEbit'] },
       { field: 'financialResult', label: 'Resultado Financeiro' },
       { field: 'incomeBeforeTax', label: 'Lucro Antes de Impostos' },
       { field: 'incomeTaxExpense', label: 'Impostos' },
-      { field: 'netIncome', label: 'Lucro Líquido' },
+      // banks report netIncome as null and fill netIncomeFromContinuingOps instead
+      { field: 'netIncome', label: 'Lucro Líquido', fallbacks: ['netIncomeFromContinuingOps', 'netIncomeApplicableToCommonShares'] },
     ],
     chart: [
       { field: 'totalRevenue', label: 'Receita', color: 'var(--accent)' },
-      { field: 'netIncome', label: 'Lucro Líquido', color: '#22c55e' },
+      { field: 'netIncome', label: 'Lucro Líquido', color: '#22c55e', fallbacks: ['netIncomeFromContinuingOps', 'netIncomeApplicableToCommonShares'] },
     ],
   },
   {
@@ -302,9 +305,14 @@ const STATEMENTS: StatementConfig[] = [
   },
 ]
 
-function num(row: StatementRow, field: string): number | null {
+function num(row: StatementRow, field: string, fallbacks?: string[]): number | null {
   const v = row[field]
-  return typeof v === 'number' ? v : null
+  if (typeof v === 'number') return v
+  for (const fb of fallbacks ?? []) {
+    const alt = row[fb]
+    if (typeof alt === 'number') return alt
+  }
+  return null
 }
 
 function StatementContent({ symbol, config }: { symbol: string; config: StatementConfig }) {
@@ -321,7 +329,7 @@ function StatementContent({ symbol, config }: { symbol: string; config: Statemen
   const chartData = useMemo(
     () => [...yearly].reverse().map(r => {
       const entry: Record<string, unknown> = { year: r.endDate.slice(0, 4) }
-      for (const c of config.chart) entry[c.field] = num(r, c.field)
+      for (const c of config.chart) entry[c.field] = num(r, c.field, c.fallbacks)
       return entry
     }),
     [yearly, config],
@@ -363,13 +371,13 @@ function StatementContent({ symbol, config }: { symbol: string; config: Statemen
           </thead>
           <tbody>
             {config.rows.map(rowCfg => {
-              const hasAny = yearly.some(r => num(r, rowCfg.field) != null)
+              const hasAny = yearly.some(r => num(r, rowCfg.field, rowCfg.fallbacks) != null)
               if (!hasAny) return null
               return (
                 <tr key={rowCfg.field}>
                   <td>{rowCfg.label}</td>
                   {yearly.map(r => {
-                    const v = num(r, rowCfg.field)
+                    const v = num(r, rowCfg.field, rowCfg.fallbacks)
                     return (
                       <td key={r.endDate} className={`right ${v != null && v < 0 ? 'ta-statement-neg' : ''}`}>
                         {v != null ? fmtBig(v) : '—'}
