@@ -306,20 +306,13 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
 
   const chartData: { key: string; display: number }[] = isPct
     ? (() => {
-        const sumByYear: Record<string, number> = {}
-        for (const d of dividends) {
-          if (!d.lastDatePrior || d.lastDatePrior.length < 4) continue
-          const yr = d.lastDatePrior.substring(0, 4)
-          sumByYear[yr] = (sumByYear[yr] ?? 0) + (d.rate ?? 0)
-        }
-        return Object.entries(sumByYear)
+        // Only years computed by the backend (split-adjusted dividends / year-end price).
+        // No fallback to the CURRENT price — that produced wildly wrong DY for past years.
+        const cutoffYear = cutoff ? cutoff.getFullYear() : null
+        return Object.entries(historicalDy)
+          .filter(([yr]) => cutoffYear == null || Number(yr) >= cutoffYear)
           .sort(([a], [b]) => a.localeCompare(b))
-          .map(([yr, total]) => ({
-            key: yr,
-            display: historicalDy[yr] != null
-              ? historicalDy[yr]
-              : price > 0 ? (total / price) * 100 : 0,
-          }))
+          .map(([yr, dy]) => ({ key: yr, display: dy }))
           .filter(d => d.display > 0)
       })()
     : dividends.map((d, i) => ({
