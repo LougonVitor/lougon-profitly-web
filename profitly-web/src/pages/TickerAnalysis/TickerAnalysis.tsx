@@ -10,6 +10,8 @@ import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import './TickerAnalysis.css'
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 const RANGES = [
   { label: '1M', value: '1m' },
   { label: '3M', value: '3m' },
@@ -45,7 +47,8 @@ function fmtCap(v: number | null | undefined): string {
   if (v == null) return '—'
   if (v >= 1e12) return `R$ ${fmt(v / 1e12, 2)}T`
   if (v >= 1e9)  return `R$ ${fmt(v / 1e9, 1)}B`
-  return `R$ ${fmt(v / 1e6, 0)}M`
+  if (v >= 1e6)  return `R$ ${fmt(v / 1e6, 0)}M`
+  return `R$ ${fmt(v / 1e3, 0)}k`
 }
 
 function fmtShares(v: number | null | undefined): string {
@@ -57,12 +60,17 @@ function fmtShares(v: number | null | undefined): string {
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return '—'
-  try {
-    return new Date(d).toLocaleDateString('pt-BR')
-  } catch {
-    return d
-  }
+  try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d }
 }
+
+function fmtInvestors(v: number | null | undefined): string {
+  if (v == null) return '—'
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k`
+  return String(v)
+}
+
+// ── Shared Components ────────────────────────────────────────────────────────
 
 function MetricCard({ label, value, sub, variant }: {
   label: string; value: string; sub?: string; variant?: 'up' | 'down' | 'neutral'
@@ -76,7 +84,6 @@ function MetricCard({ label, value, sub, variant }: {
   )
 }
 
-/** Pick ~5 evenly-spaced ticks from the data that best represent the selected range. */
 function computeTicks(data: { date: string | number }[], range: string): (string | number)[] {
   if (data.length === 0) return []
   const n = { '1m': 4, '3m': 3, '6m': 6, '1y': 4, '2y': 4, '5y': 5, '10y': 5, 'max': 5 }[range] ?? 5
@@ -85,7 +92,6 @@ function computeTicks(data: { date: string | number }[], range: string): (string
   return Array.from({ length: n }, (_, i) => data[Math.min(i * step, data.length - 1)].date)
 }
 
-/** Format a tick date label according to the selected range. */
 function tickLabel(d: string | number, range: string): string {
   try {
     const date = new Date(d)
@@ -96,6 +102,8 @@ function tickLabel(d: string | number, range: string): string {
     return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
   } catch { return '' }
 }
+
+// ── Price Chart ──────────────────────────────────────────────────────────────
 
 function PriceChartSection({ symbol }: { symbol: string }) {
   const [range, setRange] = useState('1y')
@@ -134,7 +142,6 @@ function PriceChartSection({ symbol }: { symbol: string }) {
           ))}
         </div>
       </div>
-
       <div className="ta-chart-body">
         {loading ? (
           <div className="ta-chart-loading">Carregando gráfico...</div>
@@ -158,41 +165,21 @@ function PriceChartSection({ symbol }: { symbol: string }) {
                 ticks={computeTicks(data, range)}
                 tickFormatter={d => tickLabel(d, range)}
                 tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-                interval={0}
+                axisLine={false} tickLine={false} interval={0}
               />
               <YAxis
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-                width={60}
+                axisLine={false} tickLine={false} width={60}
                 tickFormatter={v => `R$${Number(v).toFixed(0)}`}
               />
               <Tooltip
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-primary)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-                labelFormatter={d => {
-                  try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d }
-                }}
+                contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
+                labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
                 formatter={(value: unknown) => [`R$ ${Number(value).toFixed(2)}`, 'Fechamento']}
               />
-              <Area
-                type="monotone"
-                dataKey="close"
-                stroke={strokeColor}
-                strokeWidth={1.5}
-                fill={`url(#${fillId})`}
-                dot={false}
-                activeDot={{ r: 4, fill: strokeColor }}
-              />
+              <Area type="monotone" dataKey="close" stroke={strokeColor} strokeWidth={1.5}
+                fill={`url(#${fillId})`} dot={false} activeDot={{ r: 4, fill: strokeColor }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -201,15 +188,17 @@ function PriceChartSection({ symbol }: { symbol: string }) {
   )
 }
 
-const CURRENT_YEAR = new Date().getFullYear()
+// ── Dividend Section ─────────────────────────────────────────────────────────
 
+const CURRENT_YEAR = new Date().getFullYear()
 const DIV_RANGES = [
   { label: String(CURRENT_YEAR), key: 'ytd' },
-  { label: '1A',   key: '1y' },
-  { label: '3A',   key: '3y' },
-  { label: '5A',   key: '5y' },
-  { label: 'MÁX',  key: 'max' },
+  { label: '1A', key: '1y' },
+  { label: '3A', key: '3y' },
+  { label: '5A', key: '5y' },
+  { label: 'MÁX', key: 'max' },
 ]
+const DIVIDEND_PAGE_SIZE = 10
 
 function divCutoff(key: string): Date | null {
   const now = Date.now()
@@ -280,17 +269,13 @@ function DividendTable({ dividends, isPct, price }: {
       </table>
       {pages > 1 && (
         <div className="ta-div-pagination">
-          <button
-            className="ta-div-page-btn"
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            disabled={page === 0}
-          >‹ Anterior</button>
+          <button className="ta-div-page-btn" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+            ‹ Anterior
+          </button>
           <span className="ta-div-page-info">{page + 1} / {pages}</span>
-          <button
-            className="ta-div-page-btn"
-            onClick={() => setPage(p => Math.min(pages - 1, p + 1))}
-            disabled={page === pages - 1}
-          >Próximo ›</button>
+          <button className="ta-div-page-btn" onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={page === pages - 1}>
+            Próximo ›
+          </button>
         </div>
       )}
     </div>
@@ -306,21 +291,14 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   const historicalDy = analysis.historicalDyByYear ?? {}
 
   const all = (analysis.dividends ?? []).filter(d => d.rate != null && d.rate > 0)
-
   const cutoff = divCutoff(divRange)
-  const dividends = cutoff
-    ? all.filter(d => d.lastDatePrior && new Date(d.lastDatePrior) >= cutoff)
-    : all
+  const dividends = cutoff ? all.filter(d => d.lastDatePrior && new Date(d.lastDatePrior) >= cutoff) : all
 
   const fmtDisplay = (v: number) =>
     isPct ? `${v.toFixed(2)}%` : `R$ ${v.toFixed(4)}`
 
-  // In % mode: one bar per year using historically-accurate DY from backend (price_history)
-  // In R$ mode: individual payments
   const chartData: { key: string; display: number }[] = isPct
     ? (() => {
-        // Get distinct years in range from dividends, then look up pre-computed DY
-        // Sum dividends per year from filtered list
         const sumByYear: Record<string, number> = {}
         for (const d of dividends) {
           if (!d.lastDatePrior || d.lastDatePrior.length < 4) continue
@@ -331,7 +309,6 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([yr, total]) => ({
             key: yr,
-            // Prefer pre-computed DY using historical price; fall back to current price
             display: historicalDy[yr] != null
               ? historicalDy[yr]
               : price > 0 ? (total / price) * 100 : 0,
@@ -358,22 +335,12 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
         <div className="ta-section-title">Histórico de Dividendos</div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <div className="ta-range-btns">
-            <button
-              className={`ta-range-btn ${viewMode === 'value' ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setViewMode('value')}
-            >R$</button>
-            <button
-              className={`ta-range-btn ${viewMode === 'pct' ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setViewMode('pct')}
-            >%</button>
+            <button className={`ta-range-btn ${viewMode === 'value' ? 'ta-range-btn--active' : ''}`} onClick={() => setViewMode('value')}>R$</button>
+            <button className={`ta-range-btn ${viewMode === 'pct' ? 'ta-range-btn--active' : ''}`} onClick={() => setViewMode('pct')}>%</button>
           </div>
           <div className="ta-range-btns">
             {DIV_RANGES.map(r => (
-              <button
-                key={r.key}
-                className={`ta-range-btn ${divRange === r.key ? 'ta-range-btn--active' : ''}`}
-                onClick={() => setDivRange(r.key)}
-              >
+              <button key={r.key} className={`ta-range-btn ${divRange === r.key ? 'ta-range-btn--active' : ''}`} onClick={() => setDivRange(r.key)}>
                 {r.label}
               </button>
             ))}
@@ -388,45 +355,21 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
       <div className="ta-dividends-chart">
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }} barSize={isPct ? 32 : 14}>
-            <XAxis
-              dataKey="key"
-              ticks={isPct ? pctTicks : rawTicks}
+            <XAxis dataKey="key" ticks={isPct ? pctTicks : rawTicks}
               tickFormatter={d => isPct ? d : (d ? divTickLabel(d, divRange) : '')}
-              tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-            />
+              tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0} />
             <YAxis hide domain={[0, 'auto']} />
             <Tooltip
-              contentStyle={{
-                fontSize: 12,
-                borderRadius: 10,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-primary)',
-              }}
+              contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
               formatter={(v: unknown) => [fmtDisplay(Number(v)), isPct ? 'DY anual' : 'Valor']}
               labelFormatter={d => isPct ? `Ano ${d}` : (d ? new Date(d).toLocaleDateString('pt-BR') : '')}
             />
             <Bar dataKey="display" radius={[3, 3, 0, 0]}>
-              {chartData.map((_, i) => (
-                <Cell key={i} fill="var(--accent)" opacity={0.8} />
-              ))}
+              {chartData.map((_, i) => <Cell key={i} fill="var(--accent)" opacity={0.8} />)}
             </Bar>
             {avg != null && (
-              <ReferenceLine
-                y={avg}
-                stroke="var(--text-up)"
-                strokeDasharray="5 3"
-                strokeWidth={1.5}
-                label={{
-                  value: `Média ${fmtDisplay(avg)}`,
-                  position: 'insideTopRight',
-                  fontSize: 10,
-                  fill: 'var(--text-up)',
-                  dy: -4,
-                }}
+              <ReferenceLine y={avg} stroke="var(--text-up)" strokeDasharray="5 3" strokeWidth={1.5}
+                label={{ value: `Média ${fmtDisplay(avg)}`, position: 'insideTopRight', fontSize: 10, fill: 'var(--text-up)', dy: -4 }}
               />
             )}
           </BarChart>
@@ -437,52 +380,15 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
   )
 }
 
+// ── FII Components ───────────────────────────────────────────────────────────
+
 const SEGMENT_LABEL: Record<string, string> = {
-  papel: 'Papel', tijolo: 'Tijolo', hibrido: 'Híbrido', fof: 'FoF',
+  papel: 'Papel (CRI)', tijolo: 'Tijolo', hibrido: 'Híbrido', fof: 'FoF',
 }
 
-function fmtInvestors(v: number | null | undefined): string {
-  if (v == null) return '—'
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}k`
-  return String(v)
-}
-
-function FiiIndicatorsSection({ symbol }: { symbol: string }) {
-  const { indicator, loading } = useFiiIndicator(symbol)
-
-  if (loading) return (
-    <div className="ta-section-card">
-      <div className="ta-section-title">Indicadores FII</div>
-      <div className="ta-chart-loading">Carregando...</div>
-    </div>
-  )
-  if (!indicator) return null
-
-  const pvp = indicator.priceToNav
-  const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
-
-  return (
-    <div className="ta-section-card">
-      <div className="ta-section-title">Indicadores do Fundo</div>
-      <div className="ta-fii-indicators-grid">
-        <MetricCard label="P/VP" value={fmt(pvp)} sub="Preço / Val. Patrim." variant={pvpVariant} />
-        <MetricCard label="DY 12m" value={indicator.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'} sub="Dividend Yield anual" variant={indicator.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined} />
-        <MetricCard label="DY 1m" value={indicator.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'} sub="Dividend Yield mensal" />
-        <MetricCard label="Ret. mensal" value={indicator.monthlyReturn != null ? `${indicator.monthlyReturn.toFixed(2)}%` : '—'} sub="Retorno mês" variant={indicator.monthlyReturn != null ? (indicator.monthlyReturn >= 0 ? 'up' : 'down') : undefined} />
-        <MetricCard label="Cotistas" value={fmtInvestors(indicator.totalInvestors)} sub="Total de investidores" />
-        <MetricCard label="Patrimônio" value={fmtCap(indicator.equity)} sub="Patrimônio Líquido" />
-        <MetricCard label="Ativo Total" value={fmtCap(indicator.totalAssets)} sub="Total de ativos" />
-        <MetricCard label="Segmento" value={SEGMENT_LABEL[indicator.segmentType?.toLowerCase() ?? ''] ?? (indicator.segmentType ?? '—')} sub="Tipo de fundo" />
-      </div>
-      {indicator.adminName && (
-        <div className="ta-fii-admin">
-          Administrador: <strong>{indicator.adminName}</strong>
-          {indicator.adminCnpj && <span className="muted"> · CNPJ {indicator.adminCnpj}</span>}
-        </div>
-      )}
-    </div>
-  )
+function segmentLabel(s: string | null | undefined): string {
+  if (!s) return '—'
+  return SEGMENT_LABEL[s.toLowerCase()] ?? s
 }
 
 const FII_HISTORY_METRICS = [
@@ -496,20 +402,17 @@ function FiiHistorySection({ symbol }: { symbol: string }) {
   const { history, loading } = useFiiIndicatorHistory(symbol)
   const [metric, setMetric] = useState(FII_HISTORY_METRICS[0])
 
-  if (loading) return (
-    <div className="ta-section-card">
-      <div className="ta-section-title">Indicadores Históricos</div>
-      <div className="ta-chart-loading">Carregando...</div>
-    </div>
-  )
+  if (loading) return null
   if (history.length === 0) return null
 
   const chartData = history
     .filter(h => h[metric.key as keyof typeof h] != null)
     .map(h => ({
-      date: h.referenceDate.substring(0, 7), // YYYY-MM
+      date: h.referenceDate.substring(0, 7),
       value: h[metric.key as keyof typeof h] as number,
     }))
+
+  if (chartData.length < 2) return null
 
   const ticks = (() => {
     if (chartData.length <= 6) return chartData.map(d => d.date)
@@ -524,11 +427,7 @@ function FiiHistorySection({ symbol }: { symbol: string }) {
         <div className="ta-section-title">Indicadores Históricos</div>
         <div className="ta-range-btns">
           {FII_HISTORY_METRICS.map(m => (
-            <button
-              key={m.key}
-              className={`ta-range-btn ${metric.key === m.key ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setMetric(m)}
-            >
+            <button key={m.key} className={`ta-range-btn ${metric.key === m.key ? 'ta-range-btn--active' : ''}`} onClick={() => setMetric(m)}>
               {m.label}
             </button>
           ))}
@@ -538,16 +437,11 @@ function FiiHistorySection({ symbol }: { symbol: string }) {
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-            <XAxis
-              dataKey="date"
-              ticks={ticks}
+            <XAxis dataKey="date" ticks={ticks}
               tickFormatter={d => { try { return new Date(d + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) } catch { return d } }}
-              tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
-              axisLine={false} tickLine={false} interval={0}
+              tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0}
             />
-            <YAxis
-              tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-              axisLine={false} tickLine={false} width={55}
+            <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={55}
               tickFormatter={v => metric.fmt(v)}
             />
             <Tooltip
@@ -563,81 +457,136 @@ function FiiHistorySection({ symbol }: { symbol: string }) {
   )
 }
 
-const DIVIDEND_PAGE_SIZE = 10
-
-export function TickerAnalysis() {
-  const { symbol } = useParams<{ symbol: string }>()
-  const navigate = useNavigate()
-  const { t } = useI18n()
-  const { analysis, loading, error } = useTickerAnalysis(symbol ?? '')
-
-  if (loading) {
-    return (
-      <div className="ta-page">
-
-        <div className="ta-state">Carregando análise...</div>
-      </div>
-    )
-  }
-
-  if (error || !analysis) {
-    return (
-      <div className="ta-page">
-
-        <div className="ta-state ta-state--error">{error ?? 'Ticker não encontrado'}</div>
-      </div>
-    )
-  }
-
+/** Full FII analysis page layout */
+function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const { indicator, loading: indLoading } = useFiiIndicator(analysis.symbol)
   const up = (analysis.changePercent ?? 0) >= 0
-  const assetLabel = (t.assetType as Record<string, string>)[
-    (analysis.subType ?? analysis.assetType ?? '').toLowerCase()
-  ] ?? (analysis.subType ?? analysis.assetType ?? '')
+
+  const pvp = indicator?.priceToNav
+  const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
 
   return (
-    <div className="ta-page">
-      {/* Breadcrumb */}
-      <nav className="ta-breadcrumb">
-        <button className="ta-breadcrumb-btn" onClick={() => navigate('/')}>{t.nav.tickers}</button>
-        <span className="ta-sep">›</span>
-        {assetLabel && <><span className="ta-breadcrumb-part">{assetLabel}</span><span className="ta-sep">›</span></>}
-        <span className="ta-breadcrumb-active">{analysis.symbol}</span>
-      </nav>
-
-      {/* Hero */}
-      <div className="ta-hero">
-        <div className="ta-hero-left">
-          <div className="ta-logo-wrap">
-            <img
-              className="ta-logo"
-              src={analysis.logoUrl ?? ''}
-              alt={analysis.symbol}
-              onError={e => { e.currentTarget.style.display = 'none' }}
+    <>
+      {/* FII Metrics Bar */}
+      <div className="ta-metrics-bar ta-metrics-bar--fii">
+        {indLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="ta-metric ta-metric--skeleton" />
+          ))
+        ) : (
+          <>
+            <MetricCard
+              label="P/VP"
+              value={fmt(pvp)}
+              sub="Preço / Valor Patrimonial"
+              variant={pvpVariant}
             />
-          </div>
-          <div>
-            <div className="ta-hero-top">
-              <h1 className="ta-symbol">{analysis.symbol}</h1>
-              {assetLabel && <span className="ta-type-badge">{assetLabel}</span>}
+            <MetricCard
+              label="DY 12m"
+              value={indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}
+              sub="Dividend Yield anual"
+              variant={indicator?.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined}
+            />
+            <MetricCard
+              label="DY 1m"
+              value={indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}
+              sub="Dividend Yield mensal"
+            />
+            <MetricCard
+              label="Cotistas"
+              value={fmtInvestors(indicator?.totalInvestors)}
+              sub="Total de investidores"
+            />
+            <MetricCard
+              label="Patrimônio"
+              value={fmtCap(indicator?.equity)}
+              sub="Patrimônio Líquido"
+            />
+            <MetricCard
+              label="Segmento"
+              value={segmentLabel(indicator?.segmentType)}
+              sub="Tipo de fundo"
+            />
+          </>
+        )}
+      </div>
+
+      {/* Price Chart */}
+      <PriceChartSection symbol={analysis.symbol} />
+
+      {/* FII Detail Cards */}
+      <div className="ta-info-grid">
+        {/* Market data */}
+        <div className="ta-section-card">
+          <div className="ta-section-title">Dados de Mercado</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
+            <div className="ta-info-row"><span>Variação hoje</span>
+              <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
             </div>
-            <div className="ta-long-name">{analysis.longName ?? analysis.name}</div>
-            {analysis.sector && <div className="ta-sector">{analysis.sector}</div>}
+            <div className="ta-info-row"><span>Volume</span><strong>{fmtCap(analysis.volume)}</strong></div>
+            <div className="ta-info-row"><span>Valor de Mercado</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
+            <div className="ta-info-row"><span>Cotas em circulação</span><strong>{fmtShares(analysis.sharesOutstanding)}</strong></div>
+            {analysis.weekChange52 != null && (
+              <div className="ta-info-row"><span>Variação 52 semanas</span><strong>{fmtPct(analysis.weekChange52 * 100)}</strong></div>
+            )}
           </div>
         </div>
-        <div className="ta-hero-right">
-          <div className="ta-price">{fmtBRL(analysis.lastPrice)}</div>
-          <div className={`ta-day-change ${up ? 'ta-day-change--up' : 'ta-day-change--down'}`}>
-            {up ? '▲' : '▼'} {fmtPct(analysis.changePercent)} <span className="ta-day-label">hoje</span>
-          </div>
-          {analysis.weekChange52 != null && (
-            <div className="ta-52w">
-              52 semanas: {fmtPct(analysis.weekChange52 * 100)}
+
+        {/* FII Fundamentals */}
+        <div className="ta-section-card">
+          <div className="ta-section-title">Sobre o Fundo</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>P/VP</span>
+              <strong className={pvpVariant === 'up' ? 'up' : pvpVariant === 'down' ? 'down' : ''}>{fmt(pvp)}</strong>
             </div>
-          )}
+            <div className="ta-info-row"><span>DY 12 meses</span>
+              <strong className="up">{indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>DY 1 mês</span>
+              <strong>{indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>Retorno Mensal</span>
+              <strong>{indicator?.monthlyReturn != null ? `${indicator.monthlyReturn.toFixed(2)}%` : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>Patrimônio Líquido</span><strong>{fmtCap(indicator?.equity)}</strong></div>
+            <div className="ta-info-row"><span>Ativo Total</span><strong>{fmtCap(indicator?.totalAssets)}</strong></div>
+            <div className="ta-info-row"><span>Segmento</span><strong>{segmentLabel(indicator?.segmentType)}</strong></div>
+            <div className="ta-info-row"><span>Total Cotistas</span><strong>{fmtInvestors(indicator?.totalInvestors)}</strong></div>
+          </div>
         </div>
       </div>
 
-      {/* Key metrics bar */}
+      {/* Administrator */}
+      {indicator?.adminName && (
+        <div className="ta-fii-admin-card">
+          <div className="ta-fii-admin-icon">🏦</div>
+          <div>
+            <div className="ta-fii-admin-label">Administrador</div>
+            <div className="ta-fii-admin-name">{indicator.adminName}</div>
+            {indicator.adminCnpj && (
+              <div className="ta-fii-admin-cnpj">CNPJ: {indicator.adminCnpj}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Historical indicators chart */}
+      <FiiHistorySection symbol={analysis.symbol} />
+
+      {/* Dividends */}
+      <DividendSection analysis={analysis} />
+    </>
+  )
+}
+
+/** Full stock analysis page layout */
+function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const up = (analysis.changePercent ?? 0) >= 0
+
+  return (
+    <>
+      {/* Stock Metrics Bar */}
       <div className="ta-metrics-bar">
         <MetricCard label="P/L" value={fmt(analysis.trailingPE)} sub="Preço / Lucro" />
         <MetricCard label="P/VP" value={fmt(analysis.priceToBook)} sub="Preço / Val. Patrim." />
@@ -654,10 +603,10 @@ export function TickerAnalysis() {
         <MetricCard label="Margem" value={fmtDY(analysis.profitMargins)} sub="Margem Líquida" />
       </div>
 
-      {/* Price chart */}
+      {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Info grid */}
+      {/* Info Grid */}
       <div className="ta-info-grid">
         <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
@@ -694,17 +643,90 @@ export function TickerAnalysis() {
         </div>
       </div>
 
-      {/* FII-specific sections */}
-      {(['fii'].includes((analysis.assetType ?? '').toLowerCase()) ||
-        ['fii'].includes((analysis.subType ?? '').toLowerCase())) && (
-        <>
-          <FiiIndicatorsSection symbol={analysis.symbol} />
-          <FiiHistorySection symbol={analysis.symbol} />
-        </>
-      )}
-
       {/* Dividends */}
       <DividendSection analysis={analysis} />
+    </>
+  )
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
+export function TickerAnalysis() {
+  const { symbol } = useParams<{ symbol: string }>()
+  const navigate = useNavigate()
+  const { t } = useI18n()
+  const { analysis, loading, error } = useTickerAnalysis(symbol ?? '')
+
+  if (loading) {
+    return (
+      <div className="ta-page">
+        <div className="ta-state">Carregando análise...</div>
+      </div>
+    )
+  }
+
+  if (error || !analysis) {
+    return (
+      <div className="ta-page">
+        <div className="ta-state ta-state--error">{error ?? 'Ticker não encontrado'}</div>
+      </div>
+    )
+  }
+
+  const up = (analysis.changePercent ?? 0) >= 0
+  const isFii = ['fii'].includes((analysis.assetType ?? '').toLowerCase()) ||
+    ['fii'].includes((analysis.subType ?? '').toLowerCase())
+
+  const assetLabel = (t.assetType as Record<string, string>)[
+    (analysis.subType ?? analysis.assetType ?? '').toLowerCase()
+  ] ?? (analysis.subType ?? analysis.assetType ?? '')
+
+  return (
+    <div className="ta-page">
+      {/* Breadcrumb */}
+      <nav className="ta-breadcrumb">
+        <button className="ta-breadcrumb-btn" onClick={() => navigate('/')}>{t.nav.tickers}</button>
+        <span className="ta-sep">›</span>
+        {assetLabel && <><span className="ta-breadcrumb-part">{assetLabel}</span><span className="ta-sep">›</span></>}
+        <span className="ta-breadcrumb-active">{analysis.symbol}</span>
+      </nav>
+
+      {/* Hero */}
+      <div className={`ta-hero ${isFii ? 'ta-hero--fii' : ''}`}>
+        <div className="ta-hero-left">
+          <div className="ta-logo-wrap">
+            <img
+              className="ta-logo"
+              src={analysis.logoUrl ?? ''}
+              alt={analysis.symbol}
+              onError={e => { e.currentTarget.style.display = 'none' }}
+            />
+          </div>
+          <div>
+            <div className="ta-hero-top">
+              <h1 className="ta-symbol">{analysis.symbol}</h1>
+              {assetLabel && <span className="ta-type-badge">{assetLabel}</span>}
+            </div>
+            <div className="ta-long-name">{analysis.longName ?? analysis.name}</div>
+            {analysis.sector && <div className="ta-sector">{analysis.sector}</div>}
+          </div>
+        </div>
+        <div className="ta-hero-right">
+          <div className="ta-price">{fmtBRL(analysis.lastPrice)}</div>
+          <div className={`ta-day-change ${up ? 'ta-day-change--up' : 'ta-day-change--down'}`}>
+            {up ? '▲' : '▼'} {fmtPct(analysis.changePercent)} <span className="ta-day-label">hoje</span>
+          </div>
+          {analysis.weekChange52 != null && (
+            <div className="ta-52w">52 sem: {fmtPct(analysis.weekChange52 * 100)}</div>
+          )}
+        </div>
+      </div>
+
+      {/* Asset-specific content */}
+      {isFii
+        ? <FiiAnalysisPage analysis={analysis} />
+        : <StockAnalysisPage analysis={analysis} />
+      }
     </div>
   )
 }
