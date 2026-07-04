@@ -23,6 +23,16 @@ function fmtPct(v: number | null | undefined): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
 }
 
+/** Treasury symbols are slugs like "tesouro-ipca-com-juros-semestrais-15052029".
+ *  Show the friendly name as the title and the maturity date as the subtitle. */
+function treasuryDisplay(ticker: Ticker): { title: string; subtitle: string } | null {
+  if (!ticker.symbol.startsWith('tesouro-')) return null
+  const title = ticker.name ?? ticker.longName ?? ticker.symbol
+  const m = ticker.symbol.match(/(\d{2})(\d{2})(\d{4})$/)
+  const subtitle = m ? `Vencimento ${m[1]}/${m[2]}/${m[3]}` : ticker.symbol
+  return { title, subtitle }
+}
+
 interface SearchResultProps {
   ticker: Ticker
   onSelect: () => void
@@ -31,6 +41,7 @@ interface SearchResultProps {
 function SearchResult({ ticker, onSelect }: SearchResultProps) {
   const navigate = useNavigate()
   const up = (ticker.changePercent ?? 0) >= 0
+  const treasury = treasuryDisplay(ticker)
 
   function handleClick() {
     onSelect()
@@ -40,21 +51,28 @@ function SearchResult({ ticker, onSelect }: SearchResultProps) {
   return (
     <button className="search-result" onClick={handleClick}>
       <div className="search-result-logo-wrap">
-        <img
-          className="search-result-logo"
-          src={ticker.logoUrl ?? ''}
-          alt={ticker.symbol}
-          onError={e => {
-            e.currentTarget.style.display = 'none'
-            const fb = e.currentTarget.nextElementSibling as HTMLElement
-            if (fb) fb.style.display = 'flex'
-          }}
-        />
-        <div className="search-result-logo-fallback">{ticker.symbol.slice(0, 2)}</div>
+        {ticker.logoUrl && !treasury ? (
+          <img
+            className="search-result-logo"
+            src={ticker.logoUrl}
+            alt={ticker.symbol}
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              const fb = e.currentTarget.nextElementSibling as HTMLElement
+              if (fb) fb.style.display = 'flex'
+            }}
+          />
+        ) : null}
+        <div
+          className="search-result-logo-fallback"
+          style={ticker.logoUrl && !treasury ? undefined : { display: 'flex' }}
+        >
+          {treasury ? 'TD' : ticker.symbol.slice(0, 2).toUpperCase()}
+        </div>
       </div>
       <div className="search-result-info">
-        <span className="search-result-symbol">{ticker.symbol}</span>
-        <span className="search-result-name">{ticker.longName ?? ticker.name}</span>
+        <span className="search-result-symbol">{treasury ? treasury.title : ticker.symbol}</span>
+        <span className="search-result-name">{treasury ? treasury.subtitle : (ticker.longName ?? ticker.name)}</span>
       </div>
       <div className="search-result-right">
         <span className="search-result-price">{fmtBRL(ticker.lastPrice)}</span>
