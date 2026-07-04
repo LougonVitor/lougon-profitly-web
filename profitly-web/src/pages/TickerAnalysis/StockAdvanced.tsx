@@ -159,7 +159,7 @@ export function SectorComparisonSection({ comparison }: { comparison: SectorComp
                   <td className="right">
                     {verdict && (
                       <span className={`ta-sector-verdict ta-sector-verdict--${verdict}`}>
-                        {verdict === 'better' ? '▲ Acima' : '▼ Abaixo'}
+                        {verdict === 'better' ? '▲ Melhor' : '▼ Pior'}
                       </span>
                     )}
                   </td>
@@ -170,7 +170,7 @@ export function SectorComparisonSection({ comparison }: { comparison: SectorComp
         </table>
       </div>
       <div className="ta-sector-note">
-        "Acima" indica desempenho melhor que a média do setor no indicador (considera que P/L, P/VP, EV/EBITDA e dívida melhores quando menores).
+        "Melhor" indica desempenho superior à média do setor no indicador (considera que P/L, P/VP, EV/EBITDA e dívida são melhores quando menores).
       </div>
     </div>
   )
