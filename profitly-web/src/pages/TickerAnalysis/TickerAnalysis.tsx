@@ -6,6 +6,7 @@ import {
 } from 'recharts'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
+import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import './TickerAnalysis.css'
@@ -580,6 +581,65 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   )
 }
 
+/** Crypto analysis page layout */
+function CryptoAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const up = (analysis.changePercent ?? 0) >= 0
+
+  return (
+    <>
+      {/* Crypto Metrics Bar */}
+      <div className="ta-metrics-bar ta-metrics-bar--crypto">
+        <MetricCard
+          label="Market Cap"
+          value={fmtCap(analysis.marketCap)}
+          sub="Capitalização de mercado"
+        />
+        <MetricCard
+          label="Volume 24h"
+          value={fmtCap(analysis.volume)}
+          sub="Volume em 24 horas"
+        />
+        <MetricCard
+          label="Var. dia"
+          value={fmtPct(analysis.changePercent)}
+          sub="Variação em 24h"
+          variant={up ? 'up' : 'down'}
+        />
+        <MetricCard
+          label="52 semanas"
+          value={analysis.weekChange52 != null ? fmtPct(analysis.weekChange52 * 100) : '—'}
+          sub="Retorno anual"
+          variant={analysis.weekChange52 != null ? (analysis.weekChange52 >= 0 ? 'up' : 'down') : undefined}
+        />
+      </div>
+
+      {/* Price Chart */}
+      <PriceChartSection symbol={analysis.symbol} />
+
+      {/* Market Data */}
+      <div className="ta-section-card">
+        <div className="ta-section-title">Dados de Mercado</div>
+        <div className="ta-info-rows">
+          <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
+          <div className="ta-info-row"><span>Variação hoje</span>
+            <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
+          </div>
+          <div className="ta-info-row"><span>Volume 24h</span><strong>{fmtCap(analysis.volume)}</strong></div>
+          <div className="ta-info-row"><span>Market Cap</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
+          {analysis.weekChange52 != null && (
+            <div className="ta-info-row"><span>Variação 52 semanas</span>
+              <strong className={analysis.weekChange52 >= 0 ? 'up' : 'down'}>{fmtPct(analysis.weekChange52 * 100)}</strong>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dividends (staking rewards etc.) */}
+      <DividendSection analysis={analysis} />
+    </>
+  )
+}
+
 /** Full stock analysis page layout */
 function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   const up = (analysis.changePercent ?? 0) >= 0
@@ -649,6 +709,139 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   )
 }
 
+// ── Treasury Components ──────────────────────────────────────────────────────
+
+const TREASURY_HISTORY_METRICS = [
+  { key: 'buyRate',  label: 'Taxa compra (%)', fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'sellRate', label: 'Taxa venda (%)',  fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'buyPrice', label: 'Preço compra',    fmt: (v: number) => `R$ ${v.toFixed(2)}` },
+]
+
+function TreasuryHistorySection({ symbol }: { symbol: string }) {
+  const { history, loading } = useTreasuryBondHistory(symbol)
+  const [metric, setMetric] = useState(TREASURY_HISTORY_METRICS[0])
+
+  if (loading || history.length < 2) return null
+
+  const chartData = history
+    .filter(h => h[metric.key as keyof typeof h] != null)
+    .map(h => ({
+      date: h.referenceDate.substring(0, 10),
+      value: h[metric.key as keyof typeof h] as number,
+    }))
+
+  if (chartData.length < 2) return null
+
+  const n = 6
+  const step = Math.floor((chartData.length - 1) / (n - 1))
+  const ticks = Array.from({ length: n }, (_, i) => chartData[Math.min(i * step, chartData.length - 1)].date)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Histórico de Taxas</div>
+        <div className="ta-range-btns">
+          {TREASURY_HISTORY_METRICS.map(m => (
+            <button key={m.key} className={`ta-range-btn ${metric.key === m.key ? 'ta-range-btn--active' : ''}`} onClick={() => setMetric(m)}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="ta-chart-body" style={{ marginTop: '0.75rem' }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="date" ticks={ticks}
+              tickFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) } catch { return d } }}
+              tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0}
+            />
+            <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={65}
+              tickFormatter={v => metric.fmt(v)}
+            />
+            <Tooltip
+              contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+              labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
+              formatter={(v: unknown) => [metric.fmt(Number(v)), metric.label]}
+            />
+            <Line type="monotone" dataKey="value" stroke="var(--ta-treasury-accent, #6366f1)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const { bond, loading } = useTreasuryBond(analysis.symbol)
+
+  const fmtRate = (v: number | null | undefined) => v != null ? `${v.toFixed(2)}%` : '—'
+  const fmtDuration = (days: number | null | undefined) => {
+    if (days == null) return '—'
+    const years = Math.floor(days / 365)
+    const months = Math.floor((days % 365) / 30)
+    return years > 0 ? `${years}a ${months}m` : `${months}m`
+  }
+
+  const indexerLabel: Record<string, string> = {
+    selic: 'SELIC', ipca: 'IPCA', pre: 'Prefixado', igpm: 'IGP-M',
+  }
+
+  const couponLabel: Record<string, string> = {
+    zero: 'Zero cupom', semiannual: 'Semestral',
+  }
+
+  return (
+    <>
+      {/* Treasury Metrics Bar */}
+      <div className="ta-metrics-bar ta-metrics-bar--treasury">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <div key={i} className="ta-metric ta-metric--skeleton" />)
+        ) : (
+          <>
+            <MetricCard label="Taxa Compra" value={fmtRate(bond?.buyRate)} sub="Rentabilidade anual" variant="up" />
+            <MetricCard label="Taxa Venda" value={fmtRate(bond?.sellRate)} sub="Rentabilidade atual" />
+            <MetricCard label="Preço Compra" value={bond?.buyPrice != null ? `R$ ${bond.buyPrice.toFixed(2)}` : '—'} sub="Valor unitário" />
+            <MetricCard label="Vencimento" value={bond?.maturityDate ? fmtDate(bond.maturityDate) : '—'} sub="Data de resgate" />
+          </>
+        )}
+      </div>
+
+      {/* Detail cards */}
+      <div className="ta-info-grid">
+        <div className="ta-section-card">
+          <div className="ta-section-title">Dados do Título</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Tipo</span><strong>{bond?.bondType ?? '—'}</strong></div>
+            <div className="ta-info-row"><span>Indexador</span>
+              <strong>{bond?.indexer ? (indexerLabel[bond.indexer.toLowerCase()] ?? bond.indexer) : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>Cupom</span>
+              <strong>{bond?.couponType ? (couponLabel[bond.couponType.toLowerCase()] ?? bond.couponType) : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>Vencimento</span><strong>{bond?.maturityDate ? fmtDate(bond.maturityDate) : '—'}</strong></div>
+            <div className="ta-info-row"><span>Duration</span><strong>{fmtDuration(bond?.durationDays)}</strong></div>
+          </div>
+        </div>
+
+        <div className="ta-section-card">
+          <div className="ta-section-title">Preços e Taxas</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Taxa de compra</span><strong className="up">{fmtRate(bond?.buyRate)}</strong></div>
+            <div className="ta-info-row"><span>Taxa de venda</span><strong>{fmtRate(bond?.sellRate)}</strong></div>
+            <div className="ta-info-row"><span>Preço de compra</span><strong>{bond?.buyPrice != null ? `R$ ${bond.buyPrice.toFixed(2)}` : '—'}</strong></div>
+            <div className="ta-info-row"><span>Preço de venda</span><strong>{bond?.sellPrice != null ? `R$ ${bond.sellPrice.toFixed(2)}` : '—'}</strong></div>
+            <div className="ta-info-row"><span>Preço base</span><strong>{bond?.basePrice != null ? `R$ ${bond.basePrice.toFixed(2)}` : '—'}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Historical rate chart */}
+      <TreasuryHistorySection symbol={analysis.symbol} />
+    </>
+  )
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function TickerAnalysis() {
@@ -674,8 +867,11 @@ export function TickerAnalysis() {
   }
 
   const up = (analysis.changePercent ?? 0) >= 0
-  const isFii = ['fii'].includes((analysis.assetType ?? '').toLowerCase()) ||
-    ['fii'].includes((analysis.subType ?? '').toLowerCase())
+  const assetTypeLower = (analysis.assetType ?? '').toLowerCase()
+  const subTypeLower = (analysis.subType ?? '').toLowerCase()
+  const isFii = ['fii'].includes(assetTypeLower) || ['fii'].includes(subTypeLower)
+  const isCrypto = ['crypto', 'cryptocurrency'].includes(assetTypeLower)
+  const isTreasury = ['treasury', 'tesouro'].includes(assetTypeLower) || analysis.symbol?.startsWith('tesouro-')
 
   const assetLabel = (t.assetType as Record<string, string>)[
     (analysis.subType ?? analysis.assetType ?? '').toLowerCase()
@@ -692,7 +888,7 @@ export function TickerAnalysis() {
       </nav>
 
       {/* Hero */}
-      <div className={`ta-hero ${isFii ? 'ta-hero--fii' : ''}`}>
+      <div className={`ta-hero ${isFii ? 'ta-hero--fii' : isCrypto ? 'ta-hero--crypto' : isTreasury ? 'ta-hero--treasury' : ''}`}>
         <div className="ta-hero-left">
           <div className="ta-logo-wrap">
             <img
@@ -725,7 +921,11 @@ export function TickerAnalysis() {
       {/* Asset-specific content */}
       {isFii
         ? <FiiAnalysisPage analysis={analysis} />
-        : <StockAnalysisPage analysis={analysis} />
+        : isCrypto
+          ? <CryptoAnalysisPage analysis={analysis} />
+          : isTreasury
+            ? <TreasuryAnalysisPage analysis={analysis} />
+            : <StockAnalysisPage analysis={analysis} />
       }
     </div>
   )

@@ -335,9 +335,31 @@
   text-align: center;
 }
 
-/* ── FII Hero accent ──────────────────────────── */
+/* ── Asset-type hero accents ──────────────────── */
 .ta-hero--fii::before {
   background: linear-gradient(90deg, #10b981 0%, transparent 100%);
+}
+
+.ta-hero--crypto::before {
+  background: linear-gradient(90deg, #f59e0b 0%, transparent 100%);
+}
+
+.ta-hero--treasury::before {
+  background: linear-gradient(90deg, #6366f1 0%, transparent 100%);
+}
+
+.ta-hero--fund::before {
+  background: linear-gradient(90deg, #8b5cf6 0%, transparent 100%);
+}
+
+/* ── Crypto Metrics Bar ───────────────────────── */
+.ta-metrics-bar--crypto {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* ── Treasury Metrics Bar ─────────────────────── */
+.ta-metrics-bar--treasury {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 /* ── FII Metrics Bar ──────────────────────────── */
