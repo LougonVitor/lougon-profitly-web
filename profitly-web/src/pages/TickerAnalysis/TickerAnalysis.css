@@ -362,6 +362,11 @@
   grid-template-columns: repeat(4, 1fr);
 }
 
+/* ── Fund Metrics Bar ─────────────────────────── */
+.ta-metrics-bar--fund {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 /* ── FII Metrics Bar ──────────────────────────── */
 .ta-metrics-bar--fii {
   grid-template-columns: repeat(6, 1fr);

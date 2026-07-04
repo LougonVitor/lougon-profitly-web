@@ -7,6 +7,7 @@ import {
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
+import { useFundIndicator } from '../../hooks/useFundIndicator'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import './TickerAnalysis.css'
@@ -842,6 +843,106 @@ function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   )
 }
 
+// ── Fund Components ──────────────────────────────────────────────────────────
+
+const FUND_TYPE_LABELS: Record<string, string> = {
+  fiagro: 'FIAGRO', fidc: 'FIDC', fip: 'FIP', 'fi-infra': 'FI-Infra',
+}
+
+function FundAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const { indicator, loading } = useFundIndicator(analysis.symbol)
+  const up = (analysis.changePercent ?? 0) >= 0
+
+  const pvp = indicator?.priceToNav
+  const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
+  const fundTypeLabel = indicator?.fundType
+    ? (FUND_TYPE_LABELS[indicator.fundType.toLowerCase()] ?? indicator.fundType)
+    : '—'
+
+  return (
+    <>
+      {/* Fund Metrics Bar */}
+      <div className="ta-metrics-bar ta-metrics-bar--fund">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => <div key={i} className="ta-metric ta-metric--skeleton" />)
+        ) : (
+          <>
+            <MetricCard label="P/VP" value={fmt(pvp)} sub="Preço / Valor Patrimonial" variant={pvpVariant} />
+            <MetricCard
+              label="DY 12m"
+              value={indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}
+              sub="Dividend Yield anual"
+              variant={indicator?.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined}
+            />
+            <MetricCard
+              label="DY 1m"
+              value={indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}
+              sub="Dividend Yield mensal"
+            />
+            <MetricCard label="Cotistas" value={fmtInvestors(indicator?.totalInvestors)} sub="Total de investidores" />
+            <MetricCard label="Tipo" value={fundTypeLabel} sub="Categoria do fundo" />
+          </>
+        )}
+      </div>
+
+      {/* Price Chart */}
+      <PriceChartSection symbol={analysis.symbol} />
+
+      {/* Detail Cards */}
+      <div className="ta-info-grid">
+        <div className="ta-section-card">
+          <div className="ta-section-title">Dados de Mercado</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
+            <div className="ta-info-row"><span>Variação hoje</span>
+              <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
+            </div>
+            <div className="ta-info-row"><span>Volume</span><strong>{fmtCap(analysis.volume)}</strong></div>
+            <div className="ta-info-row"><span>Valor de Mercado</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
+            <div className="ta-info-row"><span>Total de Cotistas</span><strong>{fmtInvestors(indicator?.totalInvestors)}</strong></div>
+          </div>
+        </div>
+
+        <div className="ta-section-card">
+          <div className="ta-section-title">Sobre o Fundo</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Tipo de fundo</span><strong>{fundTypeLabel}</strong></div>
+            <div className="ta-info-row"><span>P/VP</span>
+              <strong className={pvpVariant === 'up' ? 'up' : pvpVariant === 'down' ? 'down' : ''}>{fmt(pvp)}</strong>
+            </div>
+            <div className="ta-info-row"><span>DY 12 meses</span>
+              <strong className="up">{indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>DY 1 mês</span>
+              <strong>{indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}</strong>
+            </div>
+            <div className="ta-info-row"><span>VPA (Nav/cota)</span><strong>{fmtBRL(indicator?.navPerShare)}</strong></div>
+            {indicator?.segmentType && (
+              <div className="ta-info-row"><span>Segmento</span><strong>{indicator.segmentType}</strong></div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {indicator?.adminName && (
+        <div className="ta-fii-admin-card">
+          <div className="ta-fii-admin-icon">🏦</div>
+          <div>
+            <div className="ta-fii-admin-label">Administrador</div>
+            <div className="ta-fii-admin-name">{indicator.adminName}</div>
+            {indicator.adminCnpj && (
+              <div className="ta-fii-admin-cnpj">CNPJ: {indicator.adminCnpj}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Dividends */}
+      <DividendSection analysis={analysis} />
+    </>
+  )
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export function TickerAnalysis() {
@@ -872,6 +973,8 @@ export function TickerAnalysis() {
   const isFii = ['fii'].includes(assetTypeLower) || ['fii'].includes(subTypeLower)
   const isCrypto = ['crypto', 'cryptocurrency'].includes(assetTypeLower)
   const isTreasury = ['treasury', 'tesouro'].includes(assetTypeLower) || analysis.symbol?.startsWith('tesouro-')
+  const isFund = ['fiagro', 'fidc', 'fip', 'fi-infra', 'fund'].includes(assetTypeLower)
+    || ['fiagro', 'fidc', 'fip', 'fi-infra', 'fund'].includes(subTypeLower)
 
   const assetLabel = (t.assetType as Record<string, string>)[
     (analysis.subType ?? analysis.assetType ?? '').toLowerCase()
@@ -888,7 +991,7 @@ export function TickerAnalysis() {
       </nav>
 
       {/* Hero */}
-      <div className={`ta-hero ${isFii ? 'ta-hero--fii' : isCrypto ? 'ta-hero--crypto' : isTreasury ? 'ta-hero--treasury' : ''}`}>
+      <div className={`ta-hero ${isFii ? 'ta-hero--fii' : isCrypto ? 'ta-hero--crypto' : isTreasury ? 'ta-hero--treasury' : isFund ? 'ta-hero--fund' : ''}`}>
         <div className="ta-hero-left">
           <div className="ta-logo-wrap">
             <img
@@ -925,7 +1028,9 @@ export function TickerAnalysis() {
           ? <CryptoAnalysisPage analysis={analysis} />
           : isTreasury
             ? <TreasuryAnalysisPage analysis={analysis} />
-            : <StockAnalysisPage analysis={analysis} />
+            : isFund
+              ? <FundAnalysisPage analysis={analysis} />
+              : <StockAnalysisPage analysis={analysis} />
       }
     </div>
   )
