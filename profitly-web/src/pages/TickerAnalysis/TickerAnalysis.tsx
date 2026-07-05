@@ -663,10 +663,19 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
         <MetricCard label="Margem" value={fmtDY(analysis.profitMargins)} sub="Margem Líquida" />
       </div>
 
-      {/* Price Chart */}
+      {/* 1. Price chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Market data + debt/cash side by side */}
+      {/* 2. 52-week range */}
+      <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
+
+      {/* 3. Investidor10-style fundamental indicator grid */}
+      <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
+
+      {/* 4. Dividend history */}
+      <DividendSection analysis={analysis} />
+
+      {/* 5. Market data + debt/cash side by side */}
       <div className="ta-info-grid">
         <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
@@ -689,22 +698,13 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
         <FinancialHighlights financials={advanced?.financials ?? null} />
       </div>
 
-      {/* 52-week range */}
-      <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
-
-      {/* Investidor10-style fundamental indicator grid */}
-      <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
-
-      {/* Company vs sector average */}
+      {/* 6. Company vs sector average */}
       <SectorComparisonSection comparison={advanced?.sectorComparison ?? null} />
 
-      {/* Dividends */}
-      <DividendSection analysis={analysis} />
-
-      {/* Financial statements: DRE, balance sheet, cash flow, DVA */}
+      {/* 7. Financial statements: DRE, balance sheet, cash flow, DVA */}
       <StatementsSection symbol={analysis.symbol} />
 
-      {/* About the company */}
+      {/* 8. About the company */}
       <CompanyProfileSection profile={advanced?.profile ?? null} />
     </>
   )
