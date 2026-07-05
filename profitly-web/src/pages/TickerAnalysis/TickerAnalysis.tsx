@@ -1331,7 +1331,7 @@ function TreasuryRateChangesSection({ ta }: { ta: TreasuryAnalysisData }) {
   return (
     <div className="ta-section-card">
       <div className="ta-section-title">Variação da Taxa de Compra</div>
-      <div className="ta-crypto-returns-grid">
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
         {periods.map(p => (
           <MetricCard key={p.key} label={p.label} value={fmtPP(changes[p.key])}
             variant={pctVariant(changes[p.key])} />
@@ -1353,7 +1353,7 @@ function TreasuryReturnsSection({ ta }: { ta: TreasuryAnalysisData }) {
   return (
     <div className="ta-section-card">
       <div className="ta-section-title">Retornos (marcação a mercado)</div>
-      <div className="ta-crypto-returns-grid">
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
         {periods.map(p => (
           <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
             variant={pctVariant(returns[p.key])} />
@@ -1448,7 +1448,7 @@ function TreasurySimilarBondsSection({ ta }: { ta: TreasuryAnalysisData }) {
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
-        <div className="ta-section-title">Títulos do Mesmo Indexador</div>
+        <div className="ta-section-title">Comparação de Títulos do Mesmo Indexador</div>
         <span className="ta-sector-badge">{indexerName} · {rows.length} títulos</span>
       </div>
       <div className="ta-sector-table-wrap">
@@ -1770,27 +1770,33 @@ export function TickerAnalysis() {
       <div className={`ta-hero ${isFii ? 'ta-hero--fii' : isCrypto ? 'ta-hero--crypto' : isTreasury ? 'ta-hero--treasury' : isFund ? 'ta-hero--fund' : ''}`}>
         <div className="ta-hero-left">
           <div className="ta-logo-wrap">
-            <img
-              className="ta-logo"
-              src={analysis.logoUrl ?? ''}
-              alt={analysis.symbol}
-              onError={e => { e.currentTarget.style.display = 'none' }}
-            />
+            {isTreasury ? (
+              <span className="ta-logo--treasury" role="img" aria-label="Tesouro Direto">🏛️</span>
+            ) : (
+              <img
+                className="ta-logo"
+                src={analysis.logoUrl ?? ''}
+                alt={analysis.symbol}
+                onError={e => { e.currentTarget.style.display = 'none' }}
+              />
+            )}
           </div>
           <div>
             <div className="ta-hero-top">
-              <h1 className="ta-symbol">{analysis.symbol}</h1>
+              <h1 className="ta-symbol">{isTreasury ? (analysis.name ?? analysis.symbol) : analysis.symbol}</h1>
               {assetLabel && <span className="ta-type-badge">{assetLabel}</span>}
             </div>
-            <div className="ta-long-name">{analysis.longName ?? analysis.name}</div>
+            <div className="ta-long-name">{isTreasury ? 'Tesouro Direto' : (analysis.longName ?? analysis.name)}</div>
             {analysis.sector && <div className="ta-sector">{analysis.sector}</div>}
           </div>
         </div>
         <div className="ta-hero-right">
           <div className="ta-price">{fmtBRL(analysis.lastPrice)}</div>
-          <div className={`ta-day-change ${up ? 'ta-day-change--up' : 'ta-day-change--down'}`}>
-            {up ? '▲' : '▼'} {fmtPct(analysis.changePercent)} <span className="ta-day-label">hoje</span>
-          </div>
+          {(!isTreasury || analysis.changePercent != null) && (
+            <div className={`ta-day-change ${up ? 'ta-day-change--up' : 'ta-day-change--down'}`}>
+              {up ? '▲' : '▼'} {fmtPct(analysis.changePercent)} <span className="ta-day-label">hoje</span>
+            </div>
+          )}
           {analysis.weekChange52 != null && (
             <div className="ta-52w">52 sem: {fmtPct(analysis.weekChange52 * 100)}</div>
           )}

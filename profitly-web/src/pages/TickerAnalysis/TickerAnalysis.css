@@ -417,6 +417,18 @@
   grid-template-columns: repeat(5, 1fr);
 }
 
+/* Inset variant for period grids rendered inside a section card (treasury) —
+   the card itself has no padding, each child brings its own */
+.ta-returns-grid--inset {
+  padding: 0 1.25rem;
+}
+
+/* Treasury hero logo placeholder (no logoUrl for bonds) */
+.ta-logo--treasury {
+  font-size: 30px;
+  line-height: 1;
+}
+
 /* ── Fund Metrics Bar ─────────────────────────── */
 .ta-metrics-bar--fund {
   grid-template-columns: repeat(5, 1fr);
