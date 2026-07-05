@@ -666,9 +666,8 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Info Grid */}
-      <div className="ta-info-grid">
-        <div className="ta-section-card">
+      {/* Market data */}
+      <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
           <div className="ta-info-rows">
             <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
@@ -684,23 +683,6 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
             )}
             <div className="ta-info-row"><span>Enterprise Value</span><strong>{fmtCap(analysis.enterpriseValue)}</strong></div>
           </div>
-        </div>
-
-        <div className="ta-section-card">
-          <div className="ta-section-title">Indicadores Fundamentalistas</div>
-          <div className="ta-info-rows">
-            <div className="ta-info-row"><span>P/L (Trailing)</span><strong>{fmt(analysis.trailingPE)}</strong></div>
-            <div className="ta-info-row"><span>P/L (Forward)</span><strong>{fmt(analysis.forwardPE)}</strong></div>
-            <div className="ta-info-row"><span>P/VP</span><strong>{fmt(analysis.priceToBook)}</strong></div>
-            <div className="ta-info-row"><span>PEG Ratio</span><strong>{fmt(analysis.pegRatio)}</strong></div>
-            <div className="ta-info-row"><span>Dividend Yield</span><strong className="up">{fmtDY(analysis.dividendYield)}</strong></div>
-            <div className="ta-info-row"><span>Último dividendo</span><strong>{fmtBRL(analysis.lastDividendValue)}</strong></div>
-            <div className="ta-info-row"><span>Data dividendo</span><strong>{fmtDate(analysis.lastDividendDate)}</strong></div>
-            <div className="ta-info-row"><span>Beta</span><strong>{fmt(analysis.beta)}</strong></div>
-            <div className="ta-info-row"><span>LPA</span><strong>{fmtBRL(analysis.earningsPerShare)}</strong></div>
-            <div className="ta-info-row"><span>Margem líquida</span><strong>{fmtDY(analysis.profitMargins)}</strong></div>
-          </div>
-        </div>
       </div>
 
       {/* 52-week range */}

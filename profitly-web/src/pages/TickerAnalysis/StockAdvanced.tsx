@@ -122,6 +122,8 @@ const KEY_INDICATORS: KeyIndicatorDef[] = [
   { key: 'pAtivoCircLiq',   label: 'P/Ativo Circ. Liq.', desc: 'Valor de mercado / ACL',          kind: 'num' },
   { key: 'vpa',             label: 'VPA',              desc: 'Valor patrimonial por ação',        kind: 'brl' },
   { key: 'lpa',             label: 'LPA',              desc: 'Lucro por ação',                    kind: 'brl' },
+  { key: 'beta',            label: 'Beta',             desc: 'Volatilidade vs mercado',           kind: 'num' },
+  { key: 'pegRatio',        label: 'PEG Ratio',        desc: 'P/L / Crescimento do lucro',        kind: 'num' },
   { key: 'giroAtivos',      label: 'Giro Ativos',      desc: 'Receita / Ativo total',             kind: 'num' },
   { key: 'roe',             label: 'ROE',              desc: 'Retorno sobre patrimônio',          kind: 'pct' },
   { key: 'roic',            label: 'ROIC',             desc: 'Retorno sobre capital investido',   kind: 'pct' },
