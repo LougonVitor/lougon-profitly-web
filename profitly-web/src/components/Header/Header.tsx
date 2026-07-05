@@ -144,11 +144,14 @@ export function Header() {
   return (
     <header className="header">
       <div className="header-left">
-        <span className="logo">Profit<span className="logo-accent">ly</span></span>
+        <span
+          className="logo"
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/')}
+        >
+          Profit<span className="logo-accent">ly</span>
+        </span>
         <nav className="header-nav">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
-            {t.nav.tickers}
-          </NavLink>
           <NavLink to="/comparar" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
             Comparador de ativos
           </NavLink>
