@@ -16,6 +16,7 @@ import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndic
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useFundIndicator } from '../../hooks/useFundIndicator'
 import { useCryptoAnalysis } from '../../hooks/useCryptoAnalysis'
+import { useFearGreed } from '../../hooks/useFearGreed'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import type { CryptoAnalysis } from '../../types/CryptoAnalysis'
@@ -151,11 +152,20 @@ function useIbovBenchmark(range: string, enabled: boolean) {
   return points
 }
 
-function PriceChartSection({ symbol }: { symbol: string }) {
+function PriceChartSection({ symbol, showBenchmark = true, currencyToggle = false }: {
+  symbol: string
+  /** Hides the "vs IBOV" comparison button when false (e.g. crypto). */
+  showBenchmark?: boolean
+  /** Shows a BRL/USD switch; USD reads the "{symbol}:USD" series from price_points. */
+  currencyToggle?: boolean
+}) {
   const [range, setRange] = useState('1y')
   const [vsIbov, setVsIbov] = useState(false)
-  const { history, loading } = usePriceHistory(symbol, range)
-  const ibovPoints = useIbovBenchmark(range, vsIbov)
+  const [currency, setCurrency] = useState<'BRL' | 'USD'>('BRL')
+  const inUsd = currencyToggle && currency === 'USD'
+  const { history, loading } = usePriceHistory(inUsd ? `${symbol}:USD` : symbol, range)
+  const ibovPoints = useIbovBenchmark(range, showBenchmark && vsIbov)
+  const cur = inUsd ? 'US$' : 'R$'
 
   const data = history?.prices
     .filter(p => p.close != null)
@@ -201,14 +211,29 @@ function PriceChartSection({ symbol }: { symbol: string }) {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <div className="ta-range-btns">
-            <button
-              className={`ta-range-btn ${vsIbov ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setVsIbov(v => !v)}
-            >
-              vs IBOV
-            </button>
-          </div>
+          {currencyToggle && (
+            <div className="ta-range-btns">
+              {(['BRL', 'USD'] as const).map(c => (
+                <button
+                  key={c}
+                  className={`ta-range-btn ${currency === c ? 'ta-range-btn--active' : ''}`}
+                  onClick={() => setCurrency(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+          {showBenchmark && (
+            <div className="ta-range-btns">
+              <button
+                className={`ta-range-btn ${vsIbov ? 'ta-range-btn--active' : ''}`}
+                onClick={() => setVsIbov(v => !v)}
+              >
+                vs IBOV
+              </button>
+            </div>
+          )}
           <div className="ta-range-btns">
             {RANGES.map(r => (
               <button
@@ -282,12 +307,12 @@ function PriceChartSection({ symbol }: { symbol: string }) {
                 domain={['auto', 'auto']}
                 tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
                 axisLine={false} tickLine={false} width={60}
-                tickFormatter={v => `R$${Number(v).toFixed(0)}`}
+                tickFormatter={v => `${cur}${Number(v).toFixed(0)}`}
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
                 labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
-                formatter={(value: unknown) => [`R$ ${Number(value).toFixed(2)}`, 'Fechamento']}
+                formatter={(value: unknown) => [`${cur} ${Number(value).toFixed(2)}`, 'Fechamento']}
               />
               <Area type="monotone" dataKey="close" stroke={strokeColor} strokeWidth={1.5}
                 fill={`url(#${fillId})`} dot={false} activeDot={{ r: 4, fill: strokeColor }} />
@@ -719,6 +744,87 @@ function pctVariant(v: number | null | undefined): 'up' | 'down' | undefined {
   return v >= 0 ? 'up' : 'down'
 }
 
+const FNG_LABELS: Record<string, string> = {
+  'Extreme Fear': 'Medo Extremo',
+  'Fear': 'Medo',
+  'Neutral': 'Neutro',
+  'Greed': 'Ganância',
+  'Extreme Greed': 'Ganância Extrema',
+}
+
+function fngLabel(classification: string | null, value: number): string {
+  if (classification && FNG_LABELS[classification]) return FNG_LABELS[classification]
+  if (value < 25) return 'Medo Extremo'
+  if (value < 45) return 'Medo'
+  if (value < 55) return 'Neutro'
+  if (value < 75) return 'Ganância'
+  return 'Ganância Extrema'
+}
+
+function fngColor(value: number): string {
+  if (value < 25) return '#ef4444'
+  if (value < 45) return '#f59e0b'
+  if (value < 55) return '#eab308'
+  if (value < 75) return '#84cc16'
+  return '#22c55e'
+}
+
+/** Crypto Fear & Greed Index gauge (market-wide sentiment, shown on the BTC page). */
+function CryptoFearGreedSection() {
+  const { readings } = useFearGreed(35)
+  if (readings.length === 0) return null
+
+  const current = readings[readings.length - 1]
+  const at = (daysAgo: number) => {
+    const target = new Date()
+    target.setDate(target.getDate() - daysAgo)
+    const key = target.toISOString().slice(0, 10)
+    return readings.filter(r => r.date <= key).at(-1) ?? null
+  }
+  const yesterday = at(1)
+  const weekAgo = at(7)
+  const monthAgo = at(30)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Fear &amp; Greed (mercado cripto)</div>
+      <div className="ta-fng-current">
+        <span className="ta-fng-value" style={{ color: fngColor(current.value) }}>{current.value}</span>
+        <span className="ta-fng-class" style={{ color: fngColor(current.value) }}>
+          {fngLabel(current.classification, current.value)}
+        </span>
+      </div>
+      <div className="ta-fng-gauge">
+        <span className="ta-fng-bound">0</span>
+        <div className="ta-fng-track">
+          <div className="ta-fng-marker" style={{ left: `${current.value}%` }} />
+        </div>
+        <span className="ta-fng-bound">100</span>
+      </div>
+      <div className="ta-info-rows">
+        {yesterday && yesterday !== current && (
+          <div className="ta-info-row"><span>Ontem</span>
+            <strong style={{ color: fngColor(yesterday.value) }}>
+              {yesterday.value} — {fngLabel(yesterday.classification, yesterday.value)}
+            </strong></div>
+        )}
+        {weekAgo && (
+          <div className="ta-info-row"><span>Há 7 dias</span>
+            <strong style={{ color: fngColor(weekAgo.value) }}>
+              {weekAgo.value} — {fngLabel(weekAgo.classification, weekAgo.value)}
+            </strong></div>
+        )}
+        {monthAgo && (
+          <div className="ta-info-row"><span>Há 30 dias</span>
+            <strong style={{ color: fngColor(monthAgo.value) }}>
+              {monthAgo.value} — {fngLabel(monthAgo.classification, monthAgo.value)}
+            </strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** 52-week range bar for crypto, reusing the stock range-bar styles. */
 function Crypto52WeekRange({ crypto }: { crypto: CryptoAnalysis }) {
   if (crypto.low52w == null || crypto.high52w == null || crypto.price == null) return null
@@ -902,8 +1008,11 @@ function CryptoAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
         />
       </div>
 
-      {/* Price Chart */}
-      <PriceChartSection symbol={analysis.symbol} />
+      {/* Price Chart — no IBOV benchmark, BRL/USD switch */}
+      <PriceChartSection symbol={analysis.symbol} showBenchmark={false} currencyToggle />
+
+      {/* Fear & Greed Index (market-wide, shown on the BTC page) */}
+      {analysis.symbol === 'BTC' && <CryptoFearGreedSection />}
 
       {/* 52-week range */}
       {crypto && <Crypto52WeekRange crypto={crypto} />}
