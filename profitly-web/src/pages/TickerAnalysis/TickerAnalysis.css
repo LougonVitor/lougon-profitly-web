@@ -700,3 +700,17 @@
 @media (max-width: 700px) {
   .ta-fair-grid { grid-template-columns: 1fr !important; }
 }
+
+/* Fair price average strip */
+.ta-fair-avg {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  margin: 0.25rem 1.25rem 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-subtle);
+}
+.ta-fair-avg--up   { background: rgba(34, 197, 94, 0.06);  border-color: rgba(34, 197, 94, 0.25); }
+.ta-fair-avg--down { background: rgba(239, 68, 68, 0.06);  border-color: rgba(239, 68, 68, 0.25); }
+.ta-fair-avg-verdict { font-size: 13px; font-weight: 600; }
+.ta-fair-avg-verdict strong { font-weight: 800; }

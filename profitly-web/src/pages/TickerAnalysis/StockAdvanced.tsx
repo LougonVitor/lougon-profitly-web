@@ -128,6 +128,11 @@ export function GrahamCard({ indicators, quote }: {
 
   if (methods.length === 0) return null
 
+  const avgPrice = methods.reduce((s, m) => s + m.price, 0) / methods.length
+  // how far the CURRENT price sits from the average fair price (negative = below = cheap)
+  const priceVsAvg = price / avgPrice - 1
+  const avgPositive = priceVsAvg <= 0
+
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
@@ -160,6 +165,17 @@ export function GrahamCard({ indicators, quote }: {
             </div>
           )
         })}
+      </div>
+      <div className={`ta-fair-avg ${avgPositive ? 'ta-fair-avg--up' : 'ta-fair-avg--down'}`}>
+        <div>
+          <span className="ta-key-label">Média dos {methods.length} métodos</span>
+          <div className="ta-key-value">R$ {fmt(avgPrice)}</div>
+        </div>
+        <div className={`ta-fair-avg-verdict ${avgPositive ? 'ta-graham-up' : 'ta-key-value--neg'}`}>
+          {avgPositive
+            ? <>▲ Na média, o preço atual está <strong>{fmt(Math.abs(priceVsAvg) * 100)}% abaixo</strong> do preço justo</>
+            : <>▼ Na média, o preço atual está <strong>{fmt(Math.abs(priceVsAvg) * 100)}% acima</strong> do preço justo</>}
+        </div>
       </div>
       <div className="ta-sector-note">
         Modelos simplificados de valuation — use como referência, não como recomendação. Cada método tem premissas próprias (veja o "?").
