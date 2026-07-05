@@ -195,7 +195,7 @@ export function UpcomingDividends({ dividends }: { dividends: DividendAnalysis |
 
 // ── key indicators grid (Investidor10-style) ─────────────────────────────────
 
-interface KeyIndicatorDef {
+export interface KeyIndicatorDef {
   key: string
   label: string
   desc: string
@@ -228,7 +228,7 @@ const INDICATOR_HISTORY: Record<string, HistoryLocation> = {
   liquidezCorrente:  { source: 'financialData', field: 'currentRatio' },
 }
 
-const KEY_INDICATORS: KeyIndicatorDef[] = [
+export const KEY_INDICATORS: KeyIndicatorDef[] = [
   { key: 'pl',              label: 'P/L',              desc: 'Preço / Lucro por ação',            kind: 'num',
     help: 'Preço dividido pelo lucro por ação dos últimos 12 meses. Indica quantos anos de lucro o mercado paga pela ação — quanto menor, mais barata.' },
   { key: 'psr',             label: 'P/Receita (PSR)',  desc: 'Valor de mercado / Receita',        kind: 'num',
@@ -291,7 +291,7 @@ const KEY_INDICATORS: KeyIndicatorDef[] = [
     help: 'Crescimento anual composto do lucro líquido nos últimos 5 anos.' },
 ]
 
-function fmtIndicator(v: number, kind: KeyIndicatorDef['kind']): string {
+export function fmtIndicator(v: number, kind: KeyIndicatorDef['kind']): string {
   if (kind === 'pct') return `${fmt(v * 100)}%`
   if (kind === 'brl') return `R$ ${fmt(v)}`
   return fmt(v)
