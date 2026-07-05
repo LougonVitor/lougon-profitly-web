@@ -64,34 +64,17 @@ export function FinancialHighlights({ financials }: { financials: StockFinancial
   if (!financials) return null
   const f = financials
   return (
-    <div className="ta-info-grid">
-      <div className="ta-section-card">
-        <div className="ta-section-title">Rentabilidade e Margens</div>
-        <div className="ta-info-rows">
-          <div className="ta-info-row"><span>ROE (Retorno s/ Patrimônio)</span><strong className="up">{fmtPctFrac(f.returnOnEquity)}</strong></div>
-          <div className="ta-info-row"><span>ROA (Retorno s/ Ativos)</span><strong>{fmtPctFrac(f.returnOnAssets)}</strong></div>
-          <div className="ta-info-row"><span>Margem Bruta</span><strong>{fmtPctFrac(f.grossMargins)}</strong></div>
-          <div className="ta-info-row"><span>Margem EBITDA</span><strong>{fmtPctFrac(f.ebitdaMargins)}</strong></div>
-          <div className="ta-info-row"><span>Margem Operacional</span><strong>{fmtPctFrac(f.operatingMargins)}</strong></div>
-          <div className="ta-info-row"><span>Margem Líquida</span><strong>{fmtPctFrac(f.profitMargins)}</strong></div>
-          <div className="ta-info-row"><span>Cresc. Receita (anual)</span><strong>{fmtPctFrac(f.revenueGrowthAnnual ?? f.revenueGrowth)}</strong></div>
-          <div className="ta-info-row"><span>Cresc. Lucro (anual)</span><strong>{fmtPctFrac(f.earningsGrowthAnnual ?? f.earningsGrowth)}</strong></div>
-        </div>
-      </div>
-
-      <div className="ta-section-card">
-        <div className="ta-section-title">Endividamento e Caixa</div>
-        <div className="ta-info-rows">
-          <div className="ta-info-row"><span>Receita Total</span><strong>R$ {fmtBig(f.totalRevenue)}</strong></div>
-          <div className="ta-info-row"><span>EBITDA</span><strong>R$ {fmtBig(f.ebitda)}</strong></div>
-          <div className="ta-info-row"><span>Lucro Bruto</span><strong>R$ {fmtBig(f.grossProfits)}</strong></div>
-          <div className="ta-info-row"><span>Caixa Total</span><strong>R$ {fmtBig(f.totalCash)}</strong></div>
-          <div className="ta-info-row"><span>Dívida Total</span><strong>R$ {fmtBig(f.totalDebt)}</strong></div>
-          <div className="ta-info-row"><span>Dívida / Patrimônio</span><strong>{fmt(f.debtToEquity)}</strong></div>
-          <div className="ta-info-row"><span>Liquidez Corrente</span><strong>{fmt(f.currentRatio)}</strong></div>
-          <div className="ta-info-row"><span>Fluxo de Caixa Livre</span><strong>R$ {fmtBig(f.freeCashflow)}</strong></div>
-          <div className="ta-info-row"><span>Fluxo de Caixa Operacional</span><strong>R$ {fmtBig(f.operatingCashflow)}</strong></div>
-        </div>
+    <div className="ta-section-card">
+      <div className="ta-section-title">Endividamento e Caixa</div>
+      <div className="ta-info-rows">
+        <div className="ta-info-row"><span>Receita Total</span><strong>R$ {fmtBig(f.totalRevenue)}</strong></div>
+        <div className="ta-info-row"><span>EBITDA</span><strong>R$ {fmtBig(f.ebitda)}</strong></div>
+        <div className="ta-info-row"><span>Lucro Bruto</span><strong>R$ {fmtBig(f.grossProfits)}</strong></div>
+        <div className="ta-info-row"><span>Caixa Total</span><strong>R$ {fmtBig(f.totalCash)}</strong></div>
+        <div className="ta-info-row"><span>Dívida Total</span><strong>R$ {fmtBig(f.totalDebt)}</strong></div>
+        <div className="ta-info-row"><span>Dívida / Patrimônio</span><strong>{fmt(f.debtToEquity)}</strong></div>
+        <div className="ta-info-row"><span>Fluxo de Caixa Livre</span><strong>R$ {fmtBig(f.freeCashflow)}</strong></div>
+        <div className="ta-info-row"><span>Fluxo de Caixa Operacional</span><strong>R$ {fmtBig(f.operatingCashflow)}</strong></div>
       </div>
     </div>
   )
@@ -115,6 +98,10 @@ const KEY_INDICATORS: KeyIndicatorDef[] = [
   { key: 'margemLiquida',   label: 'Margem Líquida',   desc: 'Lucro líquido / Receita',           kind: 'pct' },
   { key: 'margemBruta',     label: 'Margem Bruta',     desc: 'Lucro bruto / Receita',             kind: 'pct' },
   { key: 'margemEbit',      label: 'Margem EBIT',      desc: 'EBIT / Receita',                    kind: 'pct' },
+  { key: 'margemEbitda',    label: 'Margem EBITDA',    desc: 'EBITDA / Receita',                  kind: 'pct' },
+  { key: 'margemOperacional', label: 'Margem Operacional', desc: 'Resultado operacional / Receita', kind: 'pct' },
+  { key: 'crescReceita',    label: 'Cresc. Receita',   desc: 'Crescimento anual da receita',      kind: 'pct' },
+  { key: 'crescLucro',      label: 'Cresc. Lucro',     desc: 'Crescimento anual do lucro',        kind: 'pct' },
   { key: 'evEbit',          label: 'EV/EBIT',          desc: 'Enterprise Value / EBIT',           kind: 'num' },
   { key: 'pEbit',           label: 'P/EBIT',           desc: 'Valor de mercado / EBIT',           kind: 'num' },
   { key: 'pAtivo',          label: 'P/Ativo',          desc: 'Valor de mercado / Ativo total',    kind: 'num' },
