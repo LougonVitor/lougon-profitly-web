@@ -79,11 +79,17 @@ function fmtInvestors(v: number | null | undefined): string {
 
 // ── Shared Components ────────────────────────────────────────────────────────
 
-function MetricCard({ label, value, sub, variant }: {
-  label: string; value: string; sub?: string; variant?: 'up' | 'down' | 'neutral'
+function MetricCard({ label, value, sub, variant, help }: {
+  label: string; value: string; sub?: string; variant?: 'up' | 'down' | 'neutral'; help?: string
 }) {
   return (
     <div className="ta-metric">
+      {help && (
+        <span className="ta-metric-help" tabIndex={0} aria-label={help}>
+          ?
+          <span className="ta-metric-help-tip">{help}</span>
+        </span>
+      )}
       <div className="ta-metric-label">{label}</div>
       <div className={`ta-metric-value ${variant ? `ta-metric-value--${variant}` : ''}`}>{value}</div>
       {sub && <div className="ta-metric-sub">{sub}</div>}
@@ -654,19 +660,27 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
     <>
       {/* Stock Metrics Bar */}
       <div className="ta-metrics-bar">
-        <MetricCard label="P/L" value={fmt(analysis.trailingPE)} sub="Preço / Lucro" />
-        <MetricCard label="P/VP" value={fmt(analysis.priceToBook)} sub="Preço / Val. Patrim." />
+        <MetricCard label="P/L" value={fmt(analysis.trailingPE)} sub="Preço / Lucro"
+          help="Preço dividido pelo lucro por ação dos últimos 12 meses. Indica quantos anos de lucro o mercado paga pela ação — quanto menor, mais barata." />
+        <MetricCard label="P/VP" value={fmt(analysis.priceToBook)} sub="Preço / Val. Patrim."
+          help="Preço dividido pelo valor patrimonial por ação. Abaixo de 1, a ação negocia por menos que o patrimônio líquido da empresa." />
         <MetricCard
           label="DY"
           value={fmtDY(analysis.dividendYield)}
           sub="Dividend Yield"
           variant={analysis.dividendYield != null && analysis.dividendYield > 0.05 ? 'up' : undefined}
+          help="Percentual do preço da ação distribuído em dividendos e JCP nos últimos 12 meses."
         />
-        <MetricCard label="Beta" value={fmt(analysis.beta)} sub="Volatilidade relativa" />
-        <MetricCard label="LPA" value={fmtBRL(analysis.earningsPerShare)} sub="Lucro por Ação" />
-        <MetricCard label="EV/EBITDA" value={fmt(analysis.enterpriseToEbitda)} sub="Enterprise / EBITDA" />
-        <MetricCard label="EV/Receita" value={fmt(analysis.enterpriseToRevenue)} sub="Enterprise / Receita" />
-        <MetricCard label="Margem" value={fmtDY(analysis.profitMargins)} sub="Margem Líquida" />
+        <MetricCard label="Beta" value={fmt(analysis.beta)} sub="Volatilidade relativa"
+          help="Volatilidade em relação ao mercado. Acima de 1, a ação oscila mais que o Ibovespa; abaixo de 1, oscila menos." />
+        <MetricCard label="LPA" value={fmtBRL(analysis.earningsPerShare)} sub="Lucro por Ação"
+          help="Lucro líquido dos últimos 12 meses dividido pelo número de ações." />
+        <MetricCard label="EV/EBITDA" value={fmt(analysis.enterpriseToEbitda)} sub="Enterprise / EBITDA"
+          help="Valor da firma (mercado + dívida líquida) dividido pelo EBITDA. Quanto menor, mais barata a empresa em relação à geração de caixa operacional." />
+        <MetricCard label="EV/Receita" value={fmt(analysis.enterpriseToRevenue)} sub="Enterprise / Receita"
+          help="Valor da firma (mercado + dívida líquida) dividido pela receita total dos últimos 12 meses." />
+        <MetricCard label="Margem" value={fmtDY(analysis.profitMargins)} sub="Margem Líquida"
+          help="Percentual da receita que se converte em lucro líquido." />
       </div>
 
       {/* 1. Price chart */}
