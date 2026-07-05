@@ -85,60 +85,84 @@ export function FinancialHighlights({ financials }: { financials: StockFinancial
 
 // ── Graham fair price ────────────────────────────────────────────────────────
 
+interface FairPriceMethod {
+  key: string
+  label: string
+  price: number
+  help: string
+}
+
 export function GrahamCard({ indicators, quote }: {
   indicators: Record<string, number | null> | null
   quote: StockAnalysisFull['quote']
 }) {
+  const price = quote?.price
+  if (price == null || price <= 0) return null
+
   const lpa = indicators?.lpa
   const vpa = indicators?.vpa
-  const price = quote?.price
-  if (lpa == null || vpa == null || lpa <= 0 || vpa <= 0 || price == null || price <= 0) return null
+  const graham = lpa != null && vpa != null && lpa > 0 && vpa > 0
+    ? Math.sqrt(22.5 * lpa * vpa)
+    : null
 
-  const graham = Math.sqrt(22.5 * lpa * vpa)
-  const upside = graham / price - 1
-  const positive = upside >= 0
+  const methods: FairPriceMethod[] = [
+    graham != null && {
+      key: 'graham',
+      label: 'Graham',
+      price: graham,
+      help: 'Fórmula de Benjamin Graham: √(22,5 × LPA × VPA). Estima o preço máximo racional assumindo P/L de 15 e P/VP de 1,5. Não considera crescimento nem qualidade da empresa.',
+    },
+    indicators?.precoTetoBazin != null && indicators.precoTetoBazin > 0 && {
+      key: 'bazin',
+      label: 'Bazin (preço teto)',
+      price: indicators.precoTetoBazin,
+      help: 'Método de Décio Bazin: média dos dividendos anuais dos últimos 3 anos ÷ 6%. É o preço máximo para garantir um yield mínimo de 6% ao ano. Focado em empresas pagadoras de dividendos.',
+    },
+    indicators?.precoJustoGordon != null && indicators.precoJustoGordon > 0 && {
+      key: 'gordon',
+      label: 'Gordon (DDM)',
+      price: indicators.precoJustoGordon,
+      help: 'Modelo de desconto de dividendos: dividendos projetados ÷ (taxa de desconto − crescimento). Premissas: desconto de 12% a.a. e crescimento pelo CAGR dos dividendos, limitado a 5% a.a. Muito sensível às premissas.',
+    },
+  ].filter((m): m is FairPriceMethod => Boolean(m))
+
+  if (methods.length === 0) return null
 
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
-        <div className="ta-section-title">Preço Justo (Graham)</div>
-        <span className="ta-metric-help" tabIndex={0} style={{ position: 'static' }}>
-          ?
-          <span className="ta-metric-help-tip">
-            Fórmula de Benjamin Graham: √(22,5 × LPA × VPA). Estima o preço máximo racional
-            para uma ação, assumindo P/L de 15 e P/VP de 1,5. É uma referência simplificada —
-            não considera crescimento, setor nem qualidade da empresa.
-          </span>
-        </span>
+        <div className="ta-section-title">Preço Justo</div>
+        <span className="ta-sector-badge">Preço atual: R$ {fmt(price)}</span>
       </div>
-      <div className="ta-graham">
-        <div className="ta-graham-item">
-          <div className="ta-key-label">Preço justo</div>
-          <div className="ta-key-value">R$ {fmt(graham)}</div>
-        </div>
-        <div className="ta-graham-item">
-          <div className="ta-key-label">Preço atual</div>
-          <div className="ta-key-value">R$ {fmt(price)}</div>
-        </div>
-        <div className="ta-graham-item">
-          <div className="ta-key-label">{positive ? 'Potencial (upside)' : 'Sobrepreço'}</div>
-          <div className={`ta-key-value ${positive ? 'ta-graham-up' : 'ta-key-value--neg'}`}>
-            {positive ? '+' : ''}{fmt(upside * 100)}%
-          </div>
-        </div>
-        <div className="ta-graham-bar-wrap">
-          <div className="ta-graham-bar">
-            <div
-              className={`ta-graham-bar-fill ${positive ? 'ta-graham-bar-fill--up' : 'ta-graham-bar-fill--down'}`}
-              style={{ width: `${Math.min(100, (price / graham) * 100)}%` }}
-            />
-          </div>
-          <div className="ta-sector-note" style={{ padding: '0.35rem 0 0' }}>
-            {positive
-              ? 'Preço atual abaixo do preço justo estimado.'
-              : 'Preço atual acima do preço justo estimado.'}
-          </div>
-        </div>
+      <div className="ta-fair-grid" style={{ gridTemplateColumns: `repeat(${methods.length}, 1fr)` }}>
+        {methods.map(m => {
+          const upside = m.price / price - 1
+          const positive = upside >= 0
+          return (
+            <div key={m.key} className="ta-fair-method">
+              <div className="ta-fair-method-header">
+                <span className="ta-key-label">{m.label}</span>
+                <span className="ta-metric-help" tabIndex={0} style={{ position: 'static' }}>
+                  ?
+                  <span className="ta-metric-help-tip">{m.help}</span>
+                </span>
+              </div>
+              <div className="ta-key-value">R$ {fmt(m.price)}</div>
+              <div className={`ta-fair-upside ${positive ? 'ta-graham-up' : 'ta-key-value--neg'}`}>
+                {positive ? '▲ +' : '▼ '}{fmt(upside * 100)}% {positive ? 'de potencial' : 'sobrepreço'}
+              </div>
+              <div className="ta-graham-bar">
+                <div
+                  className={`ta-graham-bar-fill ${positive ? 'ta-graham-bar-fill--up' : 'ta-graham-bar-fill--down'}`}
+                  style={{ width: `${Math.min(100, (price / m.price) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="ta-sector-note">
+        Modelos simplificados de valuation — use como referência, não como recomendação. Cada método tem premissas próprias (veja o "?").
       </div>
     </div>
   )
