@@ -366,6 +366,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
             <Tooltip
               cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
               contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+              itemStyle={{ color: 'var(--text-primary)' }}
               formatter={(v: unknown) => [fmtDisplay(Number(v)), isPct ? 'DY anual' : 'Valor']}
               labelFormatter={d => isPct ? `Ano ${d}` : (d ? new Date(d).toLocaleDateString('pt-BR') : '')}
             />
