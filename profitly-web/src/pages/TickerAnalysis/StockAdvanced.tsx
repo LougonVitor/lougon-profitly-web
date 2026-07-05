@@ -5,6 +5,7 @@ import {
 import { useStockStatements } from '../../hooks/useStockAnalysis'
 import type {
   StockAnalysisFull, StockFinancials, SectorComparison, StatementRow, StatementType,
+  DividendAnalysis,
 } from '../../types/StockAnalysis'
 
 // ── formatting helpers ───────────────────────────────────────────────────────
@@ -75,6 +76,55 @@ export function FinancialHighlights({ financials }: { financials: StockFinancial
         <div className="ta-info-row"><span>Dívida / Patrimônio</span><strong>{fmt(f.debtToEquity)}</strong></div>
         <div className="ta-info-row"><span>Fluxo de Caixa Livre</span><strong>R$ {fmtBig(f.freeCashflow)}</strong></div>
         <div className="ta-info-row"><span>Fluxo de Caixa Operacional</span><strong>R$ {fmtBig(f.operatingCashflow)}</strong></div>
+      </div>
+    </div>
+  )
+}
+
+// ── upcoming dividends agenda ────────────────────────────────────────────────
+
+function fmtEventDate(d: string | null): string {
+  if (!d) return '—'
+  try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d }
+}
+
+export function UpcomingDividends({ dividends }: { dividends: DividendAnalysis | null }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const upcoming = (dividends?.events ?? [])
+    .filter(e => e.rate != null && e.rate > 0
+      && ((e.paymentDate ?? '') > today || (e.lastDatePrior ?? '') > today))
+    .sort((a, b) => (a.paymentDate ?? a.lastDatePrior ?? '').localeCompare(b.paymentDate ?? b.lastDatePrior ?? ''))
+    .slice(0, 8)
+
+  if (upcoming.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Agenda de Proventos</div>
+      <div className="ta-dividends-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Data com</th>
+              <th>Pagamento</th>
+              <th>Tipo</th>
+              <th className="right">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {upcoming.map((e, i) => (
+              <tr key={i}>
+                <td>{fmtEventDate(e.lastDatePrior)}</td>
+                <td>{fmtEventDate(e.paymentDate)}</td>
+                <td><span className="ta-div-badge">{e.label ?? '—'}</span></td>
+                <td className="right ta-div-value">R$ {(e.rate ?? 0).toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="ta-sector-note">
+        Proventos já anunciados com data-com ou pagamento futuros.
       </div>
     </div>
   )

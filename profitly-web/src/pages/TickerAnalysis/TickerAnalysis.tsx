@@ -8,7 +8,7 @@ import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysi
 import { useStockAnalysis } from '../../hooks/useStockAnalysis'
 import {
   FiftyTwoWeekRange, FinancialHighlights, SectorComparisonSection,
-  CompanyProfileSection, StatementsSection, KeyIndicatorsSection,
+  CompanyProfileSection, StatementsSection, KeyIndicatorsSection, UpcomingDividends,
 } from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
@@ -692,7 +692,8 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* 3. Investidor10-style fundamental indicator grid */}
       <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
 
-      {/* 4. Dividend history */}
+      {/* 4. Upcoming dividends + dividend history */}
+      <UpcomingDividends dividends={advanced?.dividends ?? null} />
       <DividendSection analysis={analysis} />
 
       {/* 5. Market data + debt/cash side by side */}
