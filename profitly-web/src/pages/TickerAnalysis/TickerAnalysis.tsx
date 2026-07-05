@@ -9,6 +9,7 @@ import { useStockAnalysis } from '../../hooks/useStockAnalysis'
 import {
   FiftyTwoWeekRange, FinancialHighlights, SectorComparisonSection,
   CompanyProfileSection, StatementsSection, KeyIndicatorsSection, UpcomingDividends,
+  GrahamCard,
 } from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
@@ -689,8 +690,9 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* 2. 52-week range */}
       <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
 
-      {/* 3. Investidor10-style fundamental indicator grid */}
+      {/* 3. Investidor10-style fundamental indicator grid + Graham fair price */}
       <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
+      <GrahamCard indicators={advanced?.keyIndicators ?? null} quote={advanced?.quote ?? null} />
 
       {/* 4. Upcoming dividends + dividend history */}
       <UpcomingDividends dividends={advanced?.dividends ?? null} />

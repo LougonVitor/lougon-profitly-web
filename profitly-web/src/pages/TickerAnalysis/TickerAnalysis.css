@@ -625,3 +625,25 @@
 .ta-key-card { position: relative; }
 .ta-key-card .ta-metric-help { top: 7px; right: 8px; }
 .ta-key-card .ta-key-label { padding-right: 20px; }
+
+/* ── Graham fair price ─────────────────────────── */
+.ta-graham {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 1rem;
+  padding: 1rem 1.25rem 1.1rem;
+  align-items: start;
+}
+.ta-graham-item { min-width: 0; }
+.ta-graham-up { color: var(--text-up); }
+.ta-graham-bar-wrap { grid-column: 1 / -1; }
+.ta-graham-bar {
+  height: 8px;
+  background: var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ta-graham-bar-fill { height: 100%; border-radius: 6px; }
+.ta-graham-bar-fill--up   { background: linear-gradient(90deg, var(--text-up), var(--accent)); }
+.ta-graham-bar-fill--down { background: linear-gradient(90deg, var(--accent), var(--text-down)); }
+@media (max-width: 600px) { .ta-graham { grid-template-columns: 1fr 1fr; } }
