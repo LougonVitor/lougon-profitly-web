@@ -455,6 +455,7 @@ function StatementContent({ symbol, config }: { symbol: string; config: Statemen
               <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={48}
                 tickFormatter={v => fmtBig(Number(v))} />
               <Tooltip
+                cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
                 contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
                 formatter={(v: unknown, name: unknown) => [`R$ ${fmtBig(Number(v))}`, String(name)]}
               />

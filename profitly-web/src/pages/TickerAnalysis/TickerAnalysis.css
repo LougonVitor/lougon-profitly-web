@@ -315,7 +315,8 @@
 }
 
 .ta-div-page-btn {
-  background: var(--bg-hover, #f3f4f6);
+  /* transparent bg: the old #f3f4f6 fallback rendered near-white on white text in dark mode */
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 5px 14px;
@@ -323,7 +324,7 @@
   font-weight: 600;
   cursor: pointer;
   color: var(--text-primary);
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .ta-div-page-btn:hover:not(:disabled) { background: var(--accent); color: #fff; border-color: var(--accent); }
 .ta-div-page-btn:disabled { opacity: 0.35; cursor: not-allowed; }

@@ -239,9 +239,11 @@ function DividendTable({ dividends, isPct, price }: {
   isPct: boolean
   price: number
 }) {
-  const [page, setPage] = useState(0)
+  const [rawPage, setPage] = useState(0)
   const total = dividends.length
-  const pages = Math.ceil(total / DIVIDEND_PAGE_SIZE)
+  const pages = Math.max(1, Math.ceil(total / DIVIDEND_PAGE_SIZE))
+  // clamp: switching the period filter can leave the stored page beyond the last one
+  const page = Math.min(rawPage, pages - 1)
   const slice = dividends.slice(page * DIVIDEND_PAGE_SIZE, (page + 1) * DIVIDEND_PAGE_SIZE)
 
   return (
@@ -258,8 +260,10 @@ function DividendTable({ dividends, isPct, price }: {
           </tr>
         </thead>
         <tbody>
+          {/* multiple events can share the same ex-date — key must be the global row index,
+              otherwise React reconciles pages incorrectly and stale rows pile up */}
           {slice.map((d, i) => (
-            <tr key={d.lastDatePrior ?? d.paymentDate ?? i}>
+            <tr key={page * DIVIDEND_PAGE_SIZE + i}>
               <td>{fmtDate(d.lastDatePrior)}</td>
               <td>{fmtDate(d.paymentDate)}</td>
               <td><span className="ta-div-badge">{d.label ?? '—'}</span></td>
@@ -276,11 +280,11 @@ function DividendTable({ dividends, isPct, price }: {
       </table>
       {pages > 1 && (
         <div className="ta-div-pagination">
-          <button className="ta-div-page-btn" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
             ‹ Anterior
           </button>
           <span className="ta-div-page-info">{page + 1} / {pages}</span>
-          <button className="ta-div-page-btn" onClick={() => setPage(p => Math.min(pages - 1, p + 1))} disabled={page === pages - 1}>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={page === pages - 1}>
             Próximo ›
           </button>
         </div>
@@ -360,6 +364,7 @@ function DividendSection({ analysis }: { analysis: TickerAnalysis }) {
               tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0} />
             <YAxis hide domain={[0, 'auto']} />
             <Tooltip
+              cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
               contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
               formatter={(v: unknown) => [fmtDisplay(Number(v)), isPct ? 'DY anual' : 'Valor']}
               labelFormatter={d => isPct ? `Ano ${d}` : (d ? new Date(d).toLocaleDateString('pt-BR') : '')}
