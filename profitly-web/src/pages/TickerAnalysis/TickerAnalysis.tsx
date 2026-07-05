@@ -666,8 +666,9 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Market data */}
-      <div className="ta-section-card">
+      {/* Market data + debt/cash side by side */}
+      <div className="ta-info-grid">
+        <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
           <div className="ta-info-rows">
             <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
@@ -683,6 +684,9 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
             )}
             <div className="ta-info-row"><span>Enterprise Value</span><strong>{fmtCap(analysis.enterpriseValue)}</strong></div>
           </div>
+        </div>
+
+        <FinancialHighlights financials={advanced?.financials ?? null} />
       </div>
 
       {/* 52-week range */}
@@ -690,9 +694,6 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 
       {/* Investidor10-style fundamental indicator grid */}
       <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
-
-      {/* Profitability, margins, debt and cash */}
-      <FinancialHighlights financials={advanced?.financials ?? null} />
 
       {/* Company vs sector average */}
       <SectorComparisonSection comparison={advanced?.sectorComparison ?? null} />

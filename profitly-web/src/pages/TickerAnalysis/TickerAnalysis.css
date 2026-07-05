@@ -575,3 +575,6 @@
   margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* When one of the paired cards is absent (e.g. no financials), stretch the other */
+.ta-info-grid > .ta-section-card:only-child { grid-column: 1 / -1; }
