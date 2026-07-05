@@ -147,7 +147,7 @@ export function GrahamCard({ indicators, quote }: {
             <div key={m.key} className="ta-fair-method">
               <div className="ta-fair-method-header">
                 <span className="ta-key-label">{m.label}</span>
-                <span className="ta-metric-help" tabIndex={0} style={{ position: 'static' }}>
+                <span className="ta-metric-help ta-metric-help--inline" tabIndex={0}>
                   ?
                   <span className="ta-metric-help-tip">{m.help}</span>
                 </span>

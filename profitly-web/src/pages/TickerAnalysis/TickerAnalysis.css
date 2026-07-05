@@ -714,3 +714,10 @@
 .ta-fair-avg--down { background: rgba(239, 68, 68, 0.06);  border-color: rgba(239, 68, 68, 0.25); }
 .ta-fair-avg-verdict { font-size: 13px; font-weight: 600; }
 .ta-fair-avg-verdict strong { font-weight: 800; }
+
+/* Inline variant of the help icon (inside flex headers, not absolutely positioned) */
+.ta-metric-help--inline {
+  position: relative;
+  top: auto; right: auto;
+  flex-shrink: 0;
+}
