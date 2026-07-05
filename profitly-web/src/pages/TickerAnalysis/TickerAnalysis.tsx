@@ -762,7 +762,7 @@ function fngLabel(classification: string | null, value: number): string {
 }
 
 function fngColor(value: number): string {
-  if (value < 25) return '#ef4444'
+  if (value < 25) return '#d95c5c'
   if (value < 45) return '#f59e0b'
   if (value < 55) return '#eab308'
   if (value < 75) return '#84cc16'
