@@ -1181,6 +1181,24 @@ const TREASURY_PERIODS: { key: string; label: string }[] = [
   { key: 'max', label: 'Máx' },
 ]
 
+/** Years between the first income payment and maturity: Renda+ pays 240 monthly
+ *  installments (19 years), Educa+ pays 60 (4 years). Official names use the START year. */
+function treasuryIncomeYears(bondType: string | null | undefined): number {
+  const t = (bondType ?? '').toLowerCase()
+  if (t.includes('renda+')) return 19
+  if (t.includes('educa+')) return 4
+  return 0
+}
+
+/** Official display name: bondType + naming year (income start for Renda+/Educa+). */
+function treasuryDisplayName(bondType: string | null, symbol: string, maturityDate: string | null): string {
+  const base = bondType ?? symbol
+  if (!bondType || !maturityDate || maturityDate.length < 4) return base
+  const year = parseInt(maturityDate.slice(0, 4), 10)
+  if (Number.isNaN(year)) return base
+  return `${base} ${year - treasuryIncomeYears(bondType)}`
+}
+
 /** e.g. ipca → "IPCA + 7,50%", selic → "SELIC + 0,08%", prefixado → "12,50% a.a." */
 function treasuryRateLabel(indexer: string | null | undefined, rate: number | null | undefined): string {
   if (rate == null) return '—'
@@ -1468,7 +1486,7 @@ function TreasurySimilarBondsSection({ ta }: { ta: TreasuryAnalysisData }) {
                 style={b.isCurrent ? undefined : { cursor: 'pointer' }}
                 onClick={b.isCurrent ? undefined : () => navigate(`/ticker/${b.symbol}`)}>
                 <td className={b.isCurrent ? 'ta-sector-company' : undefined}>
-                  {b.bondType ?? b.symbol}{b.maturityDate ? ` ${b.maturityDate.slice(0, 4)}` : ''}
+                  {treasuryDisplayName(b.bondType, b.symbol, b.maturityDate)}
                   {b.isCurrent ? ' (este)' : ''}
                 </td>
                 <td>{fmtDateOnly(b.maturityDate)}</td>
@@ -1501,6 +1519,11 @@ function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
   const indexerName = ta?.indexer
     ? (TREASURY_INDEXER_LABEL[ta.indexer.toLowerCase()] ?? ta.indexer)
     : null
+
+  // Renda+/Educa+: maturity is the LAST payment; income starts years earlier
+  const incomeYears = treasuryIncomeYears(ta?.bondType)
+  const maturityYear = ta?.maturityDate ? parseInt(ta.maturityDate.slice(0, 4), 10) : NaN
+  const incomeStartYear = incomeYears > 0 && !Number.isNaN(maturityYear) ? maturityYear - incomeYears : null
 
   return (
     <>
@@ -1574,7 +1597,13 @@ function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
             <div className="ta-info-row"><span>Cupom</span>
               <strong>{ta?.couponType ? (TREASURY_COUPON_LABEL[ta.couponType.toLowerCase()] ?? ta.couponType) : '—'}</strong>
             </div>
-            <div className="ta-info-row"><span>Vencimento</span><strong>{fmtDateOnly(ta?.maturityDate)}</strong></div>
+            {incomeStartYear != null && (
+              <div className="ta-info-row">
+                <span>{(ta?.bondType ?? '').toLowerCase().includes('renda+') ? 'Renda mensal' : 'Pagamentos mensais'}</span>
+                <strong>de {incomeStartYear} até {maturityYear}</strong>
+              </div>
+            )}
+            <div className="ta-info-row"><span>Vencimento{incomeStartYear != null ? ' (última parcela)' : ''}</span><strong>{fmtDateOnly(ta?.maturityDate)}</strong></div>
             {ta?.daysToMaturity != null && (
               <div className="ta-info-row"><span>Dias até o vencimento</span>
                 <strong>{ta.daysToMaturity} ({fmt(ta.yearsToMaturity, 1)} anos)</strong></div>
