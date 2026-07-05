@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { api } from '../../lib/api'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceLine, LineChart, Line, CartesianGrid,
@@ -119,9 +120,40 @@ function tickLabel(d: string | number, range: string): string {
 
 // ── Price Chart ──────────────────────────────────────────────────────────────
 
+interface IbovBenchmark {
+  points: { date: number; close: number }[]
+}
+
+/** Benchmark series (IBOV) for comparison mode — served from the ibovespa cache. */
+function useIbovBenchmark(range: string, enabled: boolean) {
+  const [points, setPoints] = useState<Map<string, number> | null>(null)
+
+  useEffect(() => {
+    if (!enabled) return
+    let active = true
+    setPoints(null)
+    api.get<IbovBenchmark>(`/api/ibovespa?range=${range}`)
+      .then(res => {
+        if (!active) return
+        const map = new Map<string, number>()
+        for (const p of res.data.points ?? []) {
+          if (p.close == null) continue
+          map.set(new Date(p.date * 1000).toISOString().slice(0, 10), p.close)
+        }
+        setPoints(map)
+      })
+      .catch(() => { if (active) setPoints(new Map()) })
+    return () => { active = false }
+  }, [range, enabled])
+
+  return points
+}
+
 function PriceChartSection({ symbol }: { symbol: string }) {
   const [range, setRange] = useState('1y')
+  const [vsIbov, setVsIbov] = useState(false)
   const { history, loading } = usePriceHistory(symbol, range)
+  const ibovPoints = useIbovBenchmark(range, vsIbov)
 
   const data = history?.prices
     .filter(p => p.close != null)
@@ -132,6 +164,28 @@ function PriceChartSection({ symbol }: { symbol: string }) {
   const isUp = last >= first
   const strokeColor = isUp ? 'var(--text-up)' : 'var(--text-down)'
   const fillId = isUp ? 'fillUp' : 'fillDown'
+
+  // Comparison mode: both series normalized to % change since period start,
+  // IBOV carried forward on days without an index point (holidays/mismatched calendars)
+  const compareData = (() => {
+    if (!vsIbov || data.length === 0 || !ibovPoints || ibovPoints.size === 0) return []
+    let ibovFirst: number | null = null
+    let lastKnown: number | null = null
+    const rows: { date: string; stock: number; ibov: number | null }[] = []
+    for (const p of data) {
+      const iv = ibovPoints.get(String(p.date).slice(0, 10))
+      if (iv != null) lastKnown = iv
+      if (ibovFirst == null && lastKnown != null) ibovFirst = lastKnown
+      rows.push({
+        date: String(p.date),
+        stock: first > 0 ? ((p.close! - first) / first) * 100 : 0,
+        ibov: lastKnown != null && ibovFirst != null && ibovFirst > 0
+          ? ((lastKnown - ibovFirst) / ibovFirst) * 100
+          : null,
+      })
+    }
+    return rows
+  })()
 
   return (
     <div className="ta-chart-card">
@@ -144,16 +198,26 @@ function PriceChartSection({ symbol }: { symbol: string }) {
             </div>
           )}
         </div>
-        <div className="ta-range-btns">
-          {RANGES.map(r => (
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div className="ta-range-btns">
             <button
-              key={r.value}
-              className={`ta-range-btn ${range === r.value ? 'ta-range-btn--active' : ''}`}
-              onClick={() => setRange(r.value)}
+              className={`ta-range-btn ${vsIbov ? 'ta-range-btn--active' : ''}`}
+              onClick={() => setVsIbov(v => !v)}
             >
-              {r.label}
+              vs IBOV
             </button>
-          ))}
+          </div>
+          <div className="ta-range-btns">
+            {RANGES.map(r => (
+              <button
+                key={r.value}
+                className={`ta-range-btn ${range === r.value ? 'ta-range-btn--active' : ''}`}
+                onClick={() => setRange(r.value)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="ta-chart-body">
@@ -161,6 +225,37 @@ function PriceChartSection({ symbol }: { symbol: string }) {
           <div className="ta-chart-loading">Carregando gráfico...</div>
         ) : data.length === 0 ? (
           <div className="ta-chart-empty">Sem dados para este período</div>
+        ) : vsIbov ? (
+          compareData.length === 0 ? (
+            <div className="ta-chart-loading">Carregando IBOV...</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={compareData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  ticks={computeTicks(compareData, range) as string[]}
+                  tickFormatter={d => tickLabel(d, range)}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false} tickLine={false} interval={0}
+                />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false} tickLine={false} width={55}
+                  tickFormatter={v => `${Number(v).toFixed(0)}%`}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                  labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
+                  formatter={(value: unknown, name: unknown) => [`${Number(value).toFixed(2)}%`, name === 'stock' ? symbol : 'IBOV']}
+                />
+                <Line type="monotone" dataKey="stock" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="ibov" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 2" dot={false} activeDot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
