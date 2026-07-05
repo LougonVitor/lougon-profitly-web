@@ -13,13 +13,15 @@ import {
   GrahamCard,
 } from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
-import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
+import { useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
+import { useTreasuryAnalysis } from '../../hooks/useTreasuryAnalysis'
 import { useFundIndicator } from '../../hooks/useFundIndicator'
 import { useCryptoAnalysis } from '../../hooks/useCryptoAnalysis'
 import { useFearGreed } from '../../hooks/useFearGreed'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import type { CryptoAnalysis } from '../../types/CryptoAnalysis'
+import type { TreasuryAnalysis as TreasuryAnalysisData } from '../../types/TreasuryAnalysis'
 import './TickerAnalysis.css'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -1163,17 +1165,76 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 
 // ── Treasury Components ──────────────────────────────────────────────────────
 
-const TREASURY_HISTORY_METRICS = [
-  { key: 'buyRate',  label: 'Taxa compra (%)', fmt: (v: number) => `${v.toFixed(2)}%` },
-  { key: 'sellRate', label: 'Taxa venda (%)',  fmt: (v: number) => `${v.toFixed(2)}%` },
-  { key: 'buyPrice', label: 'Preço compra',    fmt: (v: number) => `R$ ${v.toFixed(2)}` },
+const TREASURY_INDEXER_LABEL: Record<string, string> = {
+  selic: 'SELIC', ipca: 'IPCA', pre: 'Prefixado', prefixado: 'Prefixado', igpm: 'IGP-M',
+}
+
+const TREASURY_COUPON_LABEL: Record<string, string> = {
+  zero: 'Zero cupom', semiannual: 'Semestral', semestral: 'Semestral',
+}
+
+const TREASURY_PERIODS: { key: string; label: string }[] = [
+  { key: '1m', label: '1 mês' },
+  { key: '3m', label: '3 meses' },
+  { key: '6m', label: '6 meses' },
+  { key: '1y', label: '1 ano' },
+  { key: 'max', label: 'Máx' },
+]
+
+/** e.g. ipca → "IPCA + 7,50%", selic → "SELIC + 0,08%", prefixado → "12,50% a.a." */
+function treasuryRateLabel(indexer: string | null | undefined, rate: number | null | undefined): string {
+  if (rate == null) return '—'
+  const pct = `${fmt(rate)}%`
+  switch ((indexer ?? '').toLowerCase()) {
+    case 'selic': return `SELIC + ${pct}`
+    case 'ipca': return `IPCA + ${pct}`
+    case 'igpm': return `IGP-M + ${pct}`
+    default: return `${pct} a.a.`
+  }
+}
+
+function fmtRatePct(v: number | null | undefined): string {
+  return v != null ? `${fmt(v)}%` : '—'
+}
+
+/** Percentage-point delta, signed: "+0,25 p.p." */
+function fmtPP(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `${v >= 0 ? '+' : ''}${fmt(v)} p.p.`
+}
+
+function fmtChartPrice(v: number): string {
+  return v >= 1000 ? `R$ ${(v / 1000).toFixed(1)} mil` : `R$ ${v.toFixed(0)}`
+}
+
+const TREASURY_CHART_METRICS: { key: string; label: string; fmt: (v: number) => string }[] = [
+  { key: 'buyRate',  label: 'Taxa compra', fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'sellRate', label: 'Taxa venda',  fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'buyPrice', label: 'Preço compra', fmt: fmtChartPrice },
+  { key: 'sellPrice', label: 'Preço venda', fmt: fmtChartPrice },
+]
+
+const TREASURY_CHART_RANGES: { key: string; label: string; months: number | null }[] = [
+  { key: '3m', label: '3M', months: 3 },
+  { key: '6m', label: '6M', months: 6 },
+  { key: '1y', label: '1A', months: 12 },
+  { key: '2y', label: '2A', months: 24 },
+  { key: 'max', label: 'Máx', months: null },
 ]
 
 function TreasuryHistorySection({ symbol }: { symbol: string }) {
   const { history, loading } = useTreasuryBondHistory(symbol)
-  const [metric, setMetric] = useState(TREASURY_HISTORY_METRICS[0])
+  const [metric, setMetric] = useState(TREASURY_CHART_METRICS[0])
+  const [range, setRange] = useState(TREASURY_CHART_RANGES[2])
 
   if (loading || history.length < 2) return null
+
+  let cutoffKey: string | null = null
+  if (range.months != null) {
+    const cutoff = new Date()
+    cutoff.setMonth(cutoff.getMonth() - range.months)
+    cutoffKey = cutoff.toISOString().slice(0, 10)
+  }
 
   const chartData = history
     .filter(h => h[metric.key as keyof typeof h] != null)
@@ -1181,6 +1242,7 @@ function TreasuryHistorySection({ symbol }: { symbol: string }) {
       date: h.referenceDate.substring(0, 10),
       value: h[metric.key as keyof typeof h] as number,
     }))
+    .filter(d => cutoffKey == null || d.date >= cutoffKey)
 
   if (chartData.length < 2) return null
 
@@ -1191,24 +1253,32 @@ function TreasuryHistorySection({ symbol }: { symbol: string }) {
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
-        <div className="ta-section-title">Histórico de Taxas</div>
+        <div className="ta-section-title">Histórico de Taxas e Preços</div>
         <div className="ta-range-btns">
-          {TREASURY_HISTORY_METRICS.map(m => (
+          {TREASURY_CHART_METRICS.map(m => (
             <button key={m.key} className={`ta-range-btn ${metric.key === m.key ? 'ta-range-btn--active' : ''}`} onClick={() => setMetric(m)}>
               {m.label}
             </button>
           ))}
         </div>
       </div>
+      <div className="ta-range-btns" style={{ marginTop: '0.5rem' }}>
+        {TREASURY_CHART_RANGES.map(r => (
+          <button key={r.key} className={`ta-range-btn ${range.key === r.key ? 'ta-range-btn--active' : ''}`} onClick={() => setRange(r)}>
+            {r.label}
+          </button>
+        ))}
+      </div>
       <div className="ta-chart-body" style={{ marginTop: '0.75rem' }}>
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={240}>
           <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="date" ticks={ticks}
               tickFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) } catch { return d } }}
               tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0}
             />
-            <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={65}
+            <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={70}
+              domain={['auto', 'auto']}
               tickFormatter={v => metric.fmt(v)}
             />
             <Tooltip
@@ -1224,10 +1294,202 @@ function TreasuryHistorySection({ symbol }: { symbol: string }) {
   )
 }
 
-function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
-  const { bond, loading } = useTreasuryBond(analysis.symbol)
+/** 52-week buyRate range bar, reusing the stock range-bar styles. */
+function TreasuryRateRange({ ta }: { ta: TreasuryAnalysisData }) {
+  if (ta.rate52wLow == null || ta.rate52wHigh == null || ta.buyRate == null) return null
+  const pct = ta.ratePositionInRange52w
+    ?? (ta.rate52wHigh > ta.rate52wLow
+      ? Math.min(100, Math.max(0, ((ta.buyRate - ta.rate52wLow) / (ta.rate52wHigh - ta.rate52wLow)) * 100))
+      : 50)
 
-  const fmtRate = (v: number | null | undefined) => v != null ? `${v.toFixed(2)}%` : '—'
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Taxa de Compra — Faixa de 52 Semanas</div>
+      <div className="ta-52w">
+        <span className="ta-52w-bound">{fmtRatePct(ta.rate52wLow)}</span>
+        <div className="ta-52w-track">
+          <div className="ta-52w-fill" style={{ width: `${pct}%` }} />
+          <div className="ta-52w-marker" style={{ left: `${pct}%` }}>
+            <span className="ta-52w-price">{fmtRatePct(ta.buyRate)}</span>
+          </div>
+        </div>
+        <span className="ta-52w-bound">{fmtRatePct(ta.rate52wHigh)}</span>
+      </div>
+      <div className="ta-sector-note">
+        Quanto mais perto do topo da faixa, maior a taxa contratada hoje em relação ao último ano — historicamente um ponto de entrada mais atrativo.
+      </div>
+    </div>
+  )
+}
+
+function TreasuryRateChangesSection({ ta }: { ta: TreasuryAnalysisData }) {
+  const changes = ta.rateChanges
+  if (!changes || Object.keys(changes).length === 0) return null
+  const periods = TREASURY_PERIODS.filter(p => changes[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Variação da Taxa de Compra</div>
+      <div className="ta-crypto-returns-grid">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPP(changes[p.key])}
+            variant={pctVariant(changes[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Variação em pontos percentuais da taxa de compra. Taxa subindo favorece quem vai comprar agora; para quem já tem o título, derruba o preço na marcação a mercado.
+      </div>
+    </div>
+  )
+}
+
+function TreasuryReturnsSection({ ta }: { ta: TreasuryAnalysisData }) {
+  const returns = ta.priceReturns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = TREASURY_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Retornos (marcação a mercado)</div>
+      <div className="ta-crypto-returns-grid">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Valorização do preço de venda antecipada no período — o retorno de quem vendesse hoje, não a rentabilidade contratada até o vencimento.
+      </div>
+    </div>
+  )
+}
+
+function TreasuryRiskSection({ ta }: { ta: TreasuryAnalysisData }) {
+  const hasData = ta.priceVolatility1y != null || ta.maxDrawdown1y != null
+    || ta.ratePositionInRange52w != null || ta.rateSpread != null
+  if (!hasData) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Risco e Volatilidade</div>
+      <div className="ta-info-rows">
+        {ta.priceVolatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade do preço 1 ano (anualizada)</span>
+            <strong>{fmt(ta.priceVolatility1y)}%</strong></div>
+        )}
+        {ta.maxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima em 1 ano (drawdown)</span>
+            <strong className="down">{fmt(ta.maxDrawdown1y)}%</strong></div>
+        )}
+        {ta.ratePositionInRange52w != null && (
+          <div className="ta-info-row"><span>Posição da taxa na faixa de 52 semanas</span>
+            <strong>{fmt(ta.ratePositionInRange52w, 0)}%</strong></div>
+        )}
+        {ta.rateSpread != null && (
+          <div className="ta-info-row"><span>Spread compra/venda</span>
+            <strong>{fmtPP(ta.rateSpread)}</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TreasuryExtremesSection({ ta }: { ta: TreasuryAnalysisData }) {
+  if (ta.rateHistoryHigh == null && ta.rateHistoryLow == null) return null
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Extremos Históricos da Taxa</div>
+      <div className="ta-info-rows">
+        {ta.rateHistoryHigh != null && (
+          <div className="ta-info-row"><span>Maior taxa de compra registrada</span>
+            <strong className="up">{fmtRatePct(ta.rateHistoryHigh)}</strong></div>
+        )}
+        {ta.rateHistoryHighDate && (
+          <div className="ta-info-row"><span>Data da maior taxa</span>
+            <strong>{fmtDateOnly(ta.rateHistoryHighDate)}</strong></div>
+        )}
+        {ta.rateHistoryLow != null && (
+          <div className="ta-info-row"><span>Menor taxa de compra registrada</span>
+            <strong className="down">{fmtRatePct(ta.rateHistoryLow)}</strong></div>
+        )}
+        {ta.rateHistoryLowDate && (
+          <div className="ta-info-row"><span>Data da menor taxa</span>
+            <strong>{fmtDateOnly(ta.rateHistoryLowDate)}</strong></div>
+        )}
+        {ta.historyStart && ta.historyDays != null && (
+          <div className="ta-info-row"><span>Histórico disponível desde</span>
+            <strong>{fmtDateOnly(ta.historyStart)} ({ta.historyDays} pregões)</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** All bonds sharing the indexer, ordered by maturity, current one highlighted. */
+function TreasurySimilarBondsSection({ ta }: { ta: TreasuryAnalysisData }) {
+  const navigate = useNavigate()
+  if (!ta.similarBonds || ta.similarBonds.length === 0) return null
+
+  const rows = [
+    {
+      symbol: ta.symbol, bondType: ta.bondType, couponType: ta.couponType,
+      maturityDate: ta.maturityDate, buyRate: ta.buyRate, sellRate: ta.sellRate,
+      buyPrice: ta.buyPrice, isCurrent: true,
+    },
+    ...ta.similarBonds.map(b => ({ ...b, isCurrent: false })),
+  ].sort((a, b) => (a.maturityDate ?? '').localeCompare(b.maturityDate ?? ''))
+
+  const indexerName = ta.indexer
+    ? (TREASURY_INDEXER_LABEL[ta.indexer.toLowerCase()] ?? ta.indexer)
+    : ''
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Títulos do Mesmo Indexador</div>
+        <span className="ta-sector-badge">{indexerName} · {rows.length} títulos</span>
+      </div>
+      <div className="ta-sector-table-wrap">
+        <table className="ta-sector-table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Vencimento</th>
+              <th className="right">Taxa compra</th>
+              <th className="right">Taxa venda</th>
+              <th className="right">Preço compra</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(b => (
+              <tr key={b.symbol}
+                style={b.isCurrent ? undefined : { cursor: 'pointer' }}
+                onClick={b.isCurrent ? undefined : () => navigate(`/ticker/${b.symbol}`)}>
+                <td className={b.isCurrent ? 'ta-sector-company' : undefined}>
+                  {b.bondType ?? b.symbol}{b.maturityDate ? ` ${b.maturityDate.slice(0, 4)}` : ''}
+                  {b.isCurrent ? ' (este)' : ''}
+                </td>
+                <td>{fmtDateOnly(b.maturityDate)}</td>
+                <td className="right">{treasuryRateLabel(ta.indexer, b.buyRate)}</td>
+                <td className="right">{treasuryRateLabel(ta.indexer, b.sellRate)}</td>
+                <td className="right">{b.buyPrice != null ? fmtBRL(b.buyPrice) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="ta-sector-note">
+        Clique em um título para abrir a análise dele.
+      </div>
+    </div>
+  )
+}
+
+function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
+  const { data: ta, loading } = useTreasuryAnalysis(analysis.symbol)
+
   const fmtDuration = (days: number | null | undefined) => {
     if (days == null) return '—'
     const years = Math.floor(days / 365)
@@ -1235,61 +1497,124 @@ function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
     return years > 0 ? `${years}a ${months}m` : `${months}m`
   }
 
-  const indexerLabel: Record<string, string> = {
-    selic: 'SELIC', ipca: 'IPCA', pre: 'Prefixado', igpm: 'IGP-M',
-  }
-
-  const couponLabel: Record<string, string> = {
-    zero: 'Zero cupom', semiannual: 'Semestral',
-  }
+  const return1y = ta?.priceReturns?.['1y']
+  const indexerName = ta?.indexer
+    ? (TREASURY_INDEXER_LABEL[ta.indexer.toLowerCase()] ?? ta.indexer)
+    : null
 
   return (
     <>
       {/* Treasury Metrics Bar */}
       <div className="ta-metrics-bar ta-metrics-bar--treasury">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <div key={i} className="ta-metric ta-metric--skeleton" />)
+          Array.from({ length: 5 }).map((_, i) => <div key={i} className="ta-metric ta-metric--skeleton" />)
         ) : (
           <>
-            <MetricCard label="Taxa Compra" value={fmtRate(bond?.buyRate)} sub="Rentabilidade anual" variant="up" />
-            <MetricCard label="Taxa Venda" value={fmtRate(bond?.sellRate)} sub="Rentabilidade atual" />
-            <MetricCard label="Preço Compra" value={bond?.buyPrice != null ? `R$ ${bond.buyPrice.toFixed(2)}` : '—'} sub="Valor unitário" />
-            <MetricCard label="Vencimento" value={bond?.maturityDate ? fmtDate(bond.maturityDate) : '—'} sub="Data de resgate" />
+            <MetricCard
+              label="Taxa Compra"
+              value={treasuryRateLabel(ta?.indexer, ta?.buyRate)}
+              sub={ta?.rateUnit ?? 'Rentabilidade anual'}
+              variant="up"
+              help={ta?.rateDescription ?? undefined}
+            />
+            <MetricCard
+              label="Retorno 12m"
+              value={fmtPct(return1y)}
+              sub="Marcação a mercado"
+              variant={pctVariant(return1y)}
+              help="Valorização do preço de venda antecipada nos últimos 12 meses — não é a rentabilidade contratada."
+            />
+            <MetricCard
+              label="Vencimento"
+              value={ta?.maturityDate ? fmtDateOnly(ta.maturityDate) : '—'}
+              sub={ta?.yearsToMaturity != null ? `em ${fmt(ta.yearsToMaturity, 1)} anos` : 'Data de resgate'}
+            />
+            <MetricCard
+              label="Volatilidade"
+              value={ta?.priceVolatility1y != null ? `${fmt(ta.priceVolatility1y, 1)}%` : '—'}
+              sub="Anualizada (1 ano)"
+              help="Desvio padrão anualizado das variações diárias do preço de mercado. Só importa para quem pode vender antes do vencimento."
+            />
+            <MetricCard
+              label="Ranking"
+              value={ta?.rateRankInIndexer != null ? `#${ta.rateRankInIndexer}` : '—'}
+              sub={ta?.totalInIndexer != null ? `de ${ta.totalInIndexer} ${indexerName ?? ''}` : 'Por taxa de compra'}
+              help="Posição da taxa de compra entre os títulos com o mesmo indexador (maior taxa primeiro)."
+            />
           </>
         )}
       </div>
 
-      {/* Detail cards */}
+      {/* Rate semantics note (e.g. Selic bonds quote a spread, not the full yield) */}
+      {ta?.rateDescription && (
+        <div className="ta-section-card">
+          <div className="ta-sector-note" style={{ marginTop: 0 }}>{ta.rateDescription}</div>
+        </div>
+      )}
+
+      {/* Historical rate/price chart */}
+      <TreasuryHistorySection symbol={analysis.symbol} />
+
+      {/* 52-week rate range */}
+      {ta && <TreasuryRateRange ta={ta} />}
+
+      {/* Rate changes per period */}
+      {ta && <TreasuryRateChangesSection ta={ta} />}
+
+      {/* Mark-to-market returns per period */}
+      {ta && <TreasuryReturnsSection ta={ta} />}
+
       <div className="ta-info-grid">
+        {/* Bond data */}
         <div className="ta-section-card">
           <div className="ta-section-title">Dados do Título</div>
           <div className="ta-info-rows">
-            <div className="ta-info-row"><span>Tipo</span><strong>{bond?.bondType ?? '—'}</strong></div>
-            <div className="ta-info-row"><span>Indexador</span>
-              <strong>{bond?.indexer ? (indexerLabel[bond.indexer.toLowerCase()] ?? bond.indexer) : '—'}</strong>
-            </div>
+            <div className="ta-info-row"><span>Tipo</span><strong>{ta?.bondType ?? '—'}</strong></div>
+            <div className="ta-info-row"><span>Indexador</span><strong>{indexerName ?? '—'}</strong></div>
             <div className="ta-info-row"><span>Cupom</span>
-              <strong>{bond?.couponType ? (couponLabel[bond.couponType.toLowerCase()] ?? bond.couponType) : '—'}</strong>
+              <strong>{ta?.couponType ? (TREASURY_COUPON_LABEL[ta.couponType.toLowerCase()] ?? ta.couponType) : '—'}</strong>
             </div>
-            <div className="ta-info-row"><span>Vencimento</span><strong>{bond?.maturityDate ? fmtDate(bond.maturityDate) : '—'}</strong></div>
-            <div className="ta-info-row"><span>Duration</span><strong>{fmtDuration(bond?.durationDays)}</strong></div>
+            <div className="ta-info-row"><span>Vencimento</span><strong>{fmtDateOnly(ta?.maturityDate)}</strong></div>
+            {ta?.daysToMaturity != null && (
+              <div className="ta-info-row"><span>Dias até o vencimento</span>
+                <strong>{ta.daysToMaturity} ({fmt(ta.yearsToMaturity, 1)} anos)</strong></div>
+            )}
+            <div className="ta-info-row"><span>Duration</span><strong>{fmtDuration(ta?.durationDays)}</strong></div>
+            {ta?.baseDate && (
+              <div className="ta-info-row"><span>Data-base da cotação</span><strong>{fmtDateOnly(ta.baseDate)}</strong></div>
+            )}
           </div>
         </div>
 
+        {/* Prices and rates */}
         <div className="ta-section-card">
           <div className="ta-section-title">Preços e Taxas</div>
           <div className="ta-info-rows">
-            <div className="ta-info-row"><span>Taxa de compra</span><strong className="up">{fmtRate(bond?.buyRate)}</strong></div>
-            <div className="ta-info-row"><span>Taxa de venda</span><strong>{fmtRate(bond?.sellRate)}</strong></div>
-            <div className="ta-info-row"><span>Preço de compra</span><strong>{bond?.buyPrice != null ? `R$ ${bond.buyPrice.toFixed(2)}` : '—'}</strong></div>
-            <div className="ta-info-row"><span>Preço de venda</span><strong>{bond?.sellPrice != null ? `R$ ${bond.sellPrice.toFixed(2)}` : '—'}</strong></div>
-            <div className="ta-info-row"><span>Preço base</span><strong>{bond?.basePrice != null ? `R$ ${bond.basePrice.toFixed(2)}` : '—'}</strong></div>
+            <div className="ta-info-row"><span>Taxa de compra</span>
+              <strong className="up">{treasuryRateLabel(ta?.indexer, ta?.buyRate)}</strong></div>
+            <div className="ta-info-row"><span>Taxa de venda</span>
+              <strong>{treasuryRateLabel(ta?.indexer, ta?.sellRate)}</strong></div>
+            {ta?.rateSpread != null && (
+              <div className="ta-info-row"><span>Spread compra/venda</span><strong>{fmtPP(ta.rateSpread)}</strong></div>
+            )}
+            <div className="ta-info-row"><span>Preço de compra</span>
+              <strong>{ta?.buyPrice != null ? fmtBRL(ta.buyPrice) : '—'}</strong></div>
+            <div className="ta-info-row"><span>Preço de venda</span>
+              <strong>{ta?.sellPrice != null ? fmtBRL(ta.sellPrice) : '—'}</strong></div>
+            <div className="ta-info-row"><span>Preço base</span>
+              <strong>{ta?.basePrice != null ? fmtBRL(ta.basePrice) : '—'}</strong></div>
           </div>
         </div>
+
+        {/* Risk */}
+        {ta && <TreasuryRiskSection ta={ta} />}
+
+        {/* Rate extremes */}
+        {ta && <TreasuryExtremesSection ta={ta} />}
       </div>
 
-      {/* Historical rate chart */}
-      <TreasuryHistorySection symbol={analysis.symbol} />
+      {/* Same-indexer bonds */}
+      {ta && <TreasurySimilarBondsSection ta={ta} />}
     </>
   )
 }

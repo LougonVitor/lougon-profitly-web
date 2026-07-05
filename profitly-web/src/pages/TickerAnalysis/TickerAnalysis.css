@@ -414,7 +414,7 @@
 
 /* ── Treasury Metrics Bar ─────────────────────── */
 .ta-metrics-bar--treasury {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 /* ── Fund Metrics Bar ─────────────────────────── */
