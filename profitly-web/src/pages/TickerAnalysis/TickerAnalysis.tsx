@@ -707,6 +707,13 @@ function fmtUSD(v: number | null | undefined): string {
   return `US$ ${fmt(v)}`
 }
 
+/** Formats a date-only string (yyyy-MM-dd) without the UTC-midnight timezone shift. */
+function fmtDateOnly(d: string | null | undefined): string {
+  if (!d) return '—'
+  const [y, m, day] = d.split('-')
+  return day && m && y ? `${day}/${m}/${y}` : d
+}
+
 function pctVariant(v: number | null | undefined): 'up' | 'down' | undefined {
   if (v == null) return undefined
   return v >= 0 ? 'up' : 'down'
@@ -796,7 +803,7 @@ function CryptoAthSection({ crypto }: { crypto: CryptoAnalysis }) {
           <strong>{fmtBRL(crypto.athPrice)}</strong></div>
         {crypto.athDate && (
           <div className="ta-info-row"><span>Data da máxima</span>
-            <strong>{fmtDate(crypto.athDate)}</strong></div>
+            <strong>{fmtDateOnly(crypto.athDate)}</strong></div>
         )}
         {crypto.distanceFromAthPercent != null && (
           <div className="ta-info-row"><span>Distância da máxima</span>
@@ -806,7 +813,7 @@ function CryptoAthSection({ crypto }: { crypto: CryptoAnalysis }) {
         )}
         {crypto.historyStart && crypto.historyDays != null && (
           <div className="ta-info-row"><span>Histórico disponível desde</span>
-            <strong>{fmtDate(crypto.historyStart)} ({crypto.historyDays} pregões)</strong></div>
+            <strong>{fmtDateOnly(crypto.historyStart)} ({crypto.historyDays} dias)</strong></div>
         )}
       </div>
     </div>
