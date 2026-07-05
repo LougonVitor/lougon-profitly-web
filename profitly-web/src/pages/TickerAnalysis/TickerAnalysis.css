@@ -355,7 +355,19 @@
 
 /* ── Crypto Metrics Bar ───────────────────────── */
 .ta-metrics-bar--crypto {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* ── Crypto period returns grid ───────────────── */
+.ta-crypto-returns-grid {
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .ta-crypto-returns-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Treasury Metrics Bar ─────────────────────── */

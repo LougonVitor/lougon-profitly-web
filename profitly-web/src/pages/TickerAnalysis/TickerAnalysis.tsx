@@ -15,8 +15,10 @@ import {
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBond, useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useFundIndicator } from '../../hooks/useFundIndicator'
+import { useCryptoAnalysis } from '../../hooks/useCryptoAnalysis'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
+import type { CryptoAnalysis } from '../../types/CryptoAnalysis'
 import './TickerAnalysis.css'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -689,57 +691,270 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 }
 
 /** Crypto analysis page layout */
+const CRYPTO_RETURN_PERIODS: { key: string; label: string }[] = [
+  { key: '7d', label: '7 dias' },
+  { key: '1m', label: '1 mês' },
+  { key: '3m', label: '3 meses' },
+  { key: '6m', label: '6 meses' },
+  { key: 'ytd', label: 'No ano' },
+  { key: '1y', label: '1 ano' },
+  { key: '2y', label: '2 anos' },
+  { key: 'max', label: 'Máx' },
+]
+
+function fmtUSD(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `US$ ${fmt(v)}`
+}
+
+function pctVariant(v: number | null | undefined): 'up' | 'down' | undefined {
+  if (v == null) return undefined
+  return v >= 0 ? 'up' : 'down'
+}
+
+/** 52-week range bar for crypto, reusing the stock range-bar styles. */
+function Crypto52WeekRange({ crypto }: { crypto: CryptoAnalysis }) {
+  if (crypto.low52w == null || crypto.high52w == null || crypto.price == null) return null
+  const pct = crypto.positionInRange52w
+    ?? (crypto.high52w > crypto.low52w
+      ? Math.min(100, Math.max(0, ((crypto.price - crypto.low52w) / (crypto.high52w - crypto.low52w)) * 100))
+      : 50)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Faixa de 52 Semanas</div>
+      <div className="ta-52w">
+        <span className="ta-52w-bound">{fmtBRL(crypto.low52w)}</span>
+        <div className="ta-52w-track">
+          <div className="ta-52w-fill" style={{ width: `${pct}%` }} />
+          <div className="ta-52w-marker" style={{ left: `${pct}%` }}>
+            <span className="ta-52w-price">{fmtBRL(crypto.price)}</span>
+          </div>
+        </div>
+        <span className="ta-52w-bound">{fmtBRL(crypto.high52w)}</span>
+      </div>
+    </div>
+  )
+}
+
+function CryptoReturnsSection({ crypto }: { crypto: CryptoAnalysis }) {
+  const returns = crypto.returns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = CRYPTO_RETURN_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Retornos</div>
+      <div className="ta-crypto-returns-grid">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CryptoRiskSection({ crypto }: { crypto: CryptoAnalysis }) {
+  const hasData = crypto.volatility30d != null || crypto.volatility1y != null
+    || crypto.maxDrawdown1y != null
+  if (!hasData) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Risco e Volatilidade</div>
+      <div className="ta-info-rows">
+        {crypto.volatility30d != null && (
+          <div className="ta-info-row"><span>Volatilidade 30 dias (anualizada)</span>
+            <strong>{fmt(crypto.volatility30d)}%</strong></div>
+        )}
+        {crypto.volatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade 1 ano (anualizada)</span>
+            <strong>{fmt(crypto.volatility1y)}%</strong></div>
+        )}
+        {crypto.maxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima em 1 ano (drawdown)</span>
+            <strong className="down">{fmt(crypto.maxDrawdown1y)}%</strong></div>
+        )}
+        {crypto.positionInRange52w != null && (
+          <div className="ta-info-row"><span>Posição na faixa de 52 semanas</span>
+            <strong>{fmt(crypto.positionInRange52w, 0)}%</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CryptoAthSection({ crypto }: { crypto: CryptoAnalysis }) {
+  if (crypto.athPrice == null) return null
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Máxima Histórica</div>
+      <div className="ta-info-rows">
+        <div className="ta-info-row"><span>Preço máximo histórico (fechamento)</span>
+          <strong>{fmtBRL(crypto.athPrice)}</strong></div>
+        {crypto.athDate && (
+          <div className="ta-info-row"><span>Data da máxima</span>
+            <strong>{fmtDate(crypto.athDate)}</strong></div>
+        )}
+        {crypto.distanceFromAthPercent != null && (
+          <div className="ta-info-row"><span>Distância da máxima</span>
+            <strong className={crypto.distanceFromAthPercent >= 0 ? 'up' : 'down'}>
+              {fmtPct(crypto.distanceFromAthPercent)}
+            </strong></div>
+        )}
+        {crypto.historyStart && crypto.historyDays != null && (
+          <div className="ta-info-row"><span>Histórico disponível desde</span>
+            <strong>{fmtDate(crypto.historyStart)} ({crypto.historyDays} pregões)</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CryptoMovingAveragesSection({ crypto }: { crypto: CryptoAnalysis }) {
+  if (crypto.sma50 == null && crypto.sma200 == null) return null
+  const goldenCross = crypto.sma50 != null && crypto.sma200 != null
+    ? crypto.sma50 > crypto.sma200 : null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Médias Móveis</div>
+      <div className="ta-info-rows">
+        {crypto.sma50 != null && (
+          <div className="ta-info-row"><span>Média móvel 50 dias</span>
+            <strong>{fmtBRL(crypto.sma50)}</strong></div>
+        )}
+        {crypto.priceVsSma50Percent != null && (
+          <div className="ta-info-row"><span>Preço vs. média de 50 dias</span>
+            <strong className={crypto.priceVsSma50Percent >= 0 ? 'up' : 'down'}>
+              {fmtPct(crypto.priceVsSma50Percent)}
+            </strong></div>
+        )}
+        {crypto.sma200 != null && (
+          <div className="ta-info-row"><span>Média móvel 200 dias</span>
+            <strong>{fmtBRL(crypto.sma200)}</strong></div>
+        )}
+        {crypto.priceVsSma200Percent != null && (
+          <div className="ta-info-row"><span>Preço vs. média de 200 dias</span>
+            <strong className={crypto.priceVsSma200Percent >= 0 ? 'up' : 'down'}>
+              {fmtPct(crypto.priceVsSma200Percent)}
+            </strong></div>
+        )}
+        {goldenCross != null && (
+          <div className="ta-info-row"><span>Tendência (cruzamento 50/200)</span>
+            <strong className={goldenCross ? 'up' : 'down'}>
+              {goldenCross ? 'Alta (golden cross)' : 'Baixa (death cross)'}
+            </strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function CryptoAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
-  const up = (analysis.changePercent ?? 0) >= 0
+  const { data: crypto, loading } = useCryptoAnalysis(analysis.symbol)
+  const changePercent = crypto?.changePercent ?? analysis.changePercent
+  const up = (changePercent ?? 0) >= 0
+  const return1y = crypto?.returns?.['1y']
 
   return (
     <>
       {/* Crypto Metrics Bar */}
       <div className="ta-metrics-bar ta-metrics-bar--crypto">
         <MetricCard
-          label="Market Cap"
-          value={fmtCap(analysis.marketCap)}
-          sub="Capitalização de mercado"
-        />
-        <MetricCard
-          label="Volume 24h"
-          value={fmtCap(analysis.volume)}
-          sub="Volume em 24 horas"
-        />
-        <MetricCard
-          label="Var. dia"
-          value={fmtPct(analysis.changePercent)}
-          sub="Variação em 24h"
+          label="Var. 24h"
+          value={fmtPct(changePercent)}
+          sub={crypto?.changeValue != null ? fmtBRL(crypto.changeValue) : 'Variação em 24h'}
           variant={up ? 'up' : 'down'}
         />
         <MetricCard
-          label="52 semanas"
-          value={analysis.weekChange52 != null ? fmtPct(analysis.weekChange52 * 100) : '—'}
-          sub="Retorno anual"
-          variant={analysis.weekChange52 != null ? (analysis.weekChange52 >= 0 ? 'up' : 'down') : undefined}
+          label="Volume 24h"
+          value={fmtCap(crypto?.volume24h ?? analysis.volume)}
+          sub="Volume em 24 horas"
+          help="Valor total negociado nas últimas 24 horas, em reais."
+        />
+        <MetricCard
+          label="Retorno 1a"
+          value={fmtPct(return1y)}
+          sub="Últimos 12 meses"
+          variant={pctVariant(return1y)}
+        />
+        <MetricCard
+          label="Volatilidade"
+          value={crypto?.volatility1y != null ? `${fmt(crypto.volatility1y, 0)}%` : '—'}
+          sub="Anualizada (1 ano)"
+          help="Desvio padrão anualizado dos retornos diários do último ano. Quanto maior, mais o preço oscila."
+        />
+        <MetricCard
+          label="Ranking"
+          value={crypto?.volumeRank != null ? `#${crypto.volumeRank}` : '—'}
+          sub={crypto?.totalCoins != null ? `de ${crypto.totalCoins} por volume` : 'Por volume'}
+          help="Posição entre as criptomoedas disponíveis, ordenadas pelo volume negociado em 24h."
         />
       </div>
 
       {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Market Data */}
-      <div className="ta-section-card">
-        <div className="ta-section-title">Dados de Mercado</div>
-        <div className="ta-info-rows">
-          <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
-          <div className="ta-info-row"><span>Variação hoje</span>
-            <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
-          </div>
-          <div className="ta-info-row"><span>Volume 24h</span><strong>{fmtCap(analysis.volume)}</strong></div>
-          <div className="ta-info-row"><span>Market Cap</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
-          {analysis.weekChange52 != null && (
-            <div className="ta-info-row"><span>Variação 52 semanas</span>
-              <strong className={analysis.weekChange52 >= 0 ? 'up' : 'down'}>{fmtPct(analysis.weekChange52 * 100)}</strong>
+      {/* 52-week range */}
+      {crypto && <Crypto52WeekRange crypto={crypto} />}
+
+      {/* Period returns */}
+      {crypto && <CryptoReturnsSection crypto={crypto} />}
+
+      <div className="ta-info-grid">
+        {/* Risk */}
+        {crypto && <CryptoRiskSection crypto={crypto} />}
+
+        {/* All-time high */}
+        {crypto && <CryptoAthSection crypto={crypto} />}
+
+        {/* Moving averages */}
+        {crypto && <CryptoMovingAveragesSection crypto={crypto} />}
+
+        {/* Market Data */}
+        <div className="ta-section-card">
+          <div className="ta-section-title">Dados de Mercado</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row"><span>Preço atual</span>
+              <strong>{fmtBRL(crypto?.price ?? analysis.lastPrice)}</strong></div>
+            {crypto?.priceUsd != null && (
+              <div className="ta-info-row"><span>Preço em dólar</span>
+                <strong>{fmtUSD(crypto.priceUsd)}</strong></div>
+            )}
+            {crypto?.usdToBrlRate != null && (
+              <div className="ta-info-row"><span>Câmbio usado (USD/BRL)</span>
+                <strong>{fmt(crypto.usdToBrlRate, 4)}</strong></div>
+            )}
+            <div className="ta-info-row"><span>Variação hoje</span>
+              <strong className={up ? 'up' : 'down'}>{fmtPct(changePercent)}</strong>
             </div>
-          )}
+            {crypto?.dayLow != null && crypto?.dayHigh != null && (
+              <div className="ta-info-row"><span>Mínima / máxima do dia</span>
+                <strong>{fmtBRL(crypto.dayLow)} — {fmtBRL(crypto.dayHigh)}</strong></div>
+            )}
+            <div className="ta-info-row"><span>Volume 24h</span>
+              <strong>{fmtCap(crypto?.volume24h ?? analysis.volume)}</strong></div>
+            {crypto?.marketTime && (
+              <div className="ta-info-row"><span>Última cotação</span>
+                <strong>{new Date(crypto.marketTime).toLocaleString('pt-BR')}</strong></div>
+            )}
+          </div>
         </div>
       </div>
+
+      {!crypto && !loading && (
+        <div className="ta-section-card">
+          <div className="ta-section-title">Análise avançada</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row">
+              <span>Sem dados de análise para esta moeda ainda — aguarde o próximo sync.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dividends (staking rewards etc.) */}
       <DividendSection analysis={analysis} />
