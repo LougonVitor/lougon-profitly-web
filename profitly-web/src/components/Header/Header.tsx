@@ -150,7 +150,7 @@ export function Header() {
             {t.nav.tickers}
           </NavLink>
           <NavLink to="/comparar" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
-            Comparar
+            Comparador de ativos
           </NavLink>
           <NavLink to="/wallet" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
             {t.nav.wallet}
