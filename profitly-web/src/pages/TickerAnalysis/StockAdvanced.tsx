@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  LineChart, Line,
 } from 'recharts'
-import { useStockStatements } from '../../hooks/useStockAnalysis'
+import { useStockStatements, useIndicatorHistory } from '../../hooks/useStockAnalysis'
+import type { IndicatorHistoryData } from '../../hooks/useStockAnalysis'
 import type {
   StockAnalysisFull, StockFinancials, SectorComparison, StatementRow, StatementType,
   DividendAnalysis,
@@ -201,6 +203,31 @@ interface KeyIndicatorDef {
   kind: 'num' | 'pct' | 'brl'
 }
 
+interface HistoryLocation {
+  source: 'statistics' | 'financialData'
+  field: string
+  fallbacks?: string[]
+}
+
+/** Where each indicator lives in the yearly history (only those brapi provides in mode=history). */
+const INDICATOR_HISTORY: Record<string, HistoryLocation> = {
+  pl:                { source: 'statistics',    field: 'trailingPE' },
+  pvp:               { source: 'statistics',    field: 'priceToBook' },
+  dividendYield:     { source: 'statistics',    field: 'dividendYield' },
+  vpa:               { source: 'statistics',    field: 'bookValue' },
+  lpa:               { source: 'statistics',    field: 'earningsPerShare', fallbacks: ['trailingEps'] },
+  pegRatio:          { source: 'statistics',    field: 'pegRatio' },
+  margemLiquida:     { source: 'financialData', field: 'profitMargins' },
+  margemBruta:       { source: 'financialData', field: 'grossMargins' },
+  margemEbitda:      { source: 'financialData', field: 'ebitdaMargins' },
+  margemOperacional: { source: 'financialData', field: 'operatingMargins' },
+  crescReceita:      { source: 'financialData', field: 'revenueGrowthAnnual', fallbacks: ['revenueGrowth'] },
+  crescLucro:        { source: 'financialData', field: 'earningsGrowthAnnual', fallbacks: ['earningsGrowth'] },
+  roe:               { source: 'financialData', field: 'returnOnEquity' },
+  roa:               { source: 'financialData', field: 'returnOnAssets' },
+  liquidezCorrente:  { source: 'financialData', field: 'currentRatio' },
+}
+
 const KEY_INDICATORS: KeyIndicatorDef[] = [
   { key: 'pl',              label: 'P/L',              desc: 'Preço / Lucro por ação',            kind: 'num',
     help: 'Preço dividido pelo lucro por ação dos últimos 12 meses. Indica quantos anos de lucro o mercado paga pela ação — quanto menor, mais barata.' },
@@ -270,7 +297,59 @@ function fmtIndicator(v: number, kind: KeyIndicatorDef['kind']): string {
   return fmt(v)
 }
 
-export function KeyIndicatorsSection({ indicators }: { indicators: Record<string, number | null> | null }) {
+function IndicatorHistoryChart({ def, history }: {
+  def: KeyIndicatorDef
+  history: IndicatorHistoryData | null
+}) {
+  const loc = INDICATOR_HISTORY[def.key]
+  const points = useMemo(() => {
+    if (!loc || !history) return []
+    const rows = history[loc.source] ?? []
+    return rows
+      .filter(r => (r.type ?? '').toLowerCase() === 'yearly' && r.endDate)
+      .map(r => {
+        const raw = num(r as StatementRow, loc.field, loc.fallbacks)
+        return { year: String(r.endDate).slice(0, 4), value: raw }
+      })
+      .filter((p): p is { year: string; value: number } => p.value != null)
+      .sort((a, b) => a.year.localeCompare(b.year))
+  }, [loc, history])
+
+  const fmtValue = (v: number) => fmtIndicator(v, def.kind)
+
+  if (history == null) return <div className="ta-statement-empty">Carregando histórico…</div>
+  if (points.length < 2) return <div className="ta-statement-empty">Sem histórico disponível para este indicador.</div>
+
+  return (
+    <div className="ta-key-history-chart">
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={points} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={60}
+            tickFormatter={v => fmtValue(Number(v))} />
+          <Tooltip
+            cursor={{ stroke: 'var(--border)' }}
+            contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+            itemStyle={{ color: 'var(--text-primary)' }}
+            formatter={(v: unknown) => [fmtValue(Number(v)), def.label]}
+            labelFormatter={y => `Ano ${y}`}
+          />
+          <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2}
+            dot={{ r: 3 }} activeDot={{ r: 5 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+export function KeyIndicatorsSection({ symbol, indicators }: {
+  symbol: string
+  indicators: Record<string, number | null> | null
+}) {
+  const [selected, setSelected] = useState<KeyIndicatorDef | null>(null)
+  const { data: history } = useIndicatorHistory(symbol, selected != null)
+
   if (!indicators) return null
   const available = KEY_INDICATORS.filter(d => indicators[d.key] != null)
   if (available.length === 0) return null
@@ -281,12 +360,25 @@ export function KeyIndicatorsSection({ indicators }: { indicators: Record<string
       <div className="ta-key-grid">
         {available.map(d => {
           const v = indicators[d.key] as number
+          const hasHistory = INDICATOR_HISTORY[d.key] != null
+          const active = selected?.key === d.key
           return (
-            <div key={d.key} className="ta-key-card">
+            <div key={d.key} className={`ta-key-card ${active ? 'ta-key-card--active' : ''}`}>
               <span className="ta-metric-help" tabIndex={0} aria-label={d.help}>
                 ?
                 <span className="ta-metric-help-tip">{d.help}</span>
               </span>
+              {hasHistory && (
+                <button
+                  className={`ta-key-chart-btn ${active ? 'ta-key-chart-btn--active' : ''}`}
+                  title={`Histórico anual de ${d.label}`}
+                  onClick={() => setSelected(active ? null : d)}
+                >
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor">
+                    <path d="M4 20h16v2H2V2h2v18zm3-9h3v7H7v-7zm5-6h3v13h-3V5zm5 3h3v10h-3V8z"/>
+                  </svg>
+                </button>
+              )}
               <div className="ta-key-label">{d.label}</div>
               <div className={`ta-key-value ${v < 0 ? 'ta-key-value--neg' : ''}`}>
                 {fmtIndicator(v, d.kind)}
@@ -296,6 +388,15 @@ export function KeyIndicatorsSection({ indicators }: { indicators: Record<string
           )
         })}
       </div>
+      {selected && (
+        <div className="ta-key-history">
+          <div className="ta-key-history-header">
+            <span className="ta-key-history-title">{selected.label} — histórico anual</span>
+            <button className="ta-key-history-close" onClick={() => setSelected(null)}>✕</button>
+          </div>
+          <IndicatorHistoryChart def={selected} history={history} />
+        </div>
+      )}
     </div>
   )
 }

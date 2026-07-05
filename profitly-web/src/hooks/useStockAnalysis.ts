@@ -20,6 +20,31 @@ export function useStockAnalysis(symbol: string | undefined) {
   return { data, loading }
 }
 
+export interface IndicatorHistoryData {
+  statistics: StatementRow[]
+  financialData: StatementRow[]
+}
+
+/** Lazy: only fetches when `enabled` becomes true (first time a chart is opened). */
+export function useIndicatorHistory(symbol: string | undefined, enabled: boolean) {
+  const [data, setData] = useState<IndicatorHistoryData | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!symbol || !enabled || data != null) return
+    let active = true
+    setLoading(true)
+    api.get<IndicatorHistoryData>(`/api/stocks/${symbol}/indicator-history`)
+      .then(res => { if (active) setData(res.data) })
+      .catch(() => { if (active) setData({ statistics: [], financialData: [] }) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, enabled])
+
+  return { data, loading }
+}
+
 export function useStockStatements(symbol: string | undefined, type: StatementType) {
   const [rows, setRows] = useState<StatementRow[]>([])
   const [loading, setLoading] = useState(true)

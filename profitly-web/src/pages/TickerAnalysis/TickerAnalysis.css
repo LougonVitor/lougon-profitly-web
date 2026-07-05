@@ -647,3 +647,36 @@
 .ta-graham-bar-fill--up   { background: linear-gradient(90deg, var(--text-up), var(--accent)); }
 .ta-graham-bar-fill--down { background: linear-gradient(90deg, var(--accent), var(--text-down)); }
 @media (max-width: 600px) { .ta-graham { grid-template-columns: 1fr 1fr; } }
+
+/* Indicator history chart (key indicators grid) */
+.ta-key-chart-btn {
+  position: absolute;
+  top: 7px; right: 28px;
+  width: 15px; height: 15px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ta-key-chart-btn:hover, .ta-key-chart-btn--active {
+  color: var(--text-accent);
+  border-color: var(--text-accent);
+}
+.ta-key-card--active { border-color: var(--accent); }
+.ta-key-card .ta-key-label { padding-right: 40px; }
+.ta-key-history { border-top: 1px solid var(--border); }
+.ta-key-history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.25rem 0;
+}
+.ta-key-history-title { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+.ta-key-history-close {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 13px; padding: 2px 6px;
+}
+.ta-key-history-close:hover { color: var(--text-primary); }
+.ta-key-history-chart { padding: 0.5rem 1rem 0.75rem; }

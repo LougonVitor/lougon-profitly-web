@@ -691,7 +691,7 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
 
       {/* 3. Investidor10-style fundamental indicator grid + Graham fair price */}
-      <KeyIndicatorsSection indicators={advanced?.keyIndicators ?? null} />
+      <KeyIndicatorsSection symbol={analysis.symbol} indicators={advanced?.keyIndicators ?? null} />
       <GrahamCard indicators={advanced?.keyIndicators ?? null} quote={advanced?.quote ?? null} />
 
       {/* 4. Upcoming dividends + dividend history */}
