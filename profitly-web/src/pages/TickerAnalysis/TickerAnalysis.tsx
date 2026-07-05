@@ -785,8 +785,13 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* 2. 52-week range */}
       <FiftyTwoWeekRange quote={advanced?.quote ?? null} />
 
-      {/* 3. Investidor10-style fundamental indicator grid + Graham fair price */}
+      {/* 3. Investidor10-style fundamental indicator grid */}
       <KeyIndicatorsSection symbol={analysis.symbol} indicators={advanced?.keyIndicators ?? null} />
+
+      {/* Company vs sector average */}
+      <SectorComparisonSection comparison={advanced?.sectorComparison ?? null} />
+
+      {/* Fair price models */}
       <GrahamCard indicators={advanced?.keyIndicators ?? null} quote={advanced?.quote ?? null} />
 
       {/* 4. Upcoming dividends + dividend history */}
@@ -815,9 +820,6 @@ function StockAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 
         <FinancialHighlights financials={advanced?.financials ?? null} />
       </div>
-
-      {/* 6. Company vs sector average */}
-      <SectorComparisonSection comparison={advanced?.sectorComparison ?? null} />
 
       {/* 7. Financial statements: DRE, balance sheet, cash flow, DVA */}
       <StatementsSection symbol={analysis.symbol} />
