@@ -86,40 +86,71 @@ interface KeyIndicatorDef {
   key: string
   label: string
   desc: string
+  help: string
   kind: 'num' | 'pct' | 'brl'
 }
 
 const KEY_INDICATORS: KeyIndicatorDef[] = [
-  { key: 'pl',              label: 'P/L',              desc: 'Preço / Lucro por ação',            kind: 'num' },
-  { key: 'psr',             label: 'P/Receita (PSR)',  desc: 'Valor de mercado / Receita',        kind: 'num' },
-  { key: 'pvp',             label: 'P/VP',             desc: 'Preço / Valor patrimonial',         kind: 'num' },
-  { key: 'dividendYield',   label: 'Dividend Yield',   desc: 'Dividendos 12M / Preço',            kind: 'pct' },
-  { key: 'payout',          label: 'Payout',           desc: 'Dividendos 12M / Lucro por ação',   kind: 'pct' },
-  { key: 'margemLiquida',   label: 'Margem Líquida',   desc: 'Lucro líquido / Receita',           kind: 'pct' },
-  { key: 'margemBruta',     label: 'Margem Bruta',     desc: 'Lucro bruto / Receita',             kind: 'pct' },
-  { key: 'margemEbit',      label: 'Margem EBIT',      desc: 'EBIT / Receita',                    kind: 'pct' },
-  { key: 'margemEbitda',    label: 'Margem EBITDA',    desc: 'EBITDA / Receita',                  kind: 'pct' },
-  { key: 'margemOperacional', label: 'Margem Operacional', desc: 'Resultado operacional / Receita', kind: 'pct' },
-  { key: 'crescReceita',    label: 'Cresc. Receita',   desc: 'Crescimento anual da receita',      kind: 'pct' },
-  { key: 'crescLucro',      label: 'Cresc. Lucro',     desc: 'Crescimento anual do lucro',        kind: 'pct' },
-  { key: 'evEbit',          label: 'EV/EBIT',          desc: 'Enterprise Value / EBIT',           kind: 'num' },
-  { key: 'pEbit',           label: 'P/EBIT',           desc: 'Valor de mercado / EBIT',           kind: 'num' },
-  { key: 'pAtivo',          label: 'P/Ativo',          desc: 'Valor de mercado / Ativo total',    kind: 'num' },
-  { key: 'pCapGiro',        label: 'P/Cap. Giro',      desc: 'Valor de mercado / Capital de giro', kind: 'num' },
-  { key: 'pAtivoCircLiq',   label: 'P/Ativo Circ. Liq.', desc: 'Valor de mercado / ACL',          kind: 'num' },
-  { key: 'vpa',             label: 'VPA',              desc: 'Valor patrimonial por ação',        kind: 'brl' },
-  { key: 'lpa',             label: 'LPA',              desc: 'Lucro por ação',                    kind: 'brl' },
-  { key: 'beta',            label: 'Beta',             desc: 'Volatilidade vs mercado',           kind: 'num' },
-  { key: 'pegRatio',        label: 'PEG Ratio',        desc: 'P/L / Crescimento do lucro',        kind: 'num' },
-  { key: 'giroAtivos',      label: 'Giro Ativos',      desc: 'Receita / Ativo total',             kind: 'num' },
-  { key: 'roe',             label: 'ROE',              desc: 'Retorno sobre patrimônio',          kind: 'pct' },
-  { key: 'roic',            label: 'ROIC',             desc: 'Retorno sobre capital investido',   kind: 'pct' },
-  { key: 'roa',             label: 'ROA',              desc: 'Retorno sobre ativos',              kind: 'pct' },
-  { key: 'patrimonioAtivos', label: 'Patrimônio/Ativos', desc: 'Patrimônio líquido / Ativos',     kind: 'num' },
-  { key: 'passivosAtivos',  label: 'Passivos/Ativos',  desc: 'Passivo total / Ativos',            kind: 'num' },
-  { key: 'liquidezCorrente', label: 'Liquidez Corrente', desc: 'Ativo circ. / Passivo circ.',     kind: 'num' },
-  { key: 'cagrReceitas5a',  label: 'CAGR Receitas 5A', desc: 'Cresc. anual da receita (5 anos)',  kind: 'pct' },
-  { key: 'cagrLucros5a',    label: 'CAGR Lucros 5A',   desc: 'Cresc. anual do lucro (5 anos)',    kind: 'pct' },
+  { key: 'pl',              label: 'P/L',              desc: 'Preço / Lucro por ação',            kind: 'num',
+    help: 'Preço dividido pelo lucro por ação dos últimos 12 meses. Indica quantos anos de lucro o mercado paga pela ação — quanto menor, mais barata.' },
+  { key: 'psr',             label: 'P/Receita (PSR)',  desc: 'Valor de mercado / Receita',        kind: 'num',
+    help: 'Valor de mercado dividido pela receita. Útil para comparar empresas com lucros voláteis ou negativos.' },
+  { key: 'pvp',             label: 'P/VP',             desc: 'Preço / Valor patrimonial',         kind: 'num',
+    help: 'Preço dividido pelo valor patrimonial por ação. Abaixo de 1, a ação negocia por menos que o patrimônio líquido da empresa.' },
+  { key: 'dividendYield',   label: 'Dividend Yield',   desc: 'Dividendos 12M / Preço',            kind: 'pct',
+    help: 'Percentual do preço da ação distribuído em dividendos e JCP nos últimos 12 meses.' },
+  { key: 'payout',          label: 'Payout',           desc: 'Dividendos 12M / Lucro por ação',   kind: 'pct',
+    help: 'Percentual do lucro distribuído aos acionistas. Payout alto sobra menos para reinvestir; acima de 100% a empresa distribui mais do que lucra.' },
+  { key: 'margemLiquida',   label: 'Margem Líquida',   desc: 'Lucro líquido / Receita',           kind: 'pct',
+    help: 'Percentual da receita que se converte em lucro líquido, após todos os custos, despesas e impostos.' },
+  { key: 'margemBruta',     label: 'Margem Bruta',     desc: 'Lucro bruto / Receita',             kind: 'pct',
+    help: 'Percentual da receita que sobra após os custos diretos de produção. Mede a rentabilidade do produto em si.' },
+  { key: 'margemEbit',      label: 'Margem EBIT',      desc: 'EBIT / Receita',                    kind: 'pct',
+    help: 'Lucro operacional (antes de juros e impostos) sobre a receita. Mede a eficiência da operação sem efeitos financeiros.' },
+  { key: 'margemEbitda',    label: 'Margem EBITDA',    desc: 'EBITDA / Receita',                  kind: 'pct',
+    help: 'EBITDA sobre a receita. Aproxima a geração de caixa operacional, ignorando depreciação e amortização.' },
+  { key: 'margemOperacional', label: 'Margem Operacional', desc: 'Resultado operacional / Receita', kind: 'pct',
+    help: 'Percentual da receita que vira resultado operacional, após custos e despesas operacionais.' },
+  { key: 'crescReceita',    label: 'Cresc. Receita',   desc: 'Crescimento anual da receita',      kind: 'pct',
+    help: 'Crescimento da receita no último ano em relação ao anterior.' },
+  { key: 'crescLucro',      label: 'Cresc. Lucro',     desc: 'Crescimento anual do lucro',        kind: 'pct',
+    help: 'Crescimento do lucro líquido no último ano em relação ao anterior.' },
+  { key: 'evEbit',          label: 'EV/EBIT',          desc: 'Enterprise Value / EBIT',           kind: 'num',
+    help: 'Valor da firma (mercado + dívida líquida) dividido pelo lucro operacional. Quanto menor, mais barata a operação da empresa.' },
+  { key: 'pEbit',           label: 'P/EBIT',           desc: 'Valor de mercado / EBIT',           kind: 'num',
+    help: 'Valor de mercado dividido pelo lucro operacional (EBIT).' },
+  { key: 'pAtivo',          label: 'P/Ativo',          desc: 'Valor de mercado / Ativo total',    kind: 'num',
+    help: 'Valor de mercado dividido pelo ativo total. Mostra quanto o mercado paga por cada real de ativos da empresa.' },
+  { key: 'pCapGiro',        label: 'P/Cap. Giro',      desc: 'Valor de mercado / Capital de giro', kind: 'num',
+    help: 'Valor de mercado dividido pelo capital de giro (ativo circulante − passivo circulante).' },
+  { key: 'pAtivoCircLiq',   label: 'P/Ativo Circ. Liq.', desc: 'Valor de mercado / ACL',          kind: 'num',
+    help: 'Valor de mercado dividido pelo ativo circulante líquido (ativo circulante − passivo total). Negativo é comum e indica que os passivos superam o circulante.' },
+  { key: 'vpa',             label: 'VPA',              desc: 'Valor patrimonial por ação',        kind: 'brl',
+    help: 'Patrimônio líquido dividido pelo número de ações — quanto do patrimônio "pertence" a cada ação.' },
+  { key: 'lpa',             label: 'LPA',              desc: 'Lucro por ação',                    kind: 'brl',
+    help: 'Lucro líquido dos últimos 12 meses dividido pelo número de ações.' },
+  { key: 'beta',            label: 'Beta',             desc: 'Volatilidade vs mercado',           kind: 'num',
+    help: 'Volatilidade em relação ao mercado. Acima de 1, a ação oscila mais que o Ibovespa; abaixo de 1, oscila menos.' },
+  { key: 'pegRatio',        label: 'PEG Ratio',        desc: 'P/L / Crescimento do lucro',        kind: 'num',
+    help: 'P/L dividido pelo crescimento esperado do lucro. Próximo de 1 sugere preço justo em relação ao crescimento.' },
+  { key: 'giroAtivos',      label: 'Giro Ativos',      desc: 'Receita / Ativo total',             kind: 'num',
+    help: 'Receita dividida pelo ativo total. Mede a eficiência da empresa em gerar receita com seus ativos.' },
+  { key: 'roe',             label: 'ROE',              desc: 'Retorno sobre patrimônio',          kind: 'pct',
+    help: 'Lucro líquido sobre o patrimônio líquido. Mede quanto a empresa gera de retorno com o capital dos acionistas.' },
+  { key: 'roic',            label: 'ROIC',             desc: 'Retorno sobre capital investido',   kind: 'pct',
+    help: 'Retorno sobre todo o capital investido (próprio + terceiros). Acima do custo de capital, a empresa cria valor.' },
+  { key: 'roa',             label: 'ROA',              desc: 'Retorno sobre ativos',              kind: 'pct',
+    help: 'Lucro líquido sobre o ativo total. Mede a eficiência no uso dos ativos para gerar lucro.' },
+  { key: 'patrimonioAtivos', label: 'Patrimônio/Ativos', desc: 'Patrimônio líquido / Ativos',     kind: 'num',
+    help: 'Fração dos ativos financiada com capital próprio. Quanto maior, menos alavancada a empresa.' },
+  { key: 'passivosAtivos',  label: 'Passivos/Ativos',  desc: 'Passivo total / Ativos',            kind: 'num',
+    help: 'Fração dos ativos financiada com capital de terceiros (dívidas e obrigações).' },
+  { key: 'liquidezCorrente', label: 'Liquidez Corrente', desc: 'Ativo circ. / Passivo circ.',     kind: 'num',
+    help: 'Ativo circulante dividido pelo passivo circulante. Acima de 1 indica capacidade de honrar as obrigações de curto prazo.' },
+  { key: 'cagrReceitas5a',  label: 'CAGR Receitas 5A', desc: 'Cresc. anual da receita (5 anos)',  kind: 'pct',
+    help: 'Crescimento anual composto da receita nos últimos 5 anos.' },
+  { key: 'cagrLucros5a',    label: 'CAGR Lucros 5A',   desc: 'Cresc. anual do lucro (5 anos)',    kind: 'pct',
+    help: 'Crescimento anual composto do lucro líquido nos últimos 5 anos.' },
 ]
 
 function fmtIndicator(v: number, kind: KeyIndicatorDef['kind']): string {
@@ -140,7 +171,11 @@ export function KeyIndicatorsSection({ indicators }: { indicators: Record<string
         {available.map(d => {
           const v = indicators[d.key] as number
           return (
-            <div key={d.key} className="ta-key-card" title={d.desc}>
+            <div key={d.key} className="ta-key-card">
+              <span className="ta-metric-help" tabIndex={0} aria-label={d.help}>
+                ?
+                <span className="ta-metric-help-tip">{d.help}</span>
+              </span>
               <div className="ta-key-label">{d.label}</div>
               <div className={`ta-key-value ${v < 0 ? 'ta-key-value--neg' : ''}`}>
                 {fmtIndicator(v, d.kind)}

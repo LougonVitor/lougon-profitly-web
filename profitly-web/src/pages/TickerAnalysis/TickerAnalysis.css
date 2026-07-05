@@ -620,3 +620,8 @@
 .ta-metric-help:focus .ta-metric-help-tip {
   display: block;
 }
+
+/* Help "?" inside key indicator cards */
+.ta-key-card { position: relative; }
+.ta-key-card .ta-metric-help { top: 7px; right: 8px; }
+.ta-key-card .ta-key-label { padding-right: 20px; }
