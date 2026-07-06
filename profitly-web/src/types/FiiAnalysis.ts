@@ -65,6 +65,18 @@ export interface FiiAnalysis {
   dividendYield1m: number | null
   dividendsSum12m: number | null
   dividendCount12m: number | null
+  /** Most recent payout per quota (R$). */
+  lastDividend: number | null
+  /** Dividends over the last 3 months / current price (%). */
+  dividendYield3m: number | null
+  /** Dividends over the last 6 months / current price (%). */
+  dividendYield6m: number | null
+  /** Average of the monthly DY-12m across history (%). */
+  avgDividendYield: number | null
+  /** Average daily financial volume (R$) over ~21 trading days. */
+  avgDailyLiquidity: number | null
+  /** Management fee, annualized (% a.a.). */
+  adminFeeRate: number | null
   /** Quota price divided by the last monthly payout per quota. */
   magicNumber: number | null
   /** Market price returns (%) keyed by period: 1m, 3m, 6m, 1y, max. */

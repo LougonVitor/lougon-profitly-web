@@ -858,6 +858,14 @@ function FiiDividendsSection({ fa }: { fa: FiiAnalysisData }) {
   const pages = Math.max(1, Math.ceil(dividends.length / FII_DIVIDEND_PAGE_SIZE))
   const slice = dividends.slice(page * FII_DIVIDEND_PAGE_SIZE, (page + 1) * FII_DIVIDEND_PAGE_SIZE)
 
+  const yieldCards = [
+    { label: 'Último rendimento', value: fa.lastDividend != null ? fmtBRL(fa.lastDividend) : '—', sub: 'Por cota' },
+    { label: 'Yield 1 mês', value: fa.dividendYield1m != null ? `${fmt(fa.dividendYield1m)}%` : '—', sub: 'Sobre o preço' },
+    { label: 'Yield 3 meses', value: fa.dividendYield3m != null ? `${fmt(fa.dividendYield3m)}%` : '—', sub: 'Acumulado' },
+    { label: 'Yield 6 meses', value: fa.dividendYield6m != null ? `${fmt(fa.dividendYield6m)}%` : '—', sub: 'Acumulado' },
+    { label: 'DY médio', value: fa.avgDividendYield != null ? `${fmt(fa.avgDividendYield)}%` : '—', sub: 'Histórico mensal' },
+  ].filter(c => c.value !== '—')
+
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
@@ -866,6 +874,13 @@ function FiiDividendsSection({ fa }: { fa: FiiAnalysisData }) {
           {fa.dividendsSum12m != null ? `${fmtBRL(fa.dividendsSum12m)}/cota em 12m · ` : ''}{dividends.length} pagamentos
         </span>
       </div>
+      {yieldCards.length > 0 && (
+        <div className="ta-crypto-returns-grid ta-returns-grid--inset" style={{ marginBottom: '0.75rem' }}>
+          {yieldCards.map(c => (
+            <MetricCard key={c.label} label={c.label} value={c.value} sub={c.sub} />
+          ))}
+        </div>
+      )}
       <div className="ta-sector-table-wrap">
         <table className="ta-sector-table">
           <thead>
@@ -1066,6 +1081,9 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
               <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
             </div>
             <div className="ta-info-row"><span>Volume</span><strong>{fmtCap(analysis.volume)}</strong></div>
+            {fa?.avgDailyLiquidity != null && (
+              <div className="ta-info-row"><span>Liquidez diária média</span><strong>{fmtCap(fa.avgDailyLiquidity)}</strong></div>
+            )}
             {fa?.monthlyReturn != null && (
               <div className="ta-info-row"><span>Retorno no mês (informe)</span>
                 <strong className={fa.monthlyReturn >= 0 ? 'up' : 'down'}>{fmtPct(fa.monthlyReturn)}</strong></div>
@@ -1089,6 +1107,12 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
             )}
             {fa?.mandate && (
               <div className="ta-info-row"><span>Mandato</span><strong>{fa.mandate}</strong></div>
+            )}
+            {fa?.adminFeeRate != null && (
+              <div className="ta-info-row"><span>Taxa de administração</span><strong>{fmt(fa.adminFeeRate)}% a.a.</strong></div>
+            )}
+            {fa?.avgDividendYield != null && (
+              <div className="ta-info-row"><span>DY médio (histórico)</span><strong>{fmt(fa.avgDividendYield)}%</strong></div>
             )}
             {fa?.cnpj && (
               <div className="ta-info-row"><span>CNPJ</span><strong>{fa.cnpj}</strong></div>
