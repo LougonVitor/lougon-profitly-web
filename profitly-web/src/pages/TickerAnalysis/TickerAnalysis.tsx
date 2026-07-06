@@ -531,10 +531,11 @@ function segmentLabel(s: string | null | undefined): string {
   return SEGMENT_LABEL[s.toLowerCase()] ?? s
 }
 
+// brapi stores DY in the indicator history as a decimal fraction (0.12 = 12%) — scale for display
 const FII_HISTORY_METRICS = [
   { key: 'priceToNav',       label: 'P/VP',       fmt: (v: number) => v.toFixed(3) },
-  { key: 'dividendYield12m', label: 'DY 12m (%)', fmt: (v: number) => `${v.toFixed(2)}%` },
-  { key: 'dividendYield1m',  label: 'DY 1m (%)',  fmt: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'dividendYield12m', label: 'DY 12m (%)', fmt: (v: number) => `${(v * 100).toFixed(2)}%` },
+  { key: 'dividendYield1m',  label: 'DY 1m (%)',  fmt: (v: number) => `${(v * 100).toFixed(2)}%` },
   { key: 'equity',           label: 'Patrimônio', fmt: (v: number) => fmtCap(v) },
 ]
 
