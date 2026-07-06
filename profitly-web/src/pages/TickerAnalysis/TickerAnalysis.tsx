@@ -15,13 +15,14 @@ import {
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useTreasuryAnalysis } from '../../hooks/useTreasuryAnalysis'
-import { useFundIndicator } from '../../hooks/useFundIndicator'
+import { useFundAnalysis } from '../../hooks/useFundAnalysis'
 import { useCryptoAnalysis } from '../../hooks/useCryptoAnalysis'
 import { useFearGreed } from '../../hooks/useFearGreed'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import type { CryptoAnalysis } from '../../types/CryptoAnalysis'
 import type { TreasuryAnalysis as TreasuryAnalysisData } from '../../types/TreasuryAnalysis'
+import type { FundAnalysis as FundAnalysisData, FundRawDocument } from '../../types/FundAnalysis'
 import './TickerAnalysis.css'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -1651,18 +1652,454 @@ function TreasuryAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
 // ── Fund Components ──────────────────────────────────────────────────────────
 
 const FUND_TYPE_LABELS: Record<string, string> = {
-  fiagro: 'FIAGRO', fidc: 'FIDC', fip: 'FIP', 'fi-infra': 'FI-Infra',
+  fiagro: 'FIAGRO', fidc: 'FIDC', fip: 'FIP', 'fi-infra': 'FI-Infra', fiinfra: 'FI-Infra',
+  'fi-agro': 'FIAGRO', fund: 'Fundo',
+}
+
+const FUND_PERIODS = TREASURY_PERIODS
+
+const FIAGRO_ALLOC_LABELS: Record<string, string> = {
+  cra: 'CRA', cpr: 'CPR', cdca: 'CDCA', lca: 'LCA', lci: 'LCI',
+  fii: 'FIIs', fip: 'FIPs', fidc: 'FIDCs', fiagro: 'FIAGROs',
+  ruralRealEstate: 'Imóveis rurais',
+}
+
+const FIDC_SECTOR_LABELS: Record<string, string> = {
+  finance: 'Financeiro', commerce: 'Comércio', industry: 'Indústria', services: 'Serviços',
+  factoring: 'Factoring', realEstate: 'Imobiliário', agribusiness: 'Agronegócio',
+  creditRights: 'Direitos creditórios', publicSector: 'Setor público', judicial: 'Judicial',
+  brand: 'Marca', other: 'Outros',
+}
+
+const PORTFOLIO_SUMMARY_LABELS: Record<string, string> = {
+  publicBondsValue: 'Títulos públicos', fundHoldingsValue: 'Cotas de fundos',
+  creditAssetsValue: 'Ativos de crédito', listedSecuritiesValue: 'Títulos listados',
+  receivablesValue: 'Valores a receber',
+}
+
+const INVESTOR_BREAKDOWN_LABELS: Record<string, string> = {
+  individualRetailPercent: 'Pessoas físicas', legalEntitiesPercent: 'Pessoas jurídicas',
+  fundsOrClubsPercent: 'Fundos e clubes', nonResidentsPercent: 'Não residentes',
+  otherPercent: 'Outros',
+}
+
+// Safe readers for the raw brapi documents (shape varies per fund type)
+function docObj(doc: FundRawDocument | null | undefined, key: string): FundRawDocument | null {
+  const v = doc?.[key]
+  return v != null && typeof v === 'object' && !Array.isArray(v) ? v as FundRawDocument : null
+}
+function docNum(obj: FundRawDocument | null | undefined, key: string): number | null {
+  const v = obj?.[key]
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+function docStr(obj: FundRawDocument | null | undefined, key: string): string | null {
+  const v = obj?.[key]
+  return typeof v === 'string' && v.length > 0 ? v : null
+}
+
+/** Horizontal proportional bars for a value breakdown (composition charts). */
+function AllocationBars({ items, formatValue }: {
+  items: { label: string; value: number }[]
+  formatValue: (v: number) => string
+}) {
+  const positive = items.filter(i => i.value > 0).sort((a, b) => b.value - a.value)
+  if (positive.length === 0) return null
+  const max = positive[0].value
+  return (
+    <div>
+      {positive.map(i => (
+        <div key={i.label} className="ta-fund-alloc-row">
+          <span className="ta-fund-alloc-label" title={i.label}>{i.label}</span>
+          <div className="ta-fund-alloc-track">
+            <div className="ta-fund-alloc-fill" style={{ width: `${(i.value / max) * 100}%` }} />
+          </div>
+          <span className="ta-fund-alloc-value">{formatValue(i.value)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Fund52WeekRange({ fa }: { fa: FundAnalysisData }) {
+  if (fa.price52wLow == null || fa.price52wHigh == null || fa.price == null) return null
+  const pct = fa.pricePositionInRange52w
+    ?? (fa.price52wHigh > fa.price52wLow
+      ? Math.min(100, Math.max(0, ((fa.price - fa.price52wLow) / (fa.price52wHigh - fa.price52wLow)) * 100))
+      : 50)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Faixa de 52 Semanas</div>
+      <div className="ta-52w">
+        <span className="ta-52w-bound">{fmtBRL(fa.price52wLow)}</span>
+        <div className="ta-52w-track">
+          <div className="ta-52w-fill" style={{ width: `${pct}%` }} />
+          <div className="ta-52w-marker" style={{ left: `${pct}%` }}>
+            <span className="ta-52w-price">{fmtBRL(fa.price)}</span>
+          </div>
+        </div>
+        <span className="ta-52w-bound">{fmtBRL(fa.price52wHigh)}</span>
+      </div>
+    </div>
+  )
+}
+
+function FundReturnsSection({ fa }: { fa: FundAnalysisData }) {
+  const returns = fa.priceReturns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = FUND_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Retornos (preço de mercado)</div>
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Valorização da cota negociada na B3 no período — não inclui os rendimentos distribuídos.
+      </div>
+    </div>
+  )
+}
+
+function FundNavReturnsSection({ fa }: { fa: FundAnalysisData }) {
+  const returns = fa.navReturns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = FUND_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Evolução do Valor Patrimonial da Cota</div>
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Variação do VP/cota informado à CVM — mostra a geração de valor da carteira, sem o humor do mercado.
+      </div>
+    </div>
+  )
+}
+
+function FundRiskSection({ fa }: { fa: FundAnalysisData }) {
+  const hasData = fa.priceVolatility1y != null || fa.priceMaxDrawdown1y != null
+    || fa.navVolatility1y != null || fa.pricePositionInRange52w != null
+  if (!hasData) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Risco e Volatilidade</div>
+      <div className="ta-info-rows">
+        {fa.priceVolatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade do preço 1 ano (anualizada)</span>
+            <strong>{fmt(fa.priceVolatility1y)}%</strong></div>
+        )}
+        {fa.priceMaxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima do preço em 1 ano (drawdown)</span>
+            <strong className="down">{fmt(fa.priceMaxDrawdown1y)}%</strong></div>
+        )}
+        {fa.navVolatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade do VP/cota 1 ano</span>
+            <strong>{fmt(fa.navVolatility1y)}%</strong></div>
+        )}
+        {fa.maxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima do VP/cota em 1 ano</span>
+            <strong className="down">{fmt(fa.maxDrawdown1y)}%</strong></div>
+        )}
+        {fa.pricePositionInRange52w != null && (
+          <div className="ta-info-row"><span>Posição do preço na faixa de 52 semanas</span>
+            <strong>{fmt(fa.pricePositionInRange52w, 0)}%</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FundEquitySection({ fa }: { fa: FundAnalysisData }) {
+  const hasData = fa.equity != null || fa.navPerShare != null || fa.totalInvestors != null
+  if (!hasData) return null
+  const equity1y = fa.equityChanges?.['1y']
+  const investors1y = fa.investorsChanges?.['1y']
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Patrimônio e Cotistas</div>
+      <div className="ta-info-rows">
+        {fa.equity != null && (
+          <div className="ta-info-row"><span>Patrimônio líquido</span><strong>{fmtCap(fa.equity)}</strong></div>
+        )}
+        {fa.totalAssets != null && (
+          <div className="ta-info-row"><span>Ativos totais</span><strong>{fmtCap(fa.totalAssets)}</strong></div>
+        )}
+        {fa.navPerShare != null && (
+          <div className="ta-info-row"><span>VP por cota</span><strong>{fmtBRL(fa.navPerShare)}</strong></div>
+        )}
+        {fa.sharesOutstanding != null && (
+          <div className="ta-info-row"><span>Cotas emitidas</span><strong>{fmtShares(fa.sharesOutstanding)}</strong></div>
+        )}
+        {fa.totalInvestors != null && (
+          <div className="ta-info-row"><span>Total de cotistas</span><strong>{fmtInvestors(fa.totalInvestors)}</strong></div>
+        )}
+        {equity1y != null && (
+          <div className="ta-info-row"><span>Variação do patrimônio em 1 ano</span>
+            <strong className={equity1y >= 0 ? 'up' : 'down'}>{fmtPct(equity1y)}</strong></div>
+        )}
+        {investors1y != null && (
+          <div className="ta-info-row"><span>Variação de cotistas em 1 ano</span>
+            <strong className={investors1y >= 0 ? 'up' : 'down'}>{fmtPct(investors1y)}</strong></div>
+        )}
+        {fa.navHistoryHigh != null && (
+          <div className="ta-info-row"><span>Maior VP/cota registrado</span>
+            <strong className="up">{fmtBRL(fa.navHistoryHigh)}{fa.navHistoryHighDate ? ` (${fmtDateOnly(fa.navHistoryHighDate)})` : ''}</strong></div>
+        )}
+        {fa.navHistoryLow != null && (
+          <div className="ta-info-row"><span>Menor VP/cota registrado</span>
+            <strong className="down">{fmtBRL(fa.navHistoryLow)}{fa.navHistoryLowDate ? ` (${fmtDateOnly(fa.navHistoryLowDate)})` : ''}</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Portfolio composition — the source document depends on the fund type. */
+function FundPortfolioSection({ fa }: { fa: FundAnalysisData }) {
+  const docs = fa.documents ?? {}
+
+  // FIAGRO: allocation by instrument class (CRA, CPR, FIDCs...)
+  const fiagro = docObj(docs['fiagro_portfolio'], 'allocations')
+  if (fiagro) {
+    const items = Object.entries(FIAGRO_ALLOC_LABELS)
+      .map(([key, label]) => ({ label, value: docNum(fiagro, key) ?? 0 }))
+    const refDate = docStr(docs['fiagro_portfolio'], 'referenceDate')
+    return (
+      <div className="ta-section-card">
+        <div className="ta-section-header">
+          <div className="ta-section-title">Composição da Carteira</div>
+          {refDate && <span className="ta-sector-badge">ref. {fmtDateOnly(refDate)}</span>}
+        </div>
+        <AllocationBars items={items} formatValue={v => fmtCap(v)} />
+      </div>
+    )
+  }
+
+  // FIDC: receivables by sector + risk buckets
+  const fidcDoc = docs['fidc_portfolio']
+  const sectors = docObj(fidcDoc, 'sectors')
+  if (sectors) {
+    const items = Object.entries(FIDC_SECTOR_LABELS)
+      .map(([key, label]) => ({ label, value: docNum(sectors, key) ?? 0 }))
+    const cedentes = docObj(fidcDoc, 'cedentes')
+    const top1 = docNum(cedentes, 'top1Percent')
+    const refDate = docStr(fidcDoc, 'referenceDate')
+    return (
+      <div className="ta-section-card">
+        <div className="ta-section-header">
+          <div className="ta-section-title">Carteira de Recebíveis por Setor</div>
+          {refDate && <span className="ta-sector-badge">ref. {fmtDateOnly(refDate)}</span>}
+        </div>
+        <AllocationBars items={items} formatValue={v => fmtCap(v)} />
+        {top1 != null && top1 > 0 && (
+          <div className="ta-sector-note">
+            Maior cedente concentra {fmt(top1)}% da carteira
+            {docNum(cedentes, 'top2Percent') != null ? `; o segundo, ${fmt(docNum(cedentes, 'top2Percent')!)}%` : ''}.
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Generic portfolio (FI-Infra etc.): summary buckets
+  const summary = docObj(docs['portfolio'], 'summary')
+  if (summary) {
+    const items = Object.entries(PORTFOLIO_SUMMARY_LABELS)
+      .map(([key, label]) => ({ label, value: docNum(summary, key) ?? 0 }))
+    const holdings = docNum(summary, 'holdingsCount')
+    const refDate = docStr(docs['portfolio'], 'referenceDate')
+    return (
+      <div className="ta-section-card">
+        <div className="ta-section-header">
+          <div className="ta-section-title">Composição da Carteira</div>
+          {refDate && <span className="ta-sector-badge">ref. {fmtDateOnly(refDate)}</span>}
+        </div>
+        <AllocationBars items={items} formatValue={v => fmtCap(v)} />
+        {holdings != null && (
+          <div className="ta-sector-note">{holdings} posições na carteira informada à CVM.</div>
+        )}
+      </div>
+    )
+  }
+
+  // FIP: committed capital and quota data from the periodic report
+  const fip = docs['fip_report']
+  const capital = docObj(fip, 'capital')
+  if (capital) {
+    const quotaClass = docObj(fip, 'quotaClass')
+    return (
+      <div className="ta-section-card">
+        <div className="ta-section-title">Capital e Cotas (informe periódico)</div>
+        <div className="ta-info-rows">
+          {docNum(capital, 'committed') != null && (
+            <div className="ta-info-row"><span>Capital comprometido</span><strong>{fmtCap(docNum(capital, 'committed'))}</strong></div>
+          )}
+          {docNum(capital, 'subscribed') != null && (
+            <div className="ta-info-row"><span>Capital subscrito</span><strong>{fmtCap(docNum(capital, 'subscribed'))}</strong></div>
+          )}
+          {docNum(capital, 'paidIn') != null && (
+            <div className="ta-info-row"><span>Capital integralizado</span><strong>{fmtCap(docNum(capital, 'paidIn'))}</strong></div>
+          )}
+          {docNum(fip, 'netEquity') != null && (
+            <div className="ta-info-row"><span>Patrimônio líquido do informe</span><strong>{fmtCap(docNum(fip, 'netEquity'))}</strong></div>
+          )}
+          {docStr(fip, 'targetAudience') && (
+            <div className="ta-info-row"><span>Público-alvo</span><strong>{docStr(fip, 'targetAudience')}</strong></div>
+          )}
+          {docNum(quotaClass, 'quotaValue') != null && (
+            <div className="ta-info-row"><span>Valor da cota (classe {docStr(quotaClass, 'name') ?? '—'})</span>
+              <strong>{fmtBRL(docNum(quotaClass, 'quotaValue'))}</strong></div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return null
+}
+
+/** Investor breakdown from the CVM profile document (percentages). */
+function FundInvestorsSection({ fa }: { fa: FundAnalysisData }) {
+  const breakdown = docObj(fa.documents?.['profile'], 'investorBreakdown')
+  if (!breakdown) return null
+  const items = Object.entries(INVESTOR_BREAKDOWN_LABELS)
+    .map(([key, label]) => ({ label, value: docNum(breakdown, key) ?? 0 }))
+  if (items.every(i => i.value <= 0)) return null
+  const refDate = docStr(fa.documents?.['profile'], 'referenceDate')
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Perfil dos Cotistas</div>
+        {refDate && <span className="ta-sector-badge">ref. {fmtDateOnly(refDate)}</span>}
+      </div>
+      <AllocationBars items={items} formatValue={v => `${fmt(v, 1)}%`} />
+    </div>
+  )
+}
+
+function FundDividendsSection({ fa }: { fa: FundAnalysisData }) {
+  const dividends = fa.recentDividends
+  if (!dividends || dividends.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Últimos Rendimentos</div>
+        {fa.dividendsSum12m != null && (
+          <span className="ta-sector-badge">{fmtBRL(fa.dividendsSum12m)}/cota em 12m</span>
+        )}
+      </div>
+      <div className="ta-sector-table-wrap">
+        <table className="ta-sector-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Data com</th>
+              <th>Pagamento</th>
+              <th className="right">Valor por cota</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dividends.map((d, i) => (
+              <tr key={`${d.paymentDate}-${i}`}>
+                <td>{d.label ?? 'RENDIMENTO'}</td>
+                <td>{fmtDateOnly(d.lastDatePrior)}</td>
+                <td>{fmtDateOnly(d.paymentDate)}</td>
+                <td className="right">{d.rate != null ? fmtBRL(d.rate) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+/** All funds of the same type ordered by DY 12m, current one highlighted. */
+function FundSimilarSection({ fa }: { fa: FundAnalysisData }) {
+  const navigate = useNavigate()
+  if (!fa.similarFunds || fa.similarFunds.length === 0) return null
+
+  const rows = [
+    {
+      symbol: fa.symbol, name: fa.name, fundType: fa.fundType, price: fa.price,
+      priceToNav: fa.priceToNav, dividendYield12m: fa.dividendYield12m,
+      dividendYieldMonthly: fa.dividendYieldMonthly, equity: fa.equity,
+      totalInvestors: fa.totalInvestors, isCurrent: true,
+    },
+    ...fa.similarFunds.map(f => ({ ...f, isCurrent: false })),
+  ].sort((a, b) => (b.dividendYield12m ?? -1) - (a.dividendYield12m ?? -1))
+
+  const typeLabel = fa.fundType ? (FUND_TYPE_LABELS[fa.fundType.toLowerCase()] ?? fa.fundType) : ''
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Comparação de Fundos do Mesmo Tipo</div>
+        <span className="ta-sector-badge">{typeLabel} · {rows.length} fundos</span>
+      </div>
+      <div className="ta-sector-table-wrap">
+        <table className="ta-sector-table">
+          <thead>
+            <tr>
+              <th>Fundo</th>
+              <th className="right">Preço</th>
+              <th className="right">P/VP</th>
+              <th className="right">DY 12m</th>
+              <th className="right">Patrimônio</th>
+              <th className="right">Cotistas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(f => (
+              <tr key={f.symbol}
+                style={f.isCurrent ? undefined : { cursor: 'pointer' }}
+                onClick={f.isCurrent ? undefined : () => navigate(`/ticker/${f.symbol}`)}>
+                <td className={f.isCurrent ? 'ta-sector-company' : undefined}>
+                  {f.symbol}{f.isCurrent ? ' (este)' : ''}
+                </td>
+                <td className="right">{f.price != null ? fmtBRL(f.price) : '—'}</td>
+                <td className="right">{fmt(f.priceToNav)}</td>
+                <td className="right">{f.dividendYield12m != null ? `${fmt(f.dividendYield12m)}%` : '—'}</td>
+                <td className="right">{f.equity != null ? fmtCap(f.equity) : '—'}</td>
+                <td className="right">{fmtInvestors(f.totalInvestors)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="ta-sector-note">
+        Ordenado pelo dividend yield dos últimos 12 meses. Clique em um fundo para abrir a análise dele.
+      </div>
+    </div>
+  )
 }
 
 function FundAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
-  const { indicator, loading } = useFundIndicator(analysis.symbol)
+  const { data: fa, loading } = useFundAnalysis(analysis.symbol)
   const up = (analysis.changePercent ?? 0) >= 0
 
-  const pvp = indicator?.priceToNav
+  const pvp = fa?.priceToNav
   const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
-  const fundTypeLabel = indicator?.fundType
-    ? (FUND_TYPE_LABELS[indicator.fundType.toLowerCase()] ?? indicator.fundType)
+  const fundTypeLabel = fa?.fundType
+    ? (FUND_TYPE_LABELS[fa.fundType.toLowerCase()] ?? fa.fundType.toUpperCase())
     : '—'
+  const return1y = fa?.priceReturns?.['1y']
 
   return (
     <>
@@ -1672,20 +2109,34 @@ function FundAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
           Array.from({ length: 5 }).map((_, i) => <div key={i} className="ta-metric ta-metric--skeleton" />)
         ) : (
           <>
-            <MetricCard label="P/VP" value={fmt(pvp)} sub="Preço / Valor Patrimonial" variant={pvpVariant} />
+            <MetricCard label="P/VP" value={fmt(pvp)} sub="Preço / Valor Patrimonial" variant={pvpVariant}
+              help="Preço da cota na B3 dividido pelo valor patrimonial. Abaixo de 1, o fundo negocia com desconto sobre o patrimônio." />
             <MetricCard
               label="DY 12m"
-              value={indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}
-              sub="Dividend Yield anual"
-              variant={indicator?.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined}
+              value={fa?.dividendYield12m != null ? `${fa.dividendYield12m.toFixed(2)}%` : '—'}
+              sub={fa?.dividendCount12m != null ? `${fa.dividendCount12m} pagamentos` : 'Dividend Yield anual'}
+              variant={fa?.dividendYield12m != null && fa.dividendYield12m > 8 ? 'up' : undefined}
+              help="Rendimentos distribuídos nos últimos 12 meses divididos pelo preço atual da cota."
             />
             <MetricCard
-              label="DY 1m"
-              value={indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}
-              sub="Dividend Yield mensal"
+              label="Retorno 12m"
+              value={fmtPct(return1y)}
+              sub="Preço de mercado"
+              variant={pctVariant(return1y)}
+              help="Valorização da cota na B3 nos últimos 12 meses, sem contar os rendimentos."
             />
-            <MetricCard label="Cotistas" value={fmtInvestors(indicator?.totalInvestors)} sub="Total de investidores" />
-            <MetricCard label="Tipo" value={fundTypeLabel} sub="Categoria do fundo" />
+            <MetricCard
+              label="Volatilidade"
+              value={fa?.priceVolatility1y != null ? `${fmt(fa.priceVolatility1y, 1)}%` : '—'}
+              sub="Anualizada (1 ano)"
+              help="Desvio padrão anualizado das variações diárias do preço. Quanto maior, mais a cota oscila."
+            />
+            <MetricCard
+              label="Ranking DY"
+              value={fa?.dyRankInType != null ? `#${fa.dyRankInType}` : '—'}
+              sub={fa?.totalInType != null ? `de ${fa.totalInType} ${fundTypeLabel}` : 'Por DY 12m'}
+              help="Posição do dividend yield 12m entre os fundos do mesmo tipo."
+            />
           </>
         )}
       </div>
@@ -1693,57 +2144,109 @@ function FundAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* Detail Cards */}
+      {/* 52-week range */}
+      {fa && <Fund52WeekRange fa={fa} />}
+
+      {/* Market price returns */}
+      {fa && <FundReturnsSection fa={fa} />}
+
+      {/* NAV returns */}
+      {fa && <FundNavReturnsSection fa={fa} />}
+
       <div className="ta-info-grid">
+        {/* Risk */}
+        {fa && <FundRiskSection fa={fa} />}
+
+        {/* Equity and investors */}
+        {fa && <FundEquitySection fa={fa} />}
+
+        {/* Market data */}
         <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
           <div className="ta-info-rows">
-            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
+            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(fa?.price ?? analysis.lastPrice)}</strong></div>
             <div className="ta-info-row"><span>Variação hoje</span>
               <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
             </div>
             <div className="ta-info-row"><span>Volume</span><strong>{fmtCap(analysis.volume)}</strong></div>
-            <div className="ta-info-row"><span>Valor de Mercado</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
-            <div className="ta-info-row"><span>Total de Cotistas</span><strong>{fmtInvestors(indicator?.totalInvestors)}</strong></div>
+            {fa?.priceToNav != null && (
+              <div className="ta-info-row"><span>P/VP</span>
+                <strong className={pvpVariant === 'up' ? 'up' : pvpVariant === 'down' ? 'down' : ''}>{fmt(pvp)}</strong>
+              </div>
+            )}
+            {fa?.dividendYield1m != null && (
+              <div className="ta-info-row"><span>DY 1 mês</span><strong>{fmt(fa.dividendYield1m)}%</strong></div>
+            )}
+            {fa?.monthlyReturn != null && (
+              <div className="ta-info-row"><span>Retorno no mês (informe)</span>
+                <strong className={fa.monthlyReturn >= 0 ? 'up' : 'down'}>{fmtPct(fa.monthlyReturn)}</strong></div>
+            )}
+            {fa?.asOfDate && (
+              <div className="ta-info-row"><span>Data-base do informe</span><strong>{fmtDateOnly(fa.asOfDate)}</strong></div>
+            )}
           </div>
         </div>
 
+        {/* About the fund */}
         <div className="ta-section-card">
           <div className="ta-section-title">Sobre o Fundo</div>
           <div className="ta-info-rows">
             <div className="ta-info-row"><span>Tipo de fundo</span><strong>{fundTypeLabel}</strong></div>
-            <div className="ta-info-row"><span>P/VP</span>
-              <strong className={pvpVariant === 'up' ? 'up' : pvpVariant === 'down' ? 'down' : ''}>{fmt(pvp)}</strong>
-            </div>
-            <div className="ta-info-row"><span>DY 12 meses</span>
-              <strong className="up">{indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}</strong>
-            </div>
-            <div className="ta-info-row"><span>DY 1 mês</span>
-              <strong>{indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}</strong>
-            </div>
-            <div className="ta-info-row"><span>VPA (Nav/cota)</span><strong>{fmtBRL(indicator?.navPerShare)}</strong></div>
-            {indicator?.segmentType && (
-              <div className="ta-info-row"><span>Segmento</span><strong>{indicator.segmentType}</strong></div>
+            {fa?.b3Classification && (
+              <div className="ta-info-row"><span>Classificação B3</span><strong>{fa.b3Classification}</strong></div>
+            )}
+            {fa?.cnpj && (
+              <div className="ta-info-row"><span>CNPJ</span><strong>{fa.cnpj}</strong></div>
+            )}
+            {fa?.isin && (
+              <div className="ta-info-row"><span>ISIN</span><strong>{fa.isin}</strong></div>
+            )}
+            {fa?.legalName && (
+              <div className="ta-info-row"><span>Razão social</span><strong>{fa.legalName}</strong></div>
+            )}
+            {fa?.managerName && (
+              <div className="ta-info-row"><span>Gestor</span><strong>{fa.managerName}</strong></div>
             )}
           </div>
         </div>
       </div>
 
-      {indicator?.adminName && (
+      {/* Portfolio composition (per fund type) */}
+      {fa && <FundPortfolioSection fa={fa} />}
+
+      {/* Investor profile */}
+      {fa && <FundInvestorsSection fa={fa} />}
+
+      {/* Recent dividend events */}
+      {fa && <FundDividendsSection fa={fa} />}
+
+      {/* Administrator */}
+      {fa?.adminName && (
         <div className="ta-fii-admin-card">
           <div className="ta-fii-admin-icon">🏦</div>
           <div>
             <div className="ta-fii-admin-label">Administrador</div>
-            <div className="ta-fii-admin-name">{indicator.adminName}</div>
-            {indicator.adminCnpj && (
-              <div className="ta-fii-admin-cnpj">CNPJ: {indicator.adminCnpj}</div>
+            <div className="ta-fii-admin-name">{fa.adminName}</div>
+            {fa.cnpj && (
+              <div className="ta-fii-admin-cnpj">CNPJ do fundo: {fa.cnpj}</div>
             )}
           </div>
         </div>
       )}
 
-      {/* Dividends */}
-      <DividendSection analysis={analysis} />
+      {/* Same-type funds */}
+      {fa && <FundSimilarSection fa={fa} />}
+
+      {!fa && !loading && (
+        <div className="ta-section-card">
+          <div className="ta-section-title">Análise avançada</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row">
+              <span>Sem dados de análise para este fundo ainda — aguarde o próximo sync.</span>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
