@@ -13,6 +13,7 @@ import {
   GrahamCard,
 } from './StockAdvanced'
 import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
+import { useFiiAnalysis } from '../../hooks/useFiiAnalysis'
 import { useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useTreasuryAnalysis } from '../../hooks/useTreasuryAnalysis'
 import { useFundAnalysis } from '../../hooks/useFundAnalysis'
@@ -23,6 +24,7 @@ import type { TickerAnalysis } from '../../types/TickerAnalysis'
 import type { CryptoAnalysis } from '../../types/CryptoAnalysis'
 import type { TreasuryAnalysis as TreasuryAnalysisData } from '../../types/TreasuryAnalysis'
 import type { FundAnalysis as FundAnalysisData, FundRawDocument } from '../../types/FundAnalysis'
+import type { FiiAnalysis as FiiAnalysisData } from '../../types/FiiAnalysis'
 import './TickerAnalysis.css'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -595,24 +597,410 @@ function FiiHistorySection({ symbol }: { symbol: string }) {
   )
 }
 
+const FII_PERIODS: { key: string; label: string }[] = [
+  { key: '1m', label: '1 mês' },
+  { key: '3m', label: '3 meses' },
+  { key: '6m', label: '6 meses' },
+  { key: '1y', label: '1 ano' },
+  { key: 'max', label: 'Máx' },
+]
+
+function Fii52WeekRange({ fa }: { fa: FiiAnalysisData }) {
+  if (fa.price52wLow == null || fa.price52wHigh == null || fa.price == null) return null
+  const pct = fa.pricePositionInRange52w
+    ?? (fa.price52wHigh > fa.price52wLow
+      ? Math.min(100, Math.max(0, ((fa.price - fa.price52wLow) / (fa.price52wHigh - fa.price52wLow)) * 100))
+      : 50)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Faixa de 52 Semanas</div>
+      <div className="ta-52w">
+        <span className="ta-52w-bound">{fmtBRL(fa.price52wLow)}</span>
+        <div className="ta-52w-track">
+          <div className="ta-52w-fill" style={{ width: `${pct}%` }} />
+          <div className="ta-52w-marker" style={{ left: `${pct}%` }}>
+            <span className="ta-52w-price">{fmtBRL(fa.price)}</span>
+          </div>
+        </div>
+        <span className="ta-52w-bound">{fmtBRL(fa.price52wHigh)}</span>
+      </div>
+    </div>
+  )
+}
+
+function FiiReturnsSection({ fa }: { fa: FiiAnalysisData }) {
+  const returns = fa.priceReturns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = FII_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Retornos (preço de mercado)</div>
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Valorização da cota negociada na B3 no período — não inclui os rendimentos distribuídos.
+      </div>
+    </div>
+  )
+}
+
+function FiiNavReturnsSection({ fa }: { fa: FiiAnalysisData }) {
+  const returns = fa.navReturns
+  if (!returns || Object.keys(returns).length === 0) return null
+  const periods = FII_PERIODS.filter(p => returns[p.key] != null)
+  if (periods.length === 0) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Evolução do Valor Patrimonial da Cota</div>
+      <div className="ta-crypto-returns-grid ta-returns-grid--inset">
+        {periods.map(p => (
+          <MetricCard key={p.key} label={p.label} value={fmtPct(returns[p.key])}
+            variant={pctVariant(returns[p.key])} />
+        ))}
+      </div>
+      <div className="ta-sector-note">
+        Variação do VP/cota informado à CVM — mostra a geração de valor da carteira, sem o humor do mercado.
+      </div>
+    </div>
+  )
+}
+
+function FiiRiskSection({ fa }: { fa: FiiAnalysisData }) {
+  const hasData = fa.priceVolatility1y != null || fa.priceMaxDrawdown1y != null
+    || fa.navVolatility1y != null || fa.pricePositionInRange52w != null
+  if (!hasData) return null
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Risco e Volatilidade</div>
+      <div className="ta-info-rows">
+        {fa.priceVolatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade do preço 1 ano (anualizada)</span>
+            <strong>{fmt(fa.priceVolatility1y)}%</strong></div>
+        )}
+        {fa.priceMaxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima do preço em 1 ano (drawdown)</span>
+            <strong className="down">{fmt(fa.priceMaxDrawdown1y)}%</strong></div>
+        )}
+        {fa.navVolatility1y != null && (
+          <div className="ta-info-row"><span>Volatilidade do VP/cota 1 ano</span>
+            <strong>{fmt(fa.navVolatility1y)}%</strong></div>
+        )}
+        {fa.maxDrawdown1y != null && (
+          <div className="ta-info-row"><span>Queda máxima do VP/cota em 1 ano</span>
+            <strong className="down">{fmt(fa.maxDrawdown1y)}%</strong></div>
+        )}
+        {fa.pricePositionInRange52w != null && (
+          <div className="ta-info-row"><span>Posição do preço na faixa de 52 semanas</span>
+            <strong>{fmt(fa.pricePositionInRange52w, 0)}%</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FiiEquitySection({ fa }: { fa: FiiAnalysisData }) {
+  const hasData = fa.equity != null || fa.navPerShare != null || fa.totalInvestors != null
+  if (!hasData) return null
+  const equity1y = fa.equityChanges?.['1y']
+  const investors1y = fa.investorsChanges?.['1y']
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Patrimônio e Cotistas</div>
+      <div className="ta-info-rows">
+        {fa.equity != null && (
+          <div className="ta-info-row"><span>Patrimônio líquido</span><strong>{fmtCap(fa.equity)}</strong></div>
+        )}
+        {fa.totalAssets != null && (
+          <div className="ta-info-row"><span>Ativos totais</span><strong>{fmtCap(fa.totalAssets)}</strong></div>
+        )}
+        {fa.navPerShare != null && (
+          <div className="ta-info-row"><span>VP por cota</span><strong>{fmtBRL(fa.navPerShare)}</strong></div>
+        )}
+        {fa.sharesOutstanding != null && (
+          <div className="ta-info-row"><span>Cotas emitidas</span><strong>{fmtShares(fa.sharesOutstanding)}</strong></div>
+        )}
+        {fa.totalInvestors != null && (
+          <div className="ta-info-row"><span>Total de cotistas</span><strong>{fmtInvestors(fa.totalInvestors)}</strong></div>
+        )}
+        {equity1y != null && (
+          <div className="ta-info-row"><span>Variação do patrimônio em 1 ano</span>
+            <strong className={equity1y >= 0 ? 'up' : 'down'}>{fmtPct(equity1y)}</strong></div>
+        )}
+        {investors1y != null && (
+          <div className="ta-info-row"><span>Variação de cotistas em 1 ano</span>
+            <strong className={investors1y >= 0 ? 'up' : 'down'}>{fmtPct(investors1y)}</strong></div>
+        )}
+        {fa.navHistoryHigh != null && (
+          <div className="ta-info-row"><span>Maior VP/cota registrado</span>
+            <strong className="up">{fmtBRL(fa.navHistoryHigh)}{fa.navHistoryHighDate ? ` (${fmtDateOnly(fa.navHistoryHighDate)})` : ''}</strong></div>
+        )}
+        {fa.navHistoryLow != null && (
+          <div className="ta-info-row"><span>Menor VP/cota registrado</span>
+            <strong className="down">{fmtBRL(fa.navHistoryLow)}{fa.navHistoryLowDate ? ` (${fmtDateOnly(fa.navHistoryLowDate)})` : ''}</strong></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Vacancy trend chart + individual property table — tijolo segment only (papel/hibrido/fof have no properties). */
+function FiiVacancySection({ fa }: { fa: FiiAnalysisData }) {
+  const history = fa.vacancyHistory ?? {}
+  const chartData = Object.entries(history).map(([date, value]) => ({ date, value }))
+  const properties = fa.properties ?? []
+  if (chartData.length < 2 && properties.length === 0 && fa.vacancyRate == null) return null
+
+  const ticks = (() => {
+    if (chartData.length <= 6) return chartData.map(d => d.date)
+    const n = 6
+    const step = Math.floor((chartData.length - 1) / (n - 1))
+    return Array.from({ length: n }, (_, i) => chartData[Math.min(i * step, chartData.length - 1)].date)
+  })()
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Vacância</div>
+        {fa.vacancyRate != null && (
+          <span className="ta-sector-badge">{fmt(fa.vacancyRate, 1)}% atual</span>
+        )}
+      </div>
+      {chartData.length >= 2 && (
+        <div className="ta-chart-body" style={{ marginTop: '0.75rem' }}>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="date" ticks={ticks}
+                tickFormatter={fmtDateOnly}
+                tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval={0}
+              />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={45}
+                tickFormatter={v => `${v}%`}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                labelFormatter={fmtDateOnly}
+                formatter={(v: unknown) => [`${fmt(Number(v))}%`, 'Vacância']}
+              />
+              <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {properties.length > 0 && (
+        <div className="ta-sector-table-wrap" style={{ marginTop: '0.75rem' }}>
+          <table className="ta-sector-table">
+            <thead>
+              <tr>
+                <th>Imóvel</th>
+                <th className="right">Área (m²)</th>
+                <th className="right">Vacância</th>
+                <th className="right">% da Receita</th>
+              </tr>
+            </thead>
+            <tbody>
+              {properties.map((p, i) => (
+                <tr key={p.name ?? i}>
+                  <td title={p.address ?? undefined}>{p.name ?? '—'}</td>
+                  <td className="right">{p.area != null ? fmt(p.area, 0) : '—'}</td>
+                  <td className="right">{p.vacancyRate != null ? `${fmt(p.vacancyRate)}%` : '—'}</td>
+                  <td className="right">{p.revenueShare != null ? `${fmt(p.revenueShare)}%` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Portfolio composition by asset class (CRI, real estate, FII quotas, ...) from the latest quarter. */
+function FiiPortfolioSection({ fa }: { fa: FiiAnalysisData }) {
+  const allocations = fa.portfolioAllocations ?? []
+  const positive = allocations.filter(a => (a.value ?? 0) > 0)
+  if (positive.length === 0) return null
+
+  const items = positive.map(a => ({ label: FII_ASSET_CLASS_LABELS[a.assetClass ?? ''] ?? (a.assetClass ?? '—'), value: a.value ?? 0 }))
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-title">Composição da Carteira</div>
+      <AllocationBars items={items} formatValue={v => fmtCap(v)} />
+    </div>
+  )
+}
+
+const FII_ASSET_CLASS_LABELS: Record<string, string> = {
+  cri: 'CRI', real_estate: 'Imóveis', real_estate_company: 'Cotas de empresas imobiliárias',
+  fii: 'Cotas de FIIs', fip: 'Cotas de FIPs', lci: 'LCI', government_bond: 'Títulos públicos',
+  private_bond: 'Títulos privados', receivable: 'Recebíveis', cash: 'Caixa',
+}
+
+const FII_DIVIDEND_PAGE_SIZE = 12
+
+function FiiDividendsSection({ fa }: { fa: FiiAnalysisData }) {
+  const dividends = fa.recentDividends ?? []
+  const [page, setPage] = useState(0)
+  if (dividends.length === 0) return null
+
+  const pages = Math.max(1, Math.ceil(dividends.length / FII_DIVIDEND_PAGE_SIZE))
+  const slice = dividends.slice(page * FII_DIVIDEND_PAGE_SIZE, (page + 1) * FII_DIVIDEND_PAGE_SIZE)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Histórico de Rendimentos</div>
+        <span className="ta-sector-badge">
+          {fa.dividendsSum12m != null ? `${fmtBRL(fa.dividendsSum12m)}/cota em 12m · ` : ''}{dividends.length} pagamentos
+        </span>
+      </div>
+      <div className="ta-sector-table-wrap">
+        <table className="ta-sector-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Data com</th>
+              <th>Pagamento</th>
+              <th className="right">Valor por cota</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slice.map((d, i) => (
+              <tr key={page * FII_DIVIDEND_PAGE_SIZE + i}>
+                <td>{d.label ?? 'RENDIMENTO'}</td>
+                <td>{fmtDateOnly(d.lastDatePrior)}</td>
+                <td>{fmtDateOnly(d.paymentDate)}</td>
+                <td className="right">{d.rate != null ? fmtBRL(d.rate) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {pages > 1 && (
+        <div className="ta-div-pagination">
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
+            ‹ Anterior
+          </button>
+          <span className="ta-div-page-info">{page + 1} / {pages}</span>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={page === pages - 1}>
+            Próximo ›
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const FII_SIMILAR_PAGE_SIZE = 10
+
+/** All FIIs of the same segment ordered by DY 12m, current one highlighted. */
+function FiiSimilarSection({ fa }: { fa: FiiAnalysisData }) {
+  const navigate = useNavigate()
+  const [page, setPage] = useState(0)
+  if (!fa.similarFiis || fa.similarFiis.length === 0) return null
+
+  const rows = [
+    {
+      symbol: fa.symbol, name: fa.name, segmentType: fa.segmentType, price: fa.price,
+      priceToNav: fa.priceToNav, dividendYield12m: fa.dividendYield12m,
+      equity: fa.equity, totalInvestors: fa.totalInvestors, isCurrent: true,
+    },
+    ...fa.similarFiis.map(f => ({ ...f, isCurrent: false })),
+  ].sort((a, b) => (b.dividendYield12m ?? -1) - (a.dividendYield12m ?? -1))
+
+  const pages = Math.max(1, Math.ceil(rows.length / FII_SIMILAR_PAGE_SIZE))
+  const slice = rows.slice(page * FII_SIMILAR_PAGE_SIZE, (page + 1) * FII_SIMILAR_PAGE_SIZE)
+
+  return (
+    <div className="ta-section-card">
+      <div className="ta-section-header">
+        <div className="ta-section-title">Comparação de FIIs do Mesmo Segmento</div>
+        <span className="ta-sector-badge">{segmentLabel(fa.segmentType)} · {rows.length} fundos</span>
+      </div>
+      <div className="ta-sector-table-wrap">
+        <table className="ta-sector-table">
+          <thead>
+            <tr>
+              <th>FII</th>
+              <th className="right">Preço</th>
+              <th className="right">P/VP</th>
+              <th className="right">DY 12m</th>
+              <th className="right">Patrimônio</th>
+              <th className="right">Cotistas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slice.map(f => (
+              <tr key={f.symbol}
+                style={f.isCurrent ? undefined : { cursor: 'pointer' }}
+                onClick={f.isCurrent ? undefined : () => navigate(`/ticker/${f.symbol}`)}>
+                <td className={f.isCurrent ? 'ta-sector-company' : undefined}>
+                  {f.symbol}{f.isCurrent ? ' (este)' : ''}
+                </td>
+                <td className="right">{f.price != null ? fmtBRL(f.price) : '—'}</td>
+                <td className="right">{fmt(f.priceToNav)}</td>
+                <td className="right">{f.dividendYield12m != null ? `${fmt(f.dividendYield12m)}%` : '—'}</td>
+                <td className="right">{f.equity != null ? fmtCap(f.equity) : '—'}</td>
+                <td className="right">{fmtInvestors(f.totalInvestors)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {pages > 1 && (
+        <div className="ta-div-pagination">
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
+            ‹ Anterior
+          </button>
+          <span className="ta-div-page-info">{page + 1} / {pages}</span>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={page === pages - 1}>
+            Próximo ›
+          </button>
+        </div>
+      )}
+      <div className="ta-sector-note">
+        Ordenado pelo dividend yield dos últimos 12 meses. Clique em um FII para abrir a análise dele.
+      </div>
+    </div>
+  )
+}
+
 /** Full FII analysis page layout */
 function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
-  const { indicator, loading: indLoading } = useFiiIndicator(analysis.symbol)
+  const { data: fa, loading } = useFiiAnalysis(analysis.symbol)
   const up = (analysis.changePercent ?? 0) >= 0
 
-  const pvp = indicator?.priceToNav
+  const pvp = fa?.priceToNav
   const pvpVariant = pvp == null ? undefined : pvp < 1 ? 'up' : pvp > 1.2 ? 'down' : 'neutral'
 
   return (
     <>
-      {/* FII Metrics Bar */}
+      {/* FII Metrics Bar — Magic Number first, per the investor-favorite indicator */}
       <div className="ta-metrics-bar ta-metrics-bar--fii">
-        {indLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
+        {loading ? (
+          Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="ta-metric ta-metric--skeleton" />
           ))
         ) : (
           <>
+            <MetricCard
+              label="Magic Number"
+              value={fa?.magicNumber != null ? fmt(fa.magicNumber, 0) : '—'}
+              sub="Cotas p/ 1 renda extra/mês"
+              variant={fa?.magicNumber != null ? 'up' : undefined}
+              help="Quantas cotas você precisaria ter hoje para que o rendimento mensal pague sozinho uma nova cota — preço da cota dividido pelo último rendimento por cota."
+            />
             <MetricCard
               label="P/VP"
               value={fmt(pvp)}
@@ -621,29 +1009,29 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
             />
             <MetricCard
               label="DY 12m"
-              value={indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}
+              value={fa?.dividendYield12m != null ? `${fmt(fa.dividendYield12m)}%` : '—'}
               sub="Dividend Yield anual"
-              variant={indicator?.dividendYield12m != null && indicator.dividendYield12m > 8 ? 'up' : undefined}
+              variant={fa?.dividendYield12m != null && fa.dividendYield12m > 8 ? 'up' : undefined}
             />
             <MetricCard
               label="DY 1m"
-              value={indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}
+              value={fa?.dividendYield1m != null ? `${fmt(fa.dividendYield1m)}%` : '—'}
               sub="Dividend Yield mensal"
             />
             <MetricCard
               label="Cotistas"
-              value={fmtInvestors(indicator?.totalInvestors)}
+              value={fmtInvestors(fa?.totalInvestors)}
               sub="Total de investidores"
             />
             <MetricCard
               label="Patrimônio"
-              value={fmtCap(indicator?.equity)}
+              value={fmtCap(fa?.equity)}
               sub="Patrimônio Líquido"
             />
             <MetricCard
               label="Segmento"
-              value={segmentLabel(indicator?.segmentType)}
-              sub="Tipo de fundo"
+              value={segmentLabel(fa?.segmentType)}
+              sub="Tipo de FII"
             />
           </>
         )}
@@ -652,68 +1040,101 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
       {/* Price Chart */}
       <PriceChartSection symbol={analysis.symbol} />
 
-      {/* FII Detail Cards */}
+      {/* 52-week range */}
+      {fa && <Fii52WeekRange fa={fa} />}
+
+      {/* Market price returns */}
+      {fa && <FiiReturnsSection fa={fa} />}
+
+      {/* VP/cota evolution */}
+      {fa && <FiiNavReturnsSection fa={fa} />}
+
       <div className="ta-info-grid">
+        {/* Risk */}
+        {fa && <FiiRiskSection fa={fa} />}
+
+        {/* Equity and investors */}
+        {fa && <FiiEquitySection fa={fa} />}
+
         {/* Market data */}
         <div className="ta-section-card">
           <div className="ta-section-title">Dados de Mercado</div>
           <div className="ta-info-rows">
-            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(analysis.lastPrice)}</strong></div>
+            <div className="ta-info-row"><span>Preço atual</span><strong>{fmtBRL(fa?.price ?? analysis.lastPrice)}</strong></div>
             <div className="ta-info-row"><span>Variação hoje</span>
               <strong className={up ? 'up' : 'down'}>{fmtPct(analysis.changePercent)}</strong>
             </div>
             <div className="ta-info-row"><span>Volume</span><strong>{fmtCap(analysis.volume)}</strong></div>
-            <div className="ta-info-row"><span>Valor de Mercado</span><strong>{fmtCap(analysis.marketCap)}</strong></div>
-            <div className="ta-info-row"><span>Cotas em circulação</span><strong>{fmtShares(analysis.sharesOutstanding)}</strong></div>
-            {analysis.weekChange52 != null && (
-              <div className="ta-info-row"><span>Variação 52 semanas</span><strong>{fmtPct(analysis.weekChange52 * 100)}</strong></div>
+            {fa?.monthlyReturn != null && (
+              <div className="ta-info-row"><span>Retorno no mês (informe)</span>
+                <strong className={fa.monthlyReturn >= 0 ? 'up' : 'down'}>{fmtPct(fa.monthlyReturn)}</strong></div>
+            )}
+            {fa?.asOfDate && (
+              <div className="ta-info-row"><span>Data-base do informe</span><strong>{fmtDateOnly(fa.asOfDate)}</strong></div>
             )}
           </div>
         </div>
 
-        {/* FII Fundamentals */}
+        {/* About the FII */}
         <div className="ta-section-card">
           <div className="ta-section-title">Sobre o Fundo</div>
           <div className="ta-info-rows">
-            <div className="ta-info-row"><span>P/VP</span>
-              <strong className={pvpVariant === 'up' ? 'up' : pvpVariant === 'down' ? 'down' : ''}>{fmt(pvp)}</strong>
-            </div>
-            <div className="ta-info-row"><span>DY 12 meses</span>
-              <strong className="up">{indicator?.dividendYield12m != null ? `${indicator.dividendYield12m.toFixed(2)}%` : '—'}</strong>
-            </div>
-            <div className="ta-info-row"><span>DY 1 mês</span>
-              <strong>{indicator?.dividendYield1m != null ? `${indicator.dividendYield1m.toFixed(2)}%` : '—'}</strong>
-            </div>
-            <div className="ta-info-row"><span>Retorno Mensal</span>
-              <strong>{indicator?.monthlyReturn != null ? `${indicator.monthlyReturn.toFixed(2)}%` : '—'}</strong>
-            </div>
-            <div className="ta-info-row"><span>Patrimônio Líquido</span><strong>{fmtCap(indicator?.equity)}</strong></div>
-            <div className="ta-info-row"><span>Ativo Total</span><strong>{fmtCap(indicator?.totalAssets)}</strong></div>
-            <div className="ta-info-row"><span>Segmento</span><strong>{segmentLabel(indicator?.segmentType)}</strong></div>
-            <div className="ta-info-row"><span>Total Cotistas</span><strong>{fmtInvestors(indicator?.totalInvestors)}</strong></div>
+            <div className="ta-info-row"><span>Segmento</span><strong>{segmentLabel(fa?.segmentType)}</strong></div>
+            {fa?.segmentoAtuacao && (
+              <div className="ta-info-row"><span>Setor de atuação</span><strong>{fa.segmentoAtuacao}</strong></div>
+            )}
+            {fa?.tipoGestao && (
+              <div className="ta-info-row"><span>Tipo de gestão</span><strong>{fa.tipoGestao}</strong></div>
+            )}
+            {fa?.mandate && (
+              <div className="ta-info-row"><span>Mandato</span><strong>{fa.mandate}</strong></div>
+            )}
+            {fa?.cnpj && (
+              <div className="ta-info-row"><span>CNPJ</span><strong>{fa.cnpj}</strong></div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Vacancy + properties (tijolo) */}
+      {fa && <FiiVacancySection fa={fa} />}
+
+      {/* Portfolio composition */}
+      {fa && <FiiPortfolioSection fa={fa} />}
+
+      {/* Recent dividend events */}
+      {fa && <FiiDividendsSection fa={fa} />}
+
+      {/* Historical indicators chart */}
+      <FiiHistorySection symbol={analysis.symbol} />
+
       {/* Administrator */}
-      {indicator?.adminName && (
+      {fa?.adminName && (
         <div className="ta-fii-admin-card">
           <div className="ta-fii-admin-icon">🏦</div>
           <div>
             <div className="ta-fii-admin-label">Administrador</div>
-            <div className="ta-fii-admin-name">{indicator.adminName}</div>
-            {indicator.adminCnpj && (
-              <div className="ta-fii-admin-cnpj">CNPJ: {indicator.adminCnpj}</div>
+            <div className="ta-fii-admin-name">{fa.adminName}</div>
+            {fa.adminCnpj && (
+              <div className="ta-fii-admin-cnpj">CNPJ: {fa.adminCnpj}</div>
             )}
           </div>
         </div>
       )}
 
-      {/* Historical indicators chart */}
-      <FiiHistorySection symbol={analysis.symbol} />
+      {/* Same-segment FIIs */}
+      {fa && <FiiSimilarSection fa={fa} />}
 
-      {/* Dividends */}
-      <DividendSection analysis={analysis} />
+      {!fa && !loading && (
+        <div className="ta-section-card">
+          <div className="ta-section-title">Análise avançada</div>
+          <div className="ta-info-rows">
+            <div className="ta-info-row">
+              <span>Sem dados de análise para este FII ainda — aguarde o próximo sync.</span>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
