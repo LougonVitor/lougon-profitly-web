@@ -863,7 +863,7 @@ function FiiDividendsSection({ fa }: { fa: FiiAnalysisData }) {
     { label: 'Yield 1 mês', value: fa.dividendYield1m != null ? `${fmt(fa.dividendYield1m)}%` : '—', sub: 'Sobre o preço' },
     { label: 'Yield 3 meses', value: fa.dividendYield3m != null ? `${fmt(fa.dividendYield3m)}%` : '—', sub: 'Acumulado' },
     { label: 'Yield 6 meses', value: fa.dividendYield6m != null ? `${fmt(fa.dividendYield6m)}%` : '—', sub: 'Acumulado' },
-    { label: 'DY médio', value: fa.avgDividendYield != null ? `${fmt(fa.avgDividendYield)}%` : '—', sub: 'Histórico mensal' },
+    { label: 'DY médio', value: fa.avgDividendYield != null ? `${fmt(fa.avgDividendYield)}%` : '—', sub: 'Média 5 anos' },
   ].filter(c => c.value !== '—')
 
   return (
@@ -1112,7 +1112,7 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
               <div className="ta-info-row"><span>Taxa de administração</span><strong>{fmt(fa.adminFeeRate)}% a.a.</strong></div>
             )}
             {fa?.avgDividendYield != null && (
-              <div className="ta-info-row"><span>DY médio (histórico)</span><strong>{fmt(fa.avgDividendYield)}%</strong></div>
+              <div className="ta-info-row"><span>DY médio (5 anos)</span><strong>{fmt(fa.avgDividendYield)}%</strong></div>
             )}
             {fa?.cnpj && (
               <div className="ta-info-row"><span>CNPJ</span><strong>{fa.cnpj}</strong></div>
