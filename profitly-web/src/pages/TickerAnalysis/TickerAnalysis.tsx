@@ -1696,6 +1696,11 @@ function docStr(obj: FundRawDocument | null | undefined, key: string): string | 
   const v = obj?.[key]
   return typeof v === 'string' && v.length > 0 ? v : null
 }
+/** Dates inside raw documents come as full ISO timestamps — keep only the date part. */
+function docDate(obj: FundRawDocument | null | undefined, key: string): string | null {
+  const v = docStr(obj, key)
+  return v ? v.slice(0, 10) : null
+}
 
 /** Horizontal proportional bars for a value breakdown (composition charts). */
 function AllocationBars({ items, formatValue }: {
@@ -1877,7 +1882,7 @@ function FundPortfolioSection({ fa }: { fa: FundAnalysisData }) {
   if (fiagro) {
     const items = Object.entries(FIAGRO_ALLOC_LABELS)
       .map(([key, label]) => ({ label, value: docNum(fiagro, key) ?? 0 }))
-    const refDate = docStr(docs['fiagro_portfolio'], 'referenceDate')
+    const refDate = docDate(docs['fiagro_portfolio'], 'referenceDate')
     return (
       <div className="ta-section-card">
         <div className="ta-section-header">
@@ -1897,7 +1902,7 @@ function FundPortfolioSection({ fa }: { fa: FundAnalysisData }) {
       .map(([key, label]) => ({ label, value: docNum(sectors, key) ?? 0 }))
     const cedentes = docObj(fidcDoc, 'cedentes')
     const top1 = docNum(cedentes, 'top1Percent')
-    const refDate = docStr(fidcDoc, 'referenceDate')
+    const refDate = docDate(fidcDoc, 'referenceDate')
     return (
       <div className="ta-section-card">
         <div className="ta-section-header">
@@ -1921,7 +1926,7 @@ function FundPortfolioSection({ fa }: { fa: FundAnalysisData }) {
     const items = Object.entries(PORTFOLIO_SUMMARY_LABELS)
       .map(([key, label]) => ({ label, value: docNum(summary, key) ?? 0 }))
     const holdings = docNum(summary, 'holdingsCount')
-    const refDate = docStr(docs['portfolio'], 'referenceDate')
+    const refDate = docDate(docs['portfolio'], 'referenceDate')
     return (
       <div className="ta-section-card">
         <div className="ta-section-header">
@@ -1979,7 +1984,7 @@ function FundInvestorsSection({ fa }: { fa: FundAnalysisData }) {
   const items = Object.entries(INVESTOR_BREAKDOWN_LABELS)
     .map(([key, label]) => ({ label, value: docNum(breakdown, key) ?? 0 }))
   if (items.every(i => i.value <= 0)) return null
-  const refDate = docStr(fa.documents?.['profile'], 'referenceDate')
+  const refDate = docDate(fa.documents?.['profile'], 'referenceDate')
 
   return (
     <div className="ta-section-card">
@@ -2113,7 +2118,7 @@ function FundAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
               help="Preço da cota na B3 dividido pelo valor patrimonial. Abaixo de 1, o fundo negocia com desconto sobre o patrimônio." />
             <MetricCard
               label="DY 12m"
-              value={fa?.dividendYield12m != null ? `${fa.dividendYield12m.toFixed(2)}%` : '—'}
+              value={fa?.dividendYield12m != null ? `${fmt(fa.dividendYield12m)}%` : '—'}
               sub={fa?.dividendCount12m != null ? `${fa.dividendCount12m} pagamentos` : 'Dividend Yield anual'}
               variant={fa?.dividendYield12m != null && fa.dividendYield12m > 8 ? 'up' : undefined}
               help="Rendimentos distribuídos nos últimos 12 meses divididos pelo preço atual da cota."
