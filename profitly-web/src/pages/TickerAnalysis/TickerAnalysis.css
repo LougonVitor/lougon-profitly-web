@@ -789,6 +789,9 @@
 }
 
 /* ── Fund analysis: allocation/breakdown bars ─────────────────────────────── */
+.ta-fund-alloc {
+  padding: 0.75rem 1rem 0.5rem;
+}
 .ta-fund-alloc-row {
   display: flex;
   align-items: center;

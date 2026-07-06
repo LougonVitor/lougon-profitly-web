@@ -1711,7 +1711,7 @@ function AllocationBars({ items, formatValue }: {
   if (positive.length === 0) return null
   const max = positive[0].value
   return (
-    <div>
+    <div className="ta-fund-alloc">
       {positive.map(i => (
         <div key={i.label} className="ta-fund-alloc-row">
           <span className="ta-fund-alloc-label" title={i.label}>{i.label}</span>
@@ -1997,17 +1997,23 @@ function FundInvestorsSection({ fa }: { fa: FundAnalysisData }) {
   )
 }
 
+const FUND_DIVIDEND_PAGE_SIZE = 12
+
 function FundDividendsSection({ fa }: { fa: FundAnalysisData }) {
-  const dividends = fa.recentDividends
-  if (!dividends || dividends.length === 0) return null
+  const dividends = fa.recentDividends ?? []
+  const [page, setPage] = useState(0)
+  if (dividends.length === 0) return null
+
+  const pages = Math.max(1, Math.ceil(dividends.length / FUND_DIVIDEND_PAGE_SIZE))
+  const slice = dividends.slice(page * FUND_DIVIDEND_PAGE_SIZE, (page + 1) * FUND_DIVIDEND_PAGE_SIZE)
 
   return (
     <div className="ta-section-card">
       <div className="ta-section-header">
-        <div className="ta-section-title">Últimos Rendimentos</div>
-        {fa.dividendsSum12m != null && (
-          <span className="ta-sector-badge">{fmtBRL(fa.dividendsSum12m)}/cota em 12m</span>
-        )}
+        <div className="ta-section-title">Histórico de Rendimentos</div>
+        <span className="ta-sector-badge">
+          {fa.dividendsSum12m != null ? `${fmtBRL(fa.dividendsSum12m)}/cota em 12m · ` : ''}{dividends.length} pagamentos
+        </span>
       </div>
       <div className="ta-sector-table-wrap">
         <table className="ta-sector-table">
@@ -2020,8 +2026,9 @@ function FundDividendsSection({ fa }: { fa: FundAnalysisData }) {
             </tr>
           </thead>
           <tbody>
-            {dividends.map((d, i) => (
-              <tr key={`${d.paymentDate}-${i}`}>
+            {/* key by absolute index so React doesn't reconcile rows across pages */}
+            {slice.map((d, i) => (
+              <tr key={page * FUND_DIVIDEND_PAGE_SIZE + i}>
                 <td>{d.label ?? 'RENDIMENTO'}</td>
                 <td>{fmtDateOnly(d.lastDatePrior)}</td>
                 <td>{fmtDateOnly(d.paymentDate)}</td>
@@ -2031,13 +2038,27 @@ function FundDividendsSection({ fa }: { fa: FundAnalysisData }) {
           </tbody>
         </table>
       </div>
+      {pages > 1 && (
+        <div className="ta-div-pagination">
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
+            ‹ Anterior
+          </button>
+          <span className="ta-div-page-info">{page + 1} / {pages}</span>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={page === pages - 1}>
+            Próximo ›
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
+const FUND_SIMILAR_PAGE_SIZE = 10
+
 /** All funds of the same type ordered by DY 12m, current one highlighted. */
 function FundSimilarSection({ fa }: { fa: FundAnalysisData }) {
   const navigate = useNavigate()
+  const [page, setPage] = useState(0)
   if (!fa.similarFunds || fa.similarFunds.length === 0) return null
 
   const rows = [
@@ -2049,6 +2070,9 @@ function FundSimilarSection({ fa }: { fa: FundAnalysisData }) {
     },
     ...fa.similarFunds.map(f => ({ ...f, isCurrent: false })),
   ].sort((a, b) => (b.dividendYield12m ?? -1) - (a.dividendYield12m ?? -1))
+
+  const pages = Math.max(1, Math.ceil(rows.length / FUND_SIMILAR_PAGE_SIZE))
+  const slice = rows.slice(page * FUND_SIMILAR_PAGE_SIZE, (page + 1) * FUND_SIMILAR_PAGE_SIZE)
 
   const typeLabel = fa.fundType ? (FUND_TYPE_LABELS[fa.fundType.toLowerCase()] ?? fa.fundType) : ''
 
@@ -2071,7 +2095,7 @@ function FundSimilarSection({ fa }: { fa: FundAnalysisData }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map(f => (
+            {slice.map(f => (
               <tr key={f.symbol}
                 style={f.isCurrent ? undefined : { cursor: 'pointer' }}
                 onClick={f.isCurrent ? undefined : () => navigate(`/ticker/${f.symbol}`)}>
@@ -2088,6 +2112,17 @@ function FundSimilarSection({ fa }: { fa: FundAnalysisData }) {
           </tbody>
         </table>
       </div>
+      {pages > 1 && (
+        <div className="ta-div-pagination">
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>
+            ‹ Anterior
+          </button>
+          <span className="ta-div-page-info">{page + 1} / {pages}</span>
+          <button className="ta-div-page-btn" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={page === pages - 1}>
+            Próximo ›
+          </button>
+        </div>
+      )}
       <div className="ta-sector-note">
         Ordenado pelo dividend yield dos últimos 12 meses. Clique em um fundo para abrir a análise dele.
       </div>
