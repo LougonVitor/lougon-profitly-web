@@ -29,6 +29,11 @@ interface AdditionalIncome {
   createdAt: string
 }
 
+interface BudgetLimit {
+  type: ExpenseType
+  monthlyLimit: number
+}
+
 interface CurrentPeriod {
   expenses: Expense[]
   netSalary: number | null
@@ -39,6 +44,7 @@ interface CurrentPeriod {
   resetDay: number
   additionalIncomes: AdditionalIncome[]
   totalIncome: number
+  budgetLimits: BudgetLimit[]
 }
 
 interface RecurringExpense {
@@ -120,6 +126,11 @@ export function Finance() {
   // Investment % selector and manual entry
   const [investPct, setInvestPct] = useState<number>(25)
   const [investManual, setInvestManual] = useState('')
+
+  // Budget limits
+  const [showAddLimit, setShowAddLimit] = useState(false)
+  const [limitType, setLimitType] = useState<ExpenseType>('SUPERMARKET')
+  const [limitValue, setLimitValue] = useState('')
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
@@ -301,6 +312,20 @@ export function Finance() {
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
+  async function handleSaveLimit(e: React.FormEvent) {
+    e.preventDefault()
+    const value = parseFloat(limitValue)
+    if (!value || value <= 0) return
+    await api.put('/api/finance/budget-limits', { type: limitType, monthlyLimit: value })
+    setLimitValue(''); setShowAddLimit(false)
+    await refreshPeriod()
+  }
+
+  async function handleDeleteLimit(type: ExpenseType) {
+    await api.delete(`/api/finance/budget-limits/${type}`)
+    await refreshPeriod()
+  }
+
   async function handleReset() {
     const { data: hasConflict } = await api.get<boolean>('/api/finance/reset/check')
     setResetModal({ show: true, hasConflict, confirmed: false })
@@ -425,6 +450,68 @@ export function Finance() {
                 </div>
               )
             })()}
+
+            {/* ── Budget limits ── */}
+            <div className="fin-limits-section fin-animate-in">
+              <div className="fin-table-header">
+                <h3 className="fin-section-title">Limites de gastos</h3>
+                <button className="fin-link-btn" onClick={()=>setShowAddLimit(v=>!v)}>
+                  {showAddLimit ? '✕ fechar' : '+ definir limite'}
+                </button>
+              </div>
+
+              {showAddLimit && (
+                <form className="fin-mini-form fin-animate-in" onSubmit={handleSaveLimit}>
+                  <select className="fin-input fin-input--short" value={limitType}
+                    onChange={e=>setLimitType(e.target.value as ExpenseType)}>
+                    {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                  </select>
+                  <input className="fin-input fin-input--short" type="number" step="0.01" min="0"
+                    placeholder="Limite mensal (R$)" value={limitValue}
+                    onChange={e=>setLimitValue(e.target.value)} required />
+                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Salvar</button>
+                </form>
+              )}
+
+              {period.budgetLimits.length === 0 ? (
+                <p className="fin-recurring-desc">
+                  Defina limites por categoria para acompanhar quanto já gastou e receber alertas ao ultrapassá-los.
+                </p>
+              ) : (
+                <div className="fin-limits-grid">
+                  {period.budgetLimits.map(limit => {
+                    const spent = spentForType(period.expenses, limit.type)
+                    const ratio = limit.monthlyLimit > 0 ? spent / limit.monthlyLimit : 0
+                    const pct = Math.min(ratio * 100, 100)
+                    const state = ratio > 1 ? 'over' : ratio >= 0.8 ? 'warn' : 'ok'
+                    return (
+                      <div key={limit.type} className={`fin-limit-card fin-limit-card--${state}`}>
+                        <div className="fin-limit-head">
+                          <span className="fin-type-badge"
+                            style={{background:TYPE_COLORS[limit.type]+'22', color:TYPE_COLORS[limit.type]}}>
+                            {TYPE_LABELS[limit.type]}
+                          </span>
+                          <button className="fin-limit-del" onClick={()=>handleDeleteLimit(limit.type)} title="Remover limite">✕</button>
+                        </div>
+                        <div className="fin-limit-values">
+                          <span className="fin-limit-spent">{fmtBRL(spent)}</span>
+                          <span className="fin-limit-sep"> / {fmtBRL(limit.monthlyLimit)}</span>
+                        </div>
+                        <div className="fin-limit-bar">
+                          <div className="fin-limit-bar-fill" style={{width:`${pct}%`}} />
+                        </div>
+                        {state === 'over' && (
+                          <span className="fin-limit-alert">⚠️ Excedeu em {fmtBRL(spent - limit.monthlyLimit)}</span>
+                        )}
+                        {state === 'warn' && (
+                          <span className="fin-limit-note">{Math.round(ratio*100)}% do limite</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* ── Expense Table ── */}
             <div className="fin-table-section fin-animate-in">
@@ -993,6 +1080,10 @@ function buildPieData(expenses: Expense[]) {
   return Array.from(map.entries()).map(([type, value]) => ({
     name: TYPE_LABELS[type], value, color: TYPE_COLORS[type],
   }))
+}
+
+function spentForType(expenses: Expense[], type: ExpenseType) {
+  return expenses.filter(e => e.type === type).reduce((sum, e) => sum + e.realValue, 0)
 }
 
 function buildGroupedData(expenses: Expense[]) {

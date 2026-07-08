@@ -707,6 +707,48 @@
 .fin-month-type-name { flex: 1; color: var(--text-muted); }
 .fin-month-type-val { font-weight: 600; color: var(--text-main); }
 
+/* ── Budget limits ── */
+.fin-limits-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.fin-limits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.fin-limit-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+.fin-limit-card--ok   { border-left-color: #22c55e; }
+.fin-limit-card--warn { border-left-color: #f59e0b; }
+.fin-limit-card--over { border-left-color: #ef4444; }
+.fin-limit-head { display: flex; align-items: center; justify-content: space-between; }
+.fin-limit-del {
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 6px;
+}
+.fin-limit-del:hover { color: #ef4444; background: #ef444415; }
+.fin-limit-values { margin: 8px 0 6px; font-size: 14px; }
+.fin-limit-spent { font-weight: 700; color: var(--text-main); }
+.fin-limit-sep { color: var(--text-muted); }
+.fin-limit-bar {
+  height: 6px; border-radius: 999px; background: var(--border); overflow: hidden;
+}
+.fin-limit-bar-fill { height: 100%; border-radius: 999px; background: #22c55e; transition: width 0.3s ease; }
+.fin-limit-card--warn .fin-limit-bar-fill { background: #f59e0b; }
+.fin-limit-card--over .fin-limit-bar-fill { background: #ef4444; }
+.fin-limit-alert { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: #ef4444; }
+.fin-limit-note { display: inline-block; margin-top: 6px; font-size: 12px; color: #f59e0b; }
+
 /* ── Animations ── */
 .fin-animate-in { animation: finIn 0.35s ease both; }
 .fin-animate-row { animation: finIn 0.2s ease both; }
