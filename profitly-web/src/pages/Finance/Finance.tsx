@@ -52,6 +52,15 @@ interface RecurringExpense {
   title: string
   estimatedValue: number | null
   type: ExpenseType
+  dueDay: number | null
+  variable: boolean
+}
+
+interface RecurringIncome {
+  id: number
+  description: string
+  amount: number
+  dueDay: number | null
 }
 
 interface Settings { resetDay: number; netSalary: number | null; investmentTarget: number | null }
@@ -118,6 +127,15 @@ export function Finance() {
   const [recTitle, setRecTitle] = useState('')
   const [recEstimated, setRecEstimated] = useState('')
   const [recType, setRecType] = useState<ExpenseType>('HOME')
+  const [recDueDay, setRecDueDay] = useState('')
+  const [recVariable, setRecVariable] = useState(false)
+
+  // Recurring incomes
+  const [recurringIncomeList, setRecurringIncomeList] = useState<RecurringIncome[]>([])
+  const [showAddRecIncome, setShowAddRecIncome] = useState(false)
+  const [recIncDesc, setRecIncDesc] = useState('')
+  const [recIncAmount, setRecIncAmount] = useState('')
+  const [recIncDueDay, setRecIncDueDay] = useState('')
 
   // Inline cell editing
   const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'|'type'} | null>(null)
@@ -199,8 +217,12 @@ export function Finance() {
   }
 
   async function loadRecurring() {
-    const res = await api.get<RecurringExpense[]>('/api/finance/recurring')
-    setRecurringList(res.data)
+    const [rec, inc] = await Promise.all([
+      api.get<RecurringExpense[]>('/api/finance/recurring'),
+      api.get<RecurringIncome[]>('/api/finance/recurring-income'),
+    ])
+    setRecurringList(rec.data)
+    setRecurringIncomeList(inc.data)
   }
 
   async function handleSaveSalary() {
@@ -301,14 +323,33 @@ export function Finance() {
       title: recTitle,
       estimatedValue: recEstimated ? parseFloat(recEstimated) : null,
       type: recType,
+      dueDay: recDueDay ? parseInt(recDueDay) : null,
+      variable: recVariable,
     })
-    setRecTitle(''); setRecEstimated(''); setShowAddRecurring(false)
+    setRecTitle(''); setRecEstimated(''); setRecDueDay(''); setRecVariable(false); setShowAddRecurring(false)
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
   async function handleDeleteRecurring(id: number) {
     if (!confirm('Remover gasto recorrente?')) return
     await api.delete(`/api/finance/recurring/${id}`)
+    await Promise.all([loadRecurring(), refreshPeriod()])
+  }
+
+  async function handleAddRecIncome(e: React.FormEvent) {
+    e.preventDefault()
+    await api.post('/api/finance/recurring-income', {
+      description: recIncDesc,
+      amount: parseFloat(recIncAmount),
+      dueDay: recIncDueDay ? parseInt(recIncDueDay) : null,
+    })
+    setRecIncDesc(''); setRecIncAmount(''); setRecIncDueDay(''); setShowAddRecIncome(false)
+    await Promise.all([loadRecurring(), refreshPeriod()])
+  }
+
+  async function handleDeleteRecIncome(id: number) {
+    if (!confirm('Remover renda recorrente?')) return
+    await api.delete(`/api/finance/recurring-income/${id}`)
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
@@ -757,11 +798,17 @@ export function Finance() {
                   <input className="fin-input" placeholder="Título (ex: Aluguel)" value={recTitle}
                     onChange={e=>setRecTitle(e.target.value)} required />
                   <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Estimado (R$)"
-                    value={recEstimated} onChange={e=>setRecEstimated(e.target.value)} />
+                    value={recEstimated} onChange={e=>setRecEstimated(e.target.value)} disabled={recVariable} />
                   <select className="fin-input fin-input--short" value={recType}
                     onChange={e=>setRecType(e.target.value as ExpenseType)}>
                     {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                   </select>
+                  <input className="fin-input fin-input--tiny" type="number" min="1" max="31" placeholder="Dia venc."
+                    value={recDueDay} onChange={e=>setRecDueDay(e.target.value)} title="Dia do vencimento (1-31)" />
+                  <label className="fin-check">
+                    <input type="checkbox" checked={recVariable}
+                      onChange={e=>setRecVariable(e.target.checked)} /> Valor variável
+                  </label>
                   <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
                 </div>
               </form>
@@ -780,22 +827,84 @@ export function Finance() {
                       <th>Título</th>
                       <th>Estimado</th>
                       <th>Tipo</th>
+                      <th className="fin-th--center">Vencimento</th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {recurringList.map(r => (
                       <tr key={r.id} className="fin-row fin-row--recurring fin-animate-row">
-                        <td className="fin-cell-title">{r.title}</td>
-                        <td>{fmtBRL(r.estimatedValue)}</td>
+                        <td className="fin-cell-title">
+                          {r.title}
+                          {r.variable && <span className="fin-var-badge" title="Valor varia a cada mês">variável</span>}
+                        </td>
+                        <td>{r.variable ? <span className="fin-muted">variável</span> : fmtBRL(r.estimatedValue)}</td>
                         <td>
                           <span className="fin-type-badge"
                             style={{background:TYPE_COLORS[r.type]+'22', color:TYPE_COLORS[r.type]}}>
                             {TYPE_LABELS[r.type]}
                           </span>
                         </td>
+                        <td className="fin-td--center">{r.dueDay ? `dia ${r.dueDay}` : '—'}</td>
                         <td>
                           <button className="fin-del-btn" onClick={()=>handleDeleteRecurring(r.id)} title="Remover">✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Recurring incomes ── */}
+            <div className="fin-table-header" style={{marginTop:'2rem'}}>
+              <h3 className="fin-section-title">Rendas Recorrentes</h3>
+              <button className="fin-link-btn" onClick={()=>setShowAddRecIncome(v=>!v)}>
+                {showAddRecIncome ? '✕ fechar' : '+ nova renda recorrente'}
+              </button>
+            </div>
+            <p className="fin-recurring-desc">
+              Rendas configuradas aqui são adicionadas automaticamente às entradas de cada período.
+            </p>
+
+            {showAddRecIncome && (
+              <form className="fin-add-form fin-animate-in" onSubmit={handleAddRecIncome}>
+                <div className="fin-add-row-simple">
+                  <input className="fin-input" placeholder="Descrição (ex: Aluguel recebido)" value={recIncDesc}
+                    onChange={e=>setRecIncDesc(e.target.value)} required />
+                  <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
+                    value={recIncAmount} onChange={e=>setRecIncAmount(e.target.value)} required />
+                  <input className="fin-input fin-input--tiny" type="number" min="1" max="31" placeholder="Dia"
+                    value={recIncDueDay} onChange={e=>setRecIncDueDay(e.target.value)} title="Dia do recebimento (1-31)" />
+                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
+                </div>
+              </form>
+            )}
+
+            {recurringIncomeList.length === 0 ? (
+              <div className="fin-empty-state">
+                <span>💰</span>
+                <p>Nenhuma renda recorrente configurada.<br/>Adicione entradas que se repetem, como salário extra, aluguel recebido ou mesada.</p>
+              </div>
+            ) : (
+              <div className="fin-table-wrap">
+                <table className="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Descrição</th>
+                      <th>Valor</th>
+                      <th className="fin-th--center">Recebimento</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recurringIncomeList.map(r => (
+                      <tr key={r.id} className="fin-row fin-row--recurring fin-animate-row">
+                        <td className="fin-cell-title">{r.description}</td>
+                        <td>{fmtBRL(r.amount)}</td>
+                        <td className="fin-td--center">{r.dueDay ? `dia ${r.dueDay}` : '—'}</td>
+                        <td>
+                          <button className="fin-del-btn" onClick={()=>handleDeleteRecIncome(r.id)} title="Remover">✕</button>
                         </td>
                       </tr>
                     ))}
@@ -836,6 +945,54 @@ export function Finance() {
               </div>
             ) : (
               <>
+                {(() => {
+                  const mom = buildMoM(history.months)
+                  if (!mom) return null
+                  return (
+                    <div className="fin-mom fin-animate-in">
+                      <h4 className="fin-subsection-title">
+                        Comparação mensal — {fmtMonth(mom.curr.yearMonth)} vs {fmtMonth(mom.prev.yearMonth)}
+                      </h4>
+                      <div className="fin-mom-cards">
+                        <div className={`fin-mom-card fin-mom-card--${mom.totalDelta > 0 ? 'up' : 'down'}`}>
+                          <div className="fin-mom-label">Variação total</div>
+                          <div className="fin-mom-value">
+                            {mom.totalDelta >= 0 ? '+' : '-'}{fmtBRL(Math.abs(mom.totalDelta))}
+                          </div>
+                          {mom.totalPct != null && (
+                            <div className="fin-mom-sub">
+                              {mom.totalDelta >= 0 ? '+' : '-'}{Math.abs(mom.totalPct).toFixed(1)}% vs mês anterior
+                            </div>
+                          )}
+                        </div>
+                        <div className="fin-mom-card">
+                          <div className="fin-mom-label">Precisão do orçamento</div>
+                          <div className="fin-mom-value">
+                            {mom.accuracyPct != null ? `${mom.accuracyPct.toFixed(0)}%` : '—'}
+                          </div>
+                          <div className="fin-mom-sub">
+                            Real {fmtBRL(mom.curr.total)} de {fmtBRL(mom.estimated)} estimado
+                          </div>
+                        </div>
+                      </div>
+                      {mom.movers.length > 0 && (
+                        <div className="fin-mom-movers">
+                          <div className="fin-mom-movers-title">Maiores variações por categoria</div>
+                          {mom.movers.slice(0, 5).map(m => (
+                            <div key={m.type} className="fin-mom-mover">
+                              <span className="fin-type-dot" style={{background: TYPE_COLORS[m.type]}} />
+                              <span className="fin-mom-mover-name">{TYPE_LABELS[m.type]}</span>
+                              <span className={`fin-mom-mover-delta ${m.delta > 0 ? 'up' : 'down'}`}>
+                                {m.delta >= 0 ? '+' : '-'}{fmtBRL(Math.abs(m.delta))}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+
                 <div className="fin-chart-section">
                   <h4 className="fin-subsection-title">Total gasto por mês</h4>
                   <ResponsiveContainer width="100%" height={280}>
@@ -1084,6 +1241,28 @@ function buildPieData(expenses: Expense[]) {
 
 function spentForType(expenses: Expense[], type: ExpenseType) {
   return expenses.filter(e => e.type === type).reduce((sum, e) => sum + e.realValue, 0)
+}
+
+function buildMoM(months: MonthSummary[]) {
+  if (months.length < 2) return null
+  const curr = months[months.length - 1]
+  const prev = months[months.length - 2]
+  const totalDelta = curr.total - prev.total
+  const totalPct = prev.total > 0 ? (totalDelta / prev.total) * 100 : null
+
+  const types = new Set<ExpenseType>()
+  curr.byType.forEach(t => types.add(t.type))
+  prev.byType.forEach(t => types.add(t.type))
+  const currMap = new Map(curr.byType.map(t => [t.type, t.totalReal]))
+  const prevMap = new Map(prev.byType.map(t => [t.type, t.totalReal]))
+  const movers = Array.from(types)
+    .map(type => ({ type, delta: (currMap.get(type) ?? 0) - (prevMap.get(type) ?? 0) }))
+    .filter(m => Math.abs(m.delta) > 0.005)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+
+  const estimated = curr.byType.reduce((s, t) => s + t.totalEstimated, 0)
+  const accuracyPct = estimated > 0 ? (curr.total / estimated) * 100 : null
+  return { curr, prev, totalDelta, totalPct, movers, estimated, accuracyPct }
 }
 
 function buildGroupedData(expenses: Expense[]) {

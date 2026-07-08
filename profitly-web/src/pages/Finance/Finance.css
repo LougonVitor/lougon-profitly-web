@@ -749,6 +749,44 @@
 .fin-limit-alert { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: #ef4444; }
 .fin-limit-note { display: inline-block; margin-top: 6px; font-size: 12px; color: #f59e0b; }
 
+/* ── Recurring extras ── */
+.fin-input--tiny { width: 90px; flex: 0 0 auto; }
+.fin-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.fin-check input { accent-color: #378add; }
+.fin-var-badge {
+  margin-left: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #8b5cf6; background: #8b5cf615; padding: 1px 6px; border-radius: 6px;
+}
+.fin-muted { color: var(--text-muted); font-style: italic; }
+
+/* ── Month-over-month insights ── */
+.fin-mom {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.fin-mom-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 0.75rem 0 1rem; }
+.fin-mom-card {
+  background: var(--bg); border: 1px solid var(--border); border-left: 3px solid #64748b;
+  border-radius: 12px; padding: 0.85rem 1rem;
+}
+.fin-mom-card--up { border-left-color: #ef4444; }
+.fin-mom-card--down { border-left-color: #22c55e; }
+.fin-mom-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fin-mom-value { font-size: 20px; font-weight: 700; color: var(--text-main); margin: 4px 0 2px; }
+.fin-mom-card--up .fin-mom-value { color: #ef4444; }
+.fin-mom-card--down .fin-mom-value { color: #22c55e; }
+.fin-mom-sub { font-size: 12px; color: var(--text-muted); }
+.fin-mom-movers-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.fin-mom-mover { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.fin-mom-mover:last-child { border-bottom: none; }
+.fin-mom-mover-name { flex: 1; color: var(--text-main); font-size: 13px; }
+.fin-mom-mover-delta { font-weight: 700; font-size: 13px; }
+.fin-mom-mover-delta.up { color: #ef4444; }
+.fin-mom-mover-delta.down { color: #22c55e; }
+
 /* ── Animations ── */
 .fin-animate-in { animation: finIn 0.35s ease both; }
 .fin-animate-row { animation: finIn 0.2s ease both; }
