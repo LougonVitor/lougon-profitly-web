@@ -347,6 +347,33 @@ export function Finance() {
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
+  async function downloadCsv(url: string, filename: string) {
+    const res = await api.get(url, { responseType: 'blob' })
+    const blobUrl = URL.createObjectURL(res.data as Blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(blobUrl)
+  }
+
+  async function handleImportCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const { data } = await api.post<{ imported: number }>('/api/finance/import/expenses', form)
+      alert(`${data.imported} lançamento(s) importado(s).`)
+    } catch {
+      alert('Não foi possível importar o CSV. Verifique o formato (titulo,tipo,estimado,real).')
+    }
+    e.target.value = ''
+    await refreshPeriod()
+  }
+
   async function handleSaveLimit(e: React.FormEvent) {
     e.preventDefault()
     const value = parseFloat(limitValue)
@@ -552,9 +579,18 @@ export function Finance() {
             <div className="fin-table-section fin-animate-in">
               <div className="fin-table-header">
                 <h3 className="fin-section-title">Lançamentos</h3>
-                <button className="fin-link-btn" onClick={()=>setShowAdd(v=>!v)}>
-                  {showAdd ? '✕ fechar' : '+ novo gasto'}
-                </button>
+                <div className="fin-header-actions">
+                  <button className="fin-link-btn" onClick={()=>downloadCsv('/api/finance/export/current', 'periodo-atual.csv')}>
+                    ⤓ exportar
+                  </button>
+                  <label className="fin-link-btn fin-link-btn--file">
+                    ⤒ importar
+                    <input type="file" accept=".csv,text/csv" onChange={handleImportCsv} hidden />
+                  </label>
+                  <button className="fin-link-btn" onClick={()=>setShowAdd(v=>!v)}>
+                    {showAdd ? '✕ fechar' : '+ novo gasto'}
+                  </button>
+                </div>
               </div>
 
               {showAdd && (
@@ -903,7 +939,12 @@ export function Finance() {
         {tab === 'history' && (
           <div className="fin-history fin-animate-in">
             <div className="fin-history-filters">
-              <h3 className="fin-section-title">Histórico de gastos</h3>
+              <div className="fin-table-header" style={{marginBottom:'1rem'}}>
+                <h3 className="fin-section-title">Histórico de gastos</h3>
+                <button className="fin-link-btn" onClick={()=>downloadCsv('/api/finance/export/history', 'historico.csv')}>
+                  ⤓ exportar CSV
+                </button>
+              </div>
               <div className="fin-filter-row">
                 <div className="fin-field">
                   <label>De</label>

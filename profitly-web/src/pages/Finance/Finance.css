@@ -759,6 +759,10 @@
 }
 .fin-muted { color: var(--text-muted); font-style: italic; }
 
+/* ── Header actions (export / import) ── */
+.fin-header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fin-link-btn--file { cursor: pointer; display: inline-flex; align-items: center; }
+
 /* ── Investment (derived from wallet) ── */
 .fin-invest-real { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
 .fin-invest-real-val { font-weight: 700; color: #378add; }
