@@ -759,6 +759,11 @@
 }
 .fin-muted { color: var(--text-muted); font-style: italic; }
 
+/* ── Investment (derived from wallet) ── */
+.fin-invest-real { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.fin-invest-real-val { font-weight: 700; color: #378add; }
+.fin-invest-real-hint { font-size: 10px; color: var(--text-muted); }
+
 /* ── Month-over-month insights ── */
 .fin-mom {
   background: var(--bg-card);

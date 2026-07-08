@@ -45,6 +45,7 @@ interface CurrentPeriod {
   additionalIncomes: AdditionalIncome[]
   totalIncome: number
   budgetLimits: BudgetLimit[]
+  investedThisMonth: number
 }
 
 interface RecurringExpense {
@@ -289,13 +290,6 @@ export function Finance() {
     if (!inv || !investManual) return
     await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: parseFloat(investManual) })
     setInvestManual('')
-    await refreshPeriod()
-  }
-
-  async function handleInvestRealChange(val: string) {
-    const inv = investmentExpense()
-    if (!inv) return
-    await api.patch(`/api/finance/expenses/${inv.id}`, { realValue: parseFloat(val) || 0 })
     await refreshPeriod()
   }
 
@@ -629,19 +623,9 @@ export function Finance() {
                           </div>
                         </td>
                         <td className="fin-td--center">
-                          <div className="fin-real-cell">
-                            <InlineNumberCell
-                              value={inv.realValue}
-                              editing={editCell?.id===inv.id && editCell.field==='real'}
-                              editVal={editCellVal}
-                              onStart={()=>startEdit(inv.id,'real',inv.realValue.toString())}
-                              onChange={setEditCellVal}
-                              onCommit={commitEdit}
-                              onCancel={()=>setEditCell(null)}
-                            />
-                            {inv.estimatedValue != null && inv.realValue < inv.estimatedValue && (
-                              <button className="fin-pay-btn" onClick={()=>handleMarkPaid(inv)} title="Marcar como pago (preencher valor estimado)">✓</button>
-                            )}
+                          <div className="fin-invest-real" title="Calculado automaticamente pelas compras da sua carteira neste período">
+                            <span className="fin-invest-real-val">{fmtBRL(period.investedThisMonth)}</span>
+                            <span className="fin-invest-real-hint">📊 da carteira</span>
                           </div>
                         </td>
                         <td className="fin-td--center">
