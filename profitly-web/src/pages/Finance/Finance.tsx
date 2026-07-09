@@ -102,9 +102,8 @@ export function Finance() {
       ])
       setPeriod(pRes.data)
       setSettings(sRes.data)
-      setSettingsResetDay(sRes.data.resetDay.toString())
       setSalaryInput(sRes.data.netSalary?.toString() ?? '')
-    } catch (err: unknown) {
+    } catch {
       // 401/403 handled by PrivateRoute — no redirect needed here
     } finally { setLoading(false) }
   }
@@ -117,7 +116,6 @@ export function Finance() {
   async function refreshSettings() {
     const res = await api.get<Settings>('/api/finance/settings')
     setSettings(res.data)
-    setSettingsResetDay(res.data.resetDay.toString())
     setSalaryInput(res.data.netSalary?.toString() ?? '')
   }
 
