@@ -12,22 +12,33 @@ export function fmtMonth(ym: string) {
   return `${months[parseInt(m)-1]}/${y}`
 }
 
-export function buildPieData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, number>()
+/**
+ * Per-category estimated vs real, plus the estimated total and the largest
+ * single value (for scaling bars). Feeds the combined "Gastos por categoria"
+ * card: the donut uses `estimated`, the legend rows use both values + `max`.
+ */
+export function buildCategoryBreakdown(expenses: Expense[]) {
+  const map = new Map<ExpenseType, { estimated: number; real: number }>()
   for (const e of expenses) {
-    const v = e.estimatedValue ?? 0
-    if (v > 0) map.set(e.type, (map.get(e.type) ?? 0) + v)
+    const cur = map.get(e.type) ?? { estimated: 0, real: 0 }
+    cur.estimated += e.estimatedValue ?? 0
+    cur.real += e.realValue
+    map.set(e.type, cur)
   }
-  const total = Array.from(map.values()).reduce((s, v) => s + v, 0)
-  return Array.from(map.entries())
-    .map(([type, value]) => ({
+  const rows = Array.from(map.entries())
+    .map(([type, v]) => ({
       type,
       name: TYPE_LABELS[type],
-      value,
       color: TYPE_COLORS[type],
-      pct: total > 0 ? (value / total) * 100 : 0,
+      estimated: v.estimated,
+      real: v.real,
     }))
-    .sort((a, b) => b.value - a.value)
+    .filter(r => r.estimated > 0 || r.real > 0)
+    .sort((a, b) => (b.estimated - a.estimated) || (b.real - a.real))
+
+  const totalEstimated = rows.reduce((s, r) => s + r.estimated, 0)
+  const max = rows.reduce((m, r) => Math.max(m, r.estimated, r.real), 0)
+  return { rows, totalEstimated, max }
 }
 
 export function spentForType(expenses: Expense[], type: ExpenseType) {
@@ -54,19 +65,4 @@ export function buildMoM(months: MonthSummary[]) {
   const estimated = curr.byType.reduce((s, t) => s + t.totalEstimated, 0)
   const accuracyPct = estimated > 0 ? (curr.total / estimated) * 100 : null
   return { curr, prev, totalDelta, totalPct, movers, estimated, accuracyPct }
-}
-
-export function buildGroupedData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, {estimated: number; real: number}>()
-  for (const e of expenses) {
-    const cur = map.get(e.type) ?? {estimated: 0, real: 0}
-    cur.estimated += e.estimatedValue ?? 0
-    cur.real += e.realValue
-    map.set(e.type, cur)
-  }
-  return Array.from(map.entries()).map(([type, vals]) => ({
-    type: TYPE_LABELS[type],
-    estimated: vals.estimated,
-    real: vals.real,
-  }))
 }

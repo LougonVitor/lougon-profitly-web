@@ -1,11 +1,8 @@
 import type { Dispatch, SetStateAction, FormEvent, ChangeEvent, RefObject } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from 'recharts'
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField } from '../types'
 import { TYPE_LABELS, TYPE_COLORS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
-import { fmtBRL, buildGroupedData, buildPieData, spentForType } from '../helpers'
+import { fmtBRL, buildCategoryBreakdown, spentForType } from '../helpers'
 import { SummaryCard } from '../components/SummaryCard'
 import { ExpenseRow } from '../components/ExpenseRow'
 
@@ -367,81 +364,56 @@ export function CurrentPeriodTab({
         </div>
       </div>
 
-      {/* ── Charts ── */}
-      {period.expenses.length > 1 && (
-        <div className="fin-chart-section fin-animate-in">
-          <h3 className="fin-section-title" style={{marginBottom:'1rem'}}>Gastos por categoria</h3>
-          <ResponsiveContainer width="100%" height={buildGroupedData(period.expenses).length * 56 + 40}>
-            <BarChart
-              layout="vertical"
-              data={buildGroupedData(period.expenses)}
-              margin={{top:0, right:10, left:10, bottom:0}}
-              barCategoryGap="30%"
-              barGap={3}
-            >
-              <XAxis
-                type="number"
-                tick={{fontSize:11}}
-                tickFormatter={(v:number) => fmtBRL(v)}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                type="category"
-                dataKey="type"
-                tick={{fontSize:12}}
-                width={100}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-              <Legend
-                formatter={(value) => value === 'estimated' ? 'Valor Estimado' : 'Valor Real'}
-              />
-              <Bar dataKey="estimated" name="estimated" fill="#4b5563" radius={[0,4,4,0]}
-                label={{position:'right', fontSize:10, formatter:(v)=>Number(v)>0?fmtBRL(Number(v)):''}} />
-              <Bar dataKey="real" name="real" fill="#e85d5d" radius={[0,4,4,0]}
-                label={{position:'right', fontSize:10, formatter:(v)=>Number(v)>0?fmtBRL(Number(v)):''}} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* ── Donut + legend: Estimated by category ── */}
+      {/* ── Gastos por categoria: donut (estimated share) + estimated-vs-real per category ── */}
       {(() => {
-        const pieData = buildPieData(period.expenses)
-        if (pieData.length === 0) return null
+        const { rows, max } = buildCategoryBreakdown(period.expenses)
+        if (rows.length === 0) return null
+        const donutData = rows.filter(r => r.estimated > 0)
         return (
           <div className="fin-chart-section fin-animate-in">
-            <h3 className="fin-section-title" style={{marginBottom:'1.5rem'}}>Gastos estimados por categoria</h3>
+            <div className="fin-cat-header">
+              <h3 className="fin-section-title">Gastos por categoria</h3>
+              <span className="fin-cat-caption">barra: estimado (clara) vs real (sólida)</span>
+            </div>
             <div className="fin-breakdown">
-              <ResponsiveContainer width={220} height={220}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                  >
-                    {pieData.map(d => <Cell key={d.type} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-                </PieChart>
-              </ResponsiveContainer>
+              {donutData.length > 0 && (
+                <ResponsiveContainer width={220} height={220}>
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="estimated"
+                      nameKey="name"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                    >
+                      {donutData.map(d => <Cell key={d.type} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
               <div className="fin-breakdown-legend">
-                {pieData.map(d => (
-                  <div key={d.type} className="fin-legend-row">
-                    <span className="fin-legend-dot" style={{background:d.color}} />
-                    <span className="fin-legend-name">{d.name}</span>
-                    <span className="fin-legend-value">{fmtBRL(d.value)}</span>
-                    <span className="fin-legend-pct">{d.pct.toFixed(1)}%</span>
-                    <div className="fin-legend-bar-wrap">
-                      <div className="fin-legend-bar" style={{width:`${d.pct}%`, background:d.color}} />
+                {rows.map(r => {
+                  const estPct = max > 0 ? (r.estimated / max) * 100 : 0
+                  const realPct = max > 0 ? (r.real / max) * 100 : 0
+                  const over = r.estimated > 0 && r.real > r.estimated
+                  const realColor = over ? '#ef4444' : r.color
+                  return (
+                    <div key={r.type} className="fin-cat-row">
+                      <div className="fin-cat-line">
+                        <span className="fin-cat-dot" style={{background:r.color}} />
+                        <span className="fin-cat-name">{r.name}</span>
+                        <span className="fin-cat-real" style={{color:realColor}}>{fmtBRL(r.real)}</span>
+                        <span className="fin-cat-est">/ {fmtBRL(r.estimated)}</span>
+                      </div>
+                      <div className="fin-cat-track">
+                        <div className="fin-cat-est-bar" style={{width:`${estPct}%`}} />
+                        <div className="fin-cat-real-bar" style={{width:`${realPct}%`, background:realColor}} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>

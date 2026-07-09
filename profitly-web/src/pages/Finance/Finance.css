@@ -655,27 +655,44 @@
   min-width: 240px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
-.fin-legend-row {
+
+/* Card header: title + convention caption */
+.fin-cat-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-bottom: 1.25rem;
+}
+.fin-cat-caption { font-size: 11px; color: var(--text-muted); }
+
+/* One category: name + estimated/real values, then an overlaid est/real bar */
+.fin-cat-row { display: flex; flex-direction: column; gap: 5px; }
+.fin-cat-line {
   display: grid;
   grid-template-columns: 10px 1fr auto auto;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   font-size: 13px;
 }
-.fin-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.fin-legend-name { color: var(--text-main); font-weight: 500; }
-.fin-legend-value { color: var(--text-muted); font-size: 12px; }
-.fin-legend-pct { color: var(--text-muted); font-size: 12px; min-width: 44px; text-align: right; font-weight: 600; }
-.fin-legend-bar-wrap {
-  grid-column: 2 / -1;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
+.fin-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; align-self: center; }
+.fin-cat-name { color: var(--text-main); font-weight: 500; }
+.fin-cat-real { font-weight: 700; font-size: 13px; }
+.fin-cat-est { color: var(--text-muted); font-size: 12px; }
+
+/* Overlaid bar: faint estimated track + solid real on top (both scaled to the largest value) */
+.fin-cat-track { position: relative; height: 8px; }
+.fin-cat-est-bar {
+  position: absolute; left: 0; top: 0; height: 100%;
+  border-radius: 999px; background: var(--text-muted); opacity: 0.22;
 }
-.fin-legend-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+.fin-cat-real-bar {
+  position: absolute; left: 0; top: 0; height: 100%;
+  border-radius: 999px; transition: width 0.5s ease;
+}
 @media (max-width: 560px) {
   .fin-breakdown { justify-content: center; gap: 1.25rem; }
 }
