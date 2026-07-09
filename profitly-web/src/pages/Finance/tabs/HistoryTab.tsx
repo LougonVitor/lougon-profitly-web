@@ -103,7 +103,7 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
               <BarChart data={history.months.map(m=>({name: fmtMonth(m.yearMonth), total: m.total}))}>
                 <XAxis dataKey="name" tick={{fontSize:12}} />
                 <YAxis tick={{fontSize:12}} />
-                <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                 <Bar dataKey="total" fill="#378add" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -119,7 +119,7 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
               })}>
                 <XAxis dataKey="name" tick={{fontSize:12}} />
                 <YAxis tick={{fontSize:12}} />
-                <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                 <Legend />
                 {ALL_TYPES.filter(t => history.months.some(m => m.byType.some(b => b.type === t))).map(t => (
                   <Bar key={t} dataKey={TYPE_LABELS[t]} stackId="a" fill={TYPE_COLORS[t]} />

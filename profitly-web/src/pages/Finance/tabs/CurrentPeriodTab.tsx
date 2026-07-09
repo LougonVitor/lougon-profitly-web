@@ -394,14 +394,14 @@ export function CurrentPeriodTab({
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip formatter={(v:number) => fmtBRL(v)} />
+              <Tooltip formatter={(v) => fmtBRL(Number(v))} />
               <Legend
                 formatter={(value) => value === 'estimated' ? 'Valor Estimado' : 'Valor Real'}
               />
               <Bar dataKey="estimated" name="estimated" fill="#4b5563" radius={[0,4,4,0]}
-                label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                label={{position:'right', fontSize:10, formatter:(v)=>Number(v)>0?fmtBRL(Number(v)):''}} />
               <Bar dataKey="real" name="real" fill="#e85d5d" radius={[0,4,4,0]}
-                label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
+                label={{position:'right', fontSize:10, formatter:(v)=>Number(v)>0?fmtBRL(Number(v)):''}} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -427,7 +427,7 @@ export function CurrentPeriodTab({
                   >
                     {pieData.map(d => <Cell key={d.type} fill={d.color} />)}
                   </Pie>
-                  <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                  <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="fin-breakdown-legend">
