@@ -506,9 +506,11 @@ export function Finance() {
               return (
                 <div className="fin-cards">
                   <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
-                  <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'} />
+                  <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
+                    tone={period.balance >= 0 ? 'pos' : 'neg'} />
                   <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
-                  <SummaryCard label="Saldo Final Estimado" value={saldoFinalEstimado} icon="🎯" />
+                  <SummaryCard label="Saldo Final Estimado" value={saldoFinalEstimado} icon="🎯"
+                    tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'} />
                 </div>
               )
             })()}
@@ -1130,9 +1132,11 @@ export function Finance() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-function SummaryCard({ label, value, icon }: { label: string; value: number|null; icon: string }) {
+function SummaryCard({ label, value, icon, tone = 'neutral' }: {
+  label: string; value: number|null; icon: string; tone?: 'pos'|'neg'|'neutral'
+}) {
   return (
-    <div className="fin-card fin-animate-in">
+    <div className={`fin-card fin-card--${tone} fin-animate-in`}>
       <span className="fin-card-icon">{icon}</span>
       <div>
         <div className="fin-card-label">{label}</div>

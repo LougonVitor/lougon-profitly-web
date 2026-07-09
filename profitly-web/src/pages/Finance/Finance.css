@@ -332,6 +332,11 @@
   animation: finIn 0.35s ease both;
 }
 
+.fin-card--pos { border-left-color: #22c55e; }
+.fin-card--pos .fin-card-value { color: #16a34a; }
+.fin-card--neg { border-left-color: #ef4444; }
+.fin-card--neg .fin-card-value { color: #dc2626; }
+
 .fin-card-icon { font-size: 20px; }
 .fin-card-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .fin-card-value { font-size: 16px; font-weight: 700; color: var(--text-main); margin-top: 2px; }
