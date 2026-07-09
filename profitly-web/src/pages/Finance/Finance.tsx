@@ -4,99 +4,17 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts'
 import { api } from '../../lib/api'
+import type {
+  ExpenseType, Expense, CurrentPeriod, RecurringExpense, RecurringIncome,
+  Settings, HistoryData,
+} from './types'
+import {
+  TYPE_LABELS, TYPE_COLORS, STATUS_LABELS, ALL_TYPES, INVEST_PCTS,
+} from './constants'
+import {
+  fmtBRL, fmtMonth, buildPieData, spentForType, buildMoM, buildGroupedData,
+} from './helpers'
 import './Finance.css'
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-type ExpenseType = 'INVESTMENT'|'HOME'|'SIGNATURE'|'SPORT'|'LOCOMOTION'|
-  'SUPERMARKET'|'LEISURE'|'CREDIT'|'MEDICINE'|'SEPARATE'|'EDUCATION'|'STYLE'
-type ExpenseStatus = 'PAID'|'PARTIAL'|'PENDING'|'OVERRUN'
-
-interface Expense {
-  id: number
-  title: string
-  estimatedValue: number | null
-  realValue: number
-  status: ExpenseStatus
-  type: ExpenseType
-  createdAt: string
-  recurring: boolean
-}
-
-interface AdditionalIncome {
-  id: number
-  description: string
-  amount: number
-  createdAt: string
-}
-
-interface BudgetLimit {
-  type: ExpenseType
-  monthlyLimit: number
-}
-
-interface CurrentPeriod {
-  expenses: Expense[]
-  netSalary: number | null
-  investmentTarget: number | null
-  totalReal: number
-  totalEstimated: number
-  balance: number
-  resetDay: number
-  additionalIncomes: AdditionalIncome[]
-  totalIncome: number
-  budgetLimits: BudgetLimit[]
-  investedThisMonth: number
-}
-
-interface RecurringExpense {
-  id: number
-  title: string
-  estimatedValue: number | null
-  type: ExpenseType
-  dueDay: number | null
-  variable: boolean
-}
-
-interface RecurringIncome {
-  id: number
-  description: string
-  amount: number
-  dueDay: number | null
-}
-
-interface Settings { resetDay: number; netSalary: number | null; investmentTarget: number | null }
-interface TypeTotal { type: ExpenseType; totalReal: number; totalEstimated: number }
-interface MonthSummary { yearMonth: string; byType: TypeTotal[]; total: number }
-interface HistoryData { months: MonthSummary[]; availableMonths: string[] }
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const TYPE_LABELS: Record<ExpenseType, string> = {
-  INVESTMENT:'Investimento', HOME:'Casa', SIGNATURE:'Assinaturas',
-  SPORT:'Esporte', LOCOMOTION:'Locomoção', SUPERMARKET:'Supermercado',
-  LEISURE:'Lazer', CREDIT:'Crédito', MEDICINE:'Medicina',
-  SEPARATE:'Avulso', EDUCATION:'Educação', STYLE:'Estilo',
-}
-const TYPE_COLORS: Record<ExpenseType, string> = {
-  INVESTMENT:'#378add', HOME:'#22c55e', SIGNATURE:'#f59e0b',
-  SPORT:'#8b5cf6', LOCOMOTION:'#06b6d4', SUPERMARKET:'#f97316',
-  LEISURE:'#ec4899', CREDIT:'#64748b', MEDICINE:'#ef4444',
-  SEPARATE:'#a78bfa', EDUCATION:'#10b981', STYLE:'#d97706',
-}
-const STATUS_LABELS: Record<ExpenseStatus, string> = {
-  PAID:'Pago', PARTIAL:'Parcial', PENDING:'Pendente', OVERRUN:'Excedido',
-}
-const ALL_TYPES = Object.keys(TYPE_LABELS) as ExpenseType[]
-const INVEST_PCTS = Array.from({length: 101}, (_, i) => i)
-
-function fmtBRL(v: number | null | undefined) {
-  if (v == null) return 'R$ —'
-  return `R$ ${v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
-}
-function fmtMonth(ym: string) {
-  const [y, m] = ym.split('-')
-  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-  return `${months[parseInt(m)-1]}/${y}`
-}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export function Finance() {
@@ -1272,62 +1190,3 @@ function InlineNumberCell({ value, editing, editVal, onStart, onChange, onCommit
   )
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function buildPieData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, number>()
-  for (const e of expenses) {
-    const v = e.estimatedValue ?? 0
-    if (v > 0) map.set(e.type, (map.get(e.type) ?? 0) + v)
-  }
-  const total = Array.from(map.values()).reduce((s, v) => s + v, 0)
-  return Array.from(map.entries())
-    .map(([type, value]) => ({
-      type,
-      name: TYPE_LABELS[type],
-      value,
-      color: TYPE_COLORS[type],
-      pct: total > 0 ? (value / total) * 100 : 0,
-    }))
-    .sort((a, b) => b.value - a.value)
-}
-
-function spentForType(expenses: Expense[], type: ExpenseType) {
-  return expenses.filter(e => e.type === type).reduce((sum, e) => sum + e.realValue, 0)
-}
-
-function buildMoM(months: MonthSummary[]) {
-  if (months.length < 2) return null
-  const curr = months[months.length - 1]
-  const prev = months[months.length - 2]
-  const totalDelta = curr.total - prev.total
-  const totalPct = prev.total > 0 ? (totalDelta / prev.total) * 100 : null
-
-  const types = new Set<ExpenseType>()
-  curr.byType.forEach(t => types.add(t.type))
-  prev.byType.forEach(t => types.add(t.type))
-  const currMap = new Map(curr.byType.map(t => [t.type, t.totalReal]))
-  const prevMap = new Map(prev.byType.map(t => [t.type, t.totalReal]))
-  const movers = Array.from(types)
-    .map(type => ({ type, delta: (currMap.get(type) ?? 0) - (prevMap.get(type) ?? 0) }))
-    .filter(m => Math.abs(m.delta) > 0.005)
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-
-  const estimated = curr.byType.reduce((s, t) => s + t.totalEstimated, 0)
-  const accuracyPct = estimated > 0 ? (curr.total / estimated) * 100 : null
-  return { curr, prev, totalDelta, totalPct, movers, estimated, accuracyPct }
-}
-
-function buildGroupedData(expenses: Expense[]) {
-  const map = new Map<ExpenseType, {estimated: number; real: number}>()
-  for (const e of expenses) {
-    const cur = map.get(e.type) ?? {estimated: 0, real: 0}
-    cur.estimated += e.estimatedValue ?? 0
-    cur.real += e.realValue
-    map.set(e.type, cur)
-  }
-  return Array.from(map.entries()).map(([type, vals]) => ({
-    type: TYPE_LABELS[type],
-    estimated: vals.estimated,
-    real: vals.real,
-  }))
-}
