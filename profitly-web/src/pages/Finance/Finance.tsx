@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from 'recharts'
 import { api } from '../../lib/api'
 import type {
   ExpenseType, Expense, CurrentPeriod, RecurringExpense, RecurringIncome,
   Settings, HistoryData,
 } from './types'
-import {
-  TYPE_LABELS, TYPE_COLORS, STATUS_LABELS, ALL_TYPES, INVEST_PCTS,
-} from './constants'
-import {
-  fmtBRL, buildPieData, spentForType, buildGroupedData,
-} from './helpers'
-import { SummaryCard } from './components/SummaryCard'
-import { ExpenseRow } from './components/ExpenseRow'
+import { INVEST_PCTS } from './constants'
+import { CurrentPeriodTab } from './tabs/CurrentPeriodTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { RecurringTab } from './tabs/RecurringTab'
 import './Finance.css'
@@ -329,10 +319,6 @@ export function Finance() {
     </div>
   )
 
-  const inv = investmentExpense()
-  const nonInvestmentRecurring = period?.expenses.filter(e => e.recurring && e.type !== 'INVESTMENT') ?? []
-  const nonRecurring = period?.expenses.filter(e => !e.recurring) ?? []
-
   return (
     <div className="fin-page">
       <div className="page-container fin-container">
@@ -356,387 +342,33 @@ export function Finance() {
 
         {/* ════════════════════════════════════════════════════════════════════ */}
         {tab === 'current' && period && (
-          <>
-            {/* ── Income section ── */}
-            <div className="fin-income-section fin-animate-in">
-              <div className="fin-income-header">
-                <h3 className="fin-section-title">Entradas do mês</h3>
-                <button className="fin-link-btn" onClick={()=>setShowAddIncome(v=>!v)}>
-                  {showAddIncome ? '✕ fechar' : '+ renda adicional'}
-                </button>
-              </div>
-
-              <div className="fin-income-row">
-                {/* Salary card */}
-                <div className="fin-income-card fin-income-card--salary">
-                  <div className="fin-income-card-label">Salário Líquido</div>
-                  {editingSalary ? (
-                    <div className="fin-salary-edit">
-                      <span className="fin-salary-prefix">R$</span>
-                      <input
-                        ref={salaryRef}
-                        className="fin-salary-input"
-                        type="number"
-                        step="0.01"
-                        value={salaryInput}
-                        onChange={e=>setSalaryInput(e.target.value)}
-                        onBlur={handleSaveSalary}
-                        onKeyDown={e=>{ if(e.key==='Enter') handleSaveSalary(); if(e.key==='Escape') setEditingSalary(false) }}
-                      />
-                    </div>
-                  ) : (
-                    <button className="fin-income-value fin-income-value--editable" onClick={()=>setEditingSalary(true)} title="Clique para editar">
-                      {fmtBRL(period.netSalary)}
-                      <span className="fin-edit-hint">✎</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Additional incomes */}
-                {period.additionalIncomes.map(inc => (
-                  <div key={inc.id} className="fin-income-card fin-income-card--extra">
-                    <div className="fin-income-card-label">{inc.description}</div>
-                    <div className="fin-income-value">{fmtBRL(inc.amount)}</div>
-                    <button className="fin-income-del" onClick={()=>handleDeleteIncome(inc.id)} title="Remover">✕</button>
-                  </div>
-                ))}
-
-                {/* Total income */}
-                <div className="fin-income-card fin-income-card--total">
-                  <div className="fin-income-card-label">Total de Entradas</div>
-                  <div className="fin-income-value fin-income-value--strong">{fmtBRL(period.totalIncome)}</div>
-                </div>
-              </div>
-
-              {showAddIncome && (
-                <form className="fin-mini-form fin-animate-in" onSubmit={handleAddIncome}>
-                  <input className="fin-input" placeholder="Descrição (ex: Freelance)" value={incomeDesc}
-                    onChange={e=>setIncomeDesc(e.target.value)} required />
-                  <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
-                    value={incomeAmount} onChange={e=>setIncomeAmount(e.target.value)} required />
-                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
-                </form>
-              )}
-            </div>
-
-            {/* ── Summary Cards ── */}
-            {(() => {
-              // If investment has no estimatedValue yet, fall back to investmentTarget from settings
-              const invEst = inv?.estimatedValue ?? period.investmentTarget ?? 0
-              const extraInvDeduction = inv?.estimatedValue == null ? invEst : 0
-              const saldoFinalEstimado = period.totalIncome - period.totalEstimated - extraInvDeduction
-              return (
-                <div className="fin-cards">
-                  <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
-                  <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
-                    tone={period.balance >= 0 ? 'pos' : 'neg'} />
-                  <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
-                  <SummaryCard label="Saldo Final Estimado" value={saldoFinalEstimado} icon="🎯"
-                    tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'} />
-                </div>
-              )
-            })()}
-
-            {/* ── Budget limits ── */}
-            <div className="fin-limits-section fin-animate-in">
-              <div className="fin-table-header">
-                <h3 className="fin-section-title">Limites de gastos</h3>
-                <button className="fin-link-btn" onClick={()=>setShowAddLimit(v=>!v)}>
-                  {showAddLimit ? '✕ fechar' : '+ definir limite'}
-                </button>
-              </div>
-
-              {showAddLimit && (
-                <form className="fin-mini-form fin-animate-in" onSubmit={handleSaveLimit}>
-                  <select className="fin-input fin-input--short" value={limitType}
-                    onChange={e=>setLimitType(e.target.value as ExpenseType)}>
-                    {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                  </select>
-                  <input className="fin-input fin-input--short" type="number" step="0.01" min="0"
-                    placeholder="Limite mensal (R$)" value={limitValue}
-                    onChange={e=>setLimitValue(e.target.value)} required />
-                  <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Salvar</button>
-                </form>
-              )}
-
-              {period.budgetLimits.length === 0 ? (
-                <p className="fin-recurring-desc">
-                  Defina limites por categoria para acompanhar quanto já gastou e receber alertas ao ultrapassá-los.
-                </p>
-              ) : (
-                <div className="fin-limits-grid">
-                  {period.budgetLimits.map(limit => {
-                    const spent = spentForType(period.expenses, limit.type)
-                    const ratio = limit.monthlyLimit > 0 ? spent / limit.monthlyLimit : 0
-                    const pct = Math.min(ratio * 100, 100)
-                    const state = ratio > 1 ? 'over' : ratio >= 0.8 ? 'warn' : 'ok'
-                    return (
-                      <div key={limit.type} className={`fin-limit-card fin-limit-card--${state}`}>
-                        <div className="fin-limit-head">
-                          <span className="fin-type-badge"
-                            style={{background:TYPE_COLORS[limit.type]+'22', color:TYPE_COLORS[limit.type]}}>
-                            {TYPE_LABELS[limit.type]}
-                          </span>
-                          <button className="fin-limit-del" onClick={()=>handleDeleteLimit(limit.type)} title="Remover limite">✕</button>
-                        </div>
-                        <div className="fin-limit-values">
-                          <span className="fin-limit-spent">{fmtBRL(spent)}</span>
-                          <span className="fin-limit-sep"> / {fmtBRL(limit.monthlyLimit)}</span>
-                        </div>
-                        <div className="fin-limit-bar">
-                          <div className="fin-limit-bar-fill" style={{width:`${pct}%`}} />
-                        </div>
-                        {state === 'over' && (
-                          <span className="fin-limit-alert">⚠️ Excedeu em {fmtBRL(spent - limit.monthlyLimit)}</span>
-                        )}
-                        {state === 'warn' && (
-                          <span className="fin-limit-note">{Math.round(ratio*100)}% do limite</span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* ── Expense Table ── */}
-            <div className="fin-table-section fin-animate-in">
-              <div className="fin-table-header">
-                <h3 className="fin-section-title">Lançamentos</h3>
-                <div className="fin-header-actions">
-                  <button className="fin-link-btn" onClick={()=>downloadCsv('/api/finance/export/current', 'periodo-atual.csv')}>
-                    ⤓ exportar
-                  </button>
-                  <label className="fin-link-btn fin-link-btn--file">
-                    ⤒ importar
-                    <input type="file" accept=".csv,text/csv" onChange={handleImportCsv} hidden />
-                  </label>
-                  <button className="fin-link-btn" onClick={()=>setShowAdd(v=>!v)}>
-                    {showAdd ? '✕ fechar' : '+ novo gasto'}
-                  </button>
-                </div>
-              </div>
-
-              {showAdd && (
-                <form className="fin-add-form fin-animate-in" onSubmit={handleAddExpense}>
-                  <div className="fin-add-row-simple">
-                    <input className="fin-input" placeholder="Título" value={addTitle}
-                      onChange={e=>setAddTitle(e.target.value)} required />
-                    <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
-                      value={addReal} onChange={e=>setAddReal(e.target.value)} required />
-                    <select className="fin-input fin-input--short" value={addType}
-                      onChange={e=>setAddType(e.target.value as ExpenseType)}>
-                      {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                    </select>
-                    <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
-                  </div>
-                </form>
-              )}
-
-              <div className="fin-table-wrap">
-                <table className="fin-table">
-                  <thead>
-                    <tr>
-                      <th>Título</th>
-                      <th>Estimado</th>
-                      <th className="fin-th--center">Real</th>
-                      <th className="fin-th--center">Tipo</th>
-                      <th className="fin-th--center">Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Investment row */}
-                    {inv && (
-                      <tr className="fin-row fin-row--investment fin-animate-row">
-                        <td className="fin-cell-title">
-                          <span className="fin-invest-badge">📈</span> Investimento
-                        </td>
-                        <td>
-                          <div className="fin-invest-est">
-                            <span>{fmtBRL(inv.estimatedValue)}</span>
-                            <div className="fin-invest-inputs">
-                              <select
-                                className="fin-pct-select"
-                                value={investPct}
-                                disabled={!period.netSalary}
-                                onChange={e=>handleInvestPct(parseInt(e.target.value))}
-                                title={!period.netSalary ? 'Configure o salário para usar %' : 'Selecione a % do salário'}
-                              >
-                                {INVEST_PCTS.map(p => (
-                                  <option key={p} value={p}>{p}%{p===25?' (rec.)':''}</option>
-                                ))}
-                              </select>
-                              <span className="fin-or">ou</span>
-                              <input
-                                className="fin-invest-manual"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="Valor exato"
-                                value={investManual}
-                                onChange={e=>setInvestManual(e.target.value)}
-                                onBlur={handleInvestManual}
-                                onKeyDown={e=>{ if(e.key==='Enter') handleInvestManual() }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="fin-td--center">
-                          <div className="fin-invest-real" title="Calculado automaticamente pelas compras da sua carteira neste período">
-                            <span className="fin-invest-real-val">{fmtBRL(period.investedThisMonth)}</span>
-                            <span className="fin-invest-real-hint">📊 da carteira</span>
-                          </div>
-                        </td>
-                        <td className="fin-td--center">
-                          <span className="fin-type-badge" style={{background:'#378add22',color:'#378add'}}>
-                            Investimento
-                          </span>
-                        </td>
-                        <td className="fin-td--center">
-                          <span className={`fin-status-badge fin-status-badge--${inv.status.toLowerCase()}`}>
-                            {STATUS_LABELS[inv.status]}
-                          </span>
-                        </td>
-                        <td></td>
-                      </tr>
-                    )}
-
-                    {/* Recurring section */}
-                    {nonInvestmentRecurring.length > 0 && (
-                      <tr className="fin-section-divider">
-                        <td colSpan={6}>
-                          <span className="fin-divider-label">↻ Recorrentes</span>
-                        </td>
-                      </tr>
-                    )}
-                    {nonInvestmentRecurring.map(exp => (
-                      <ExpenseRow
-                        key={exp.id}
-                        exp={exp}
-                        editCell={editCell}
-                        editCellVal={editCellVal}
-                        onStartEdit={startEdit}
-                        onEditChange={setEditCellVal}
-                        onCommit={commitEdit}
-                        onCancelEdit={()=>setEditCell(null)}
-                        onMarkPaid={handleMarkPaid}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-
-                    {/* Non-recurring section */}
-                    {nonRecurring.length > 0 && (
-                      <tr className="fin-section-divider">
-                        <td colSpan={6}>
-                          <span className="fin-divider-label">Avulsos</span>
-                        </td>
-                      </tr>
-                    )}
-                    {nonRecurring.map(exp => (
-                      <ExpenseRow
-                        key={exp.id}
-                        exp={exp}
-                        editCell={editCell}
-                        editCellVal={editCellVal}
-                        onStartEdit={startEdit}
-                        onEditChange={setEditCellVal}
-                        onCommit={commitEdit}
-                        onCancelEdit={()=>setEditCell(null)}
-                        onMarkPaid={handleMarkPaid}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-
-                    {period.expenses.length === 0 && (
-                      <tr><td colSpan={6} className="fin-empty">Nenhum lançamento ainda</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* ── Charts ── */}
-            {period.expenses.length > 1 && (
-              <div className="fin-chart-section fin-animate-in">
-                <h3 className="fin-section-title" style={{marginBottom:'1rem'}}>Gastos por categoria</h3>
-                <ResponsiveContainer width="100%" height={buildGroupedData(period.expenses).length * 56 + 40}>
-                  <BarChart
-                    layout="vertical"
-                    data={buildGroupedData(period.expenses)}
-                    margin={{top:0, right:10, left:10, bottom:0}}
-                    barCategoryGap="30%"
-                    barGap={3}
-                  >
-                    <XAxis
-                      type="number"
-                      tick={{fontSize:11}}
-                      tickFormatter={(v:number) => fmtBRL(v)}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="type"
-                      tick={{fontSize:12}}
-                      width={100}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip formatter={(v:number) => fmtBRL(v)} />
-                    <Legend
-                      formatter={(value) => value === 'estimated' ? 'Valor Estimado' : 'Valor Real'}
-                    />
-                    <Bar dataKey="estimated" name="estimated" fill="#4b5563" radius={[0,4,4,0]}
-                      label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
-                    <Bar dataKey="real" name="real" fill="#e85d5d" radius={[0,4,4,0]}
-                      label={{position:'right', fontSize:10, formatter:(v:number)=>v>0?fmtBRL(v):''}} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* ── Donut + legend: Estimated by category ── */}
-            {(() => {
-              const pieData = buildPieData(period.expenses)
-              if (pieData.length === 0) return null
-              return (
-                <div className="fin-chart-section fin-animate-in">
-                  <h3 className="fin-section-title" style={{marginBottom:'1.5rem'}}>Gastos estimados por categoria</h3>
-                  <div className="fin-breakdown">
-                    <ResponsiveContainer width={220} height={220}>
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          nameKey="name"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={2}
-                        >
-                          {pieData.map(d => <Cell key={d.type} fill={d.color} />)}
-                        </Pie>
-                        <Tooltip formatter={(v:number) => fmtBRL(v)} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="fin-breakdown-legend">
-                      {pieData.map(d => (
-                        <div key={d.type} className="fin-legend-row">
-                          <span className="fin-legend-dot" style={{background:d.color}} />
-                          <span className="fin-legend-name">{d.name}</span>
-                          <span className="fin-legend-value">{fmtBRL(d.value)}</span>
-                          <span className="fin-legend-pct">{d.pct.toFixed(1)}%</span>
-                          <div className="fin-legend-bar-wrap">
-                            <div className="fin-legend-bar" style={{width:`${d.pct}%`, background:d.color}} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-          </>
+          <CurrentPeriodTab
+            period={period}
+            editingSalary={editingSalary} setEditingSalary={setEditingSalary}
+            salaryInput={salaryInput} setSalaryInput={setSalaryInput}
+            salaryRef={salaryRef} onSaveSalary={handleSaveSalary}
+            showAddIncome={showAddIncome} setShowAddIncome={setShowAddIncome}
+            incomeDesc={incomeDesc} setIncomeDesc={setIncomeDesc}
+            incomeAmount={incomeAmount} setIncomeAmount={setIncomeAmount}
+            onAddIncome={handleAddIncome} onDeleteIncome={handleDeleteIncome}
+            showAddLimit={showAddLimit} setShowAddLimit={setShowAddLimit}
+            limitType={limitType} setLimitType={setLimitType}
+            limitValue={limitValue} setLimitValue={setLimitValue}
+            onSaveLimit={handleSaveLimit} onDeleteLimit={handleDeleteLimit}
+            showAdd={showAdd} setShowAdd={setShowAdd}
+            addTitle={addTitle} setAddTitle={setAddTitle}
+            addReal={addReal} setAddReal={setAddReal}
+            addType={addType} setAddType={setAddType}
+            onAddExpense={handleAddExpense}
+            onExport={downloadCsv} onImport={handleImportCsv}
+            editCell={editCell} editCellVal={editCellVal}
+            onStartEdit={startEdit} onEditChange={setEditCellVal}
+            onCommit={commitEdit} onCancelEdit={()=>setEditCell(null)}
+            onMarkPaid={handleMarkPaid} onDelete={handleDelete}
+            investPct={investPct} onInvestPct={handleInvestPct}
+            investManual={investManual} setInvestManual={setInvestManual}
+            onInvestManual={handleInvestManual}
+          />
         )}
 
         {/* ════════════════════════════════════════════════════════════════════ */}
