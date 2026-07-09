@@ -235,7 +235,7 @@ function IbovespaCard() {
               />
               <Tooltip
                 labelFormatter={ts => fmtIbovDate(ts as number, range)}
-                formatter={(v: number) => [v.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 'Pontos']}
+                formatter={(v) => [Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 'Pontos']}
                 contentStyle={{
                   fontSize: 12,
                   borderRadius: 10,
