@@ -827,10 +827,44 @@
 .fin-header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .fin-link-btn--file { cursor: pointer; display: inline-flex; align-items: center; }
 
-/* ── Investment (derived from wallet) ── */
-.fin-invest-real { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+/* ── Investment (wallet or manual) ── */
+.fin-invest-real { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
 .fin-invest-real-val { font-weight: 700; color: #378add; }
 .fin-invest-real-hint { font-size: 10px; color: var(--text-muted); }
+
+/* Source toggle: Carteira | Manual */
+.fin-invest-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--bg);
+  margin-bottom: 1px;
+}
+.fin-invest-toggle-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 999px;
+  transition: background 0.15s, color 0.15s;
+}
+.fin-invest-toggle-btn--active { background: #378add; color: #fff; }
+
+.fin-invest-fill {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.fin-invest-fill:hover { color: #378add; background: rgba(55,138,221,0.08); }
 
 /* ── Month-over-month insights ── */
 .fin-mom {

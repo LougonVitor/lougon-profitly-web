@@ -16,7 +16,7 @@ export function Finance() {
   const [period, setPeriod] = useState<CurrentPeriod | null>(null)
   const [recurringList, setRecurringList] = useState<RecurringExpense[]>([])
   const [history, setHistory] = useState<HistoryData | null>(null)
-  const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null })
+  const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null, investmentAuto: true })
   const [loading, setLoading] = useState(true)
 
   // Salary editing
@@ -143,6 +143,17 @@ export function Finance() {
       resetDay: settings.resetDay,
       netSalary: val,
       investmentTarget: settings.investmentTarget,
+      investmentAuto: settings.investmentAuto,
+    })
+    await Promise.all([refreshSettings(), refreshPeriod()])
+  }
+
+  async function handleSetInvestmentAuto(auto: boolean) {
+    await api.put('/api/finance/settings', {
+      resetDay: settings.resetDay,
+      netSalary: settings.netSalary,
+      investmentTarget: settings.investmentTarget,
+      investmentAuto: auto,
     })
     await Promise.all([refreshSettings(), refreshPeriod()])
   }
@@ -366,6 +377,7 @@ export function Finance() {
             investPct={investPct} onInvestPct={handleInvestPct}
             investManual={investManual} setInvestManual={setInvestManual}
             onInvestManual={handleInvestManual}
+            onSetInvestmentAuto={handleSetInvestmentAuto}
           />
         )}
 

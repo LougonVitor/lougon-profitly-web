@@ -38,6 +38,7 @@ export interface CurrentPeriod {
   totalIncome: number
   budgetLimits: BudgetLimit[]
   investedThisMonth: number
+  investmentAuto: boolean
 }
 
 export interface RecurringExpense {
@@ -56,7 +57,7 @@ export interface RecurringIncome {
   dueDay: number | null
 }
 
-export interface Settings { resetDay: number; netSalary: number | null; investmentTarget: number | null }
+export interface Settings { resetDay: number; netSalary: number | null; investmentTarget: number | null; investmentAuto: boolean }
 export interface TypeTotal { type: ExpenseType; totalReal: number; totalEstimated: number }
 export interface MonthSummary { yearMonth: string; byType: TypeTotal[]; total: number }
 export interface HistoryData { months: MonthSummary[]; availableMonths: string[] }

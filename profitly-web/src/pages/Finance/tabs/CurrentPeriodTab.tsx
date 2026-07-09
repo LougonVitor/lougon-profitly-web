@@ -48,6 +48,7 @@ interface CurrentPeriodTabProps {
   onInvestPct: (pct: number) => void
   investManual: string; setInvestManual: Dispatch<SetStateAction<string>>
   onInvestManual: () => void
+  onSetInvestmentAuto: (auto: boolean) => void
 }
 
 export function CurrentPeriodTab({
@@ -60,9 +61,10 @@ export function CurrentPeriodTab({
   showAdd, setShowAdd, addTitle, setAddTitle, addReal, setAddReal, addType, setAddType, onAddExpense,
   onExport, onImport,
   editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onDelete,
-  investPct, onInvestPct, investManual, setInvestManual, onInvestManual,
+  investPct, onInvestPct, investManual, setInvestManual, onInvestManual, onSetInvestmentAuto,
 }: CurrentPeriodTabProps) {
   const inv = period.expenses.find(e => e.type === 'INVESTMENT') ?? null
+  const editingInvReal = inv != null && editCell?.id === inv.id && editCell.field === 'real'
   const nonInvestmentRecurring = period.expenses.filter(e => e.recurring && e.type !== 'INVESTMENT')
   const nonRecurring = period.expenses.filter(e => !e.recurring)
 
@@ -291,9 +293,54 @@ export function CurrentPeriodTab({
                     </div>
                   </td>
                   <td className="fin-td--center">
-                    <div className="fin-invest-real" title="Calculado automaticamente pelas compras da sua carteira neste período">
-                      <span className="fin-invest-real-val">{fmtBRL(period.investedThisMonth)}</span>
-                      <span className="fin-invest-real-hint">📊 da carteira</span>
+                    <div className="fin-invest-real">
+                      <div className="fin-invest-toggle" role="group" aria-label="Fonte do valor investido">
+                        <button
+                          type="button"
+                          className={`fin-invest-toggle-btn ${period.investmentAuto ? 'fin-invest-toggle-btn--active' : ''}`}
+                          onClick={()=>onSetInvestmentAuto(true)}
+                        >Carteira</button>
+                        <button
+                          type="button"
+                          className={`fin-invest-toggle-btn ${!period.investmentAuto ? 'fin-invest-toggle-btn--active' : ''}`}
+                          onClick={()=>onSetInvestmentAuto(false)}
+                        >Manual</button>
+                      </div>
+                      {period.investmentAuto ? (
+                        <>
+                          <span className="fin-invest-real-val" title="Calculado pelas compras da sua carteira neste período">
+                            {fmtBRL(period.investedThisMonth)}
+                          </span>
+                          <span className="fin-invest-real-hint">📊 da carteira</span>
+                        </>
+                      ) : (
+                        <>
+                          {editingInvReal ? (
+                            <input
+                              className="fin-inline-input fin-inline-input--number"
+                              autoFocus
+                              type="number"
+                              step="0.01"
+                              value={editCellVal}
+                              onChange={e=>onEditChange(e.target.value)}
+                              onBlur={onCommit}
+                              onKeyDown={e=>{ if(e.key==='Enter') onCommit(); if(e.key==='Escape') onCancelEdit() }}
+                            />
+                          ) : (
+                            <span
+                              className="fin-editable-cell fin-invest-real-val"
+                              onClick={()=>onStartEdit(inv.id, 'real', inv.realValue.toString())}
+                              title="Clique para editar"
+                            >{fmtBRL(inv.realValue)}</span>
+                          )}
+                          <button
+                            type="button"
+                            className="fin-invest-fill"
+                            onClick={()=>onStartEdit(inv.id, 'real', String(period.investedThisMonth))}
+                            title="Preencher com o valor da carteira"
+                          >usar carteira: {fmtBRL(period.investedThisMonth)}</button>
+                        </>
+                      )}
                     </div>
                   </td>
                   <td className="fin-td--center">
