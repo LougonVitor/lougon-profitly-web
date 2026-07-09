@@ -772,30 +772,46 @@ export function Finance() {
               </div>
             )}
 
-            {/* ── Pie Chart: Estimated % ── */}
-            {period.expenses.some(e => (e.estimatedValue ?? 0) > 0) && (
-              <div className="fin-chart-section fin-animate-in">
-                <h3 className="fin-section-title" style={{marginBottom:'1.5rem'}}>Gastos Estimados em %</h3>
-                <ResponsiveContainer width="100%" height={420}>
-                  <PieChart>
-                    <Pie
-                      data={buildPieData(period.expenses)}
-                      dataKey="value"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={170}
-                      labelLine={{stroke:'#94a3b8', strokeWidth:1}}
-                      label={({name, percent}) => `${name}\n${(percent*100).toFixed(1)}%`}
-                    >
-                      {buildPieData(period.expenses).map((d, i) => (
-                        <Cell key={i} fill={d.color} fillOpacity={0.75} />
+            {/* ── Donut + legend: Estimated by category ── */}
+            {(() => {
+              const pieData = buildPieData(period.expenses)
+              if (pieData.length === 0) return null
+              return (
+                <div className="fin-chart-section fin-animate-in">
+                  <h3 className="fin-section-title" style={{marginBottom:'1.5rem'}}>Gastos estimados por categoria</h3>
+                  <div className="fin-breakdown">
+                    <ResponsiveContainer width={220} height={220}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                        >
+                          {pieData.map(d => <Cell key={d.type} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip formatter={(v:number) => fmtBRL(v)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="fin-breakdown-legend">
+                      {pieData.map(d => (
+                        <div key={d.type} className="fin-legend-row">
+                          <span className="fin-legend-dot" style={{background:d.color}} />
+                          <span className="fin-legend-name">{d.name}</span>
+                          <span className="fin-legend-value">{fmtBRL(d.value)}</span>
+                          <span className="fin-legend-pct">{d.pct.toFixed(1)}%</span>
+                          <div className="fin-legend-bar-wrap">
+                            <div className="fin-legend-bar" style={{width:`${d.pct}%`, background:d.color}} />
+                          </div>
+                        </div>
                       ))}
-                    </Pie>
-                    <Tooltip formatter={(v:number) => fmtBRL(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </>
         )}
 
@@ -1259,9 +1275,16 @@ function buildPieData(expenses: Expense[]) {
     const v = e.estimatedValue ?? 0
     if (v > 0) map.set(e.type, (map.get(e.type) ?? 0) + v)
   }
-  return Array.from(map.entries()).map(([type, value]) => ({
-    name: TYPE_LABELS[type], value, color: TYPE_COLORS[type],
-  }))
+  const total = Array.from(map.values()).reduce((s, v) => s + v, 0)
+  return Array.from(map.entries())
+    .map(([type, value]) => ({
+      type,
+      name: TYPE_LABELS[type],
+      value,
+      color: TYPE_COLORS[type],
+      pct: total > 0 ? (value / total) * 100 : 0,
+    }))
+    .sort((a, b) => b.value - a.value)
 }
 
 function spentForType(expenses: Expense[], type: ExpenseType) {
