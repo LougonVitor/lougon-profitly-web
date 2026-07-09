@@ -43,6 +43,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
   margin-bottom: 2rem;
   padding-bottom: 0;
@@ -202,6 +203,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 1rem;
 }
 
@@ -393,6 +396,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 1rem;
 }
 
@@ -836,3 +841,34 @@
 /* ── Animations ── */
 .fin-animate-in { animation: finIn 0.35s ease both; }
 .fin-animate-row { animation: finIn 0.2s ease both; }
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  .fin-container { padding: 1.25rem 0; }
+
+  .fin-tabs { margin-bottom: 1.25rem; }
+  .fin-tab { padding: 10px 12px; }
+  .fin-tabs-actions { margin-left: auto; }
+
+  /* Tighter card paddings on small screens */
+  .fin-income-section,
+  .fin-limits-section { padding: 1rem 1.1rem; }
+  .fin-table-section,
+  .fin-chart-section,
+  .fin-mom { padding: 1.1rem; }
+
+  /* Income cards fill the row width */
+  .fin-income-row { gap: 8px; }
+  .fin-income-card { flex: 1 1 100%; min-width: 0; }
+
+  /* Mini/add forms stack their controls full-width */
+  .fin-mini-form .fin-input,
+  .fin-mini-form .fin-input--short,
+  .fin-add-row-simple .fin-input,
+  .fin-add-row-simple .fin-input--short {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .fin-mini-form .fin-btn,
+  .fin-add-row-simple .fin-btn { width: 100%; }
+}
