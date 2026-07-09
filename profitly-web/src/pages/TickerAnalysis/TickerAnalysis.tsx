@@ -12,7 +12,7 @@ import {
   CompanyProfileSection, StatementsSection, KeyIndicatorsSection, UpcomingDividends,
   GrahamCard,
 } from './StockAdvanced'
-import { useFiiIndicator, useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
+import { useFiiIndicatorHistory } from '../../hooks/useFiiIndicators'
 import { useFiiAnalysis } from '../../hooks/useFiiAnalysis'
 import { useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useTreasuryAnalysis } from '../../hooks/useTreasuryAnalysis'
@@ -790,7 +790,7 @@ function FiiVacancySection({ fa }: { fa: FiiAnalysisData }) {
               />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
-                labelFormatter={fmtDateOnly}
+                labelFormatter={(d) => fmtDateOnly(d as string)}
                 formatter={(v: unknown) => [`${fmt(Number(v))}%`, 'Vacância']}
               />
               <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
