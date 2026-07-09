@@ -340,7 +340,7 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                 tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`}
                 width={52}
               />
-              <Tooltip formatter={(v: number) => [fmtBRL(v), 'Total Investido']} />
+              <Tooltip formatter={(v) => [fmtBRL(Number(v)), 'Total Investido']} />
               <Line
                 type="monotone"
                 dataKey="invested"
@@ -373,7 +373,7 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                     <Cell key={i} fill={ASSET_COLORS[i % ASSET_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmtBRL(v)} />
+                <Tooltip formatter={(v) => fmtBRL(Number(v))} />
               </PieChart>
             </ResponsiveContainer>
 
@@ -478,7 +478,7 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                     <Pie data={byTicker} dataKey="value" nameKey="name" innerRadius={38} outerRadius={66} paddingAngle={2}>
                       {byTicker.map((_, i) => <Cell key={i} fill={ASSET_COLORS[i % ASSET_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => fmtBRL(v)} />
+                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="prov-donut-legend">
@@ -512,7 +512,7 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false}
                   tickFormatter={(v: number) => `R$${v.toFixed(0)}`} width={48} />
-                <Tooltip formatter={(v: number) => [fmtBRL(v), 'Recebido']} />
+                <Tooltip formatter={(v) => [fmtBRL(Number(v)), 'Recebido']} />
                 <Bar dataKey="amount" fill="#378add" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
