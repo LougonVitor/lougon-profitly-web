@@ -157,7 +157,9 @@ export function CurrentPeriodTab({
       {/* ── Budget limits ── */}
       <div className="fin-limits-section fin-animate-in">
         <div className="fin-table-header">
-          <h3 className="fin-section-title">Limites de gastos</h3>
+          <h3 className="fin-section-title">Limites de gastos
+            <HelpTip inline text="Defina um teto mensal por categoria. A barra acompanha o quanto já gastou e avisa em âmbar aos 80% e em vermelho ao passar de 100% do limite." />
+          </h3>
           <button className="fin-link-btn" onClick={()=>setShowAddLimit(v=>!v)}>
             {showAddLimit ? '✕ fechar' : '+ definir limite'}
           </button>
@@ -255,10 +257,16 @@ export function CurrentPeriodTab({
             <thead>
               <tr>
                 <th>Título</th>
-                <th>Valor esperado</th>
-                <th className="fin-th--center">Valor gasto</th>
+                <th>Valor esperado
+                  <HelpTip inline text="Quanto você planejou gastar nessa linha. Serve de meta para comparar com o que realmente saiu." />
+                </th>
+                <th className="fin-th--center">Valor gasto
+                  <HelpTip inline text="Quanto de fato já saiu nessa linha. Clique no valor para editar." />
+                </th>
                 <th className="fin-th--center">Tipo</th>
-                <th className="fin-th--center">Status</th>
+                <th className="fin-th--center">Status
+                  <HelpTip inline text="Pago = gasto atingiu o esperado. Parcial = gastou menos que o esperado. Pendente = ainda sem valor. Excedido = gasto passou do esperado." />
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -268,6 +276,7 @@ export function CurrentPeriodTab({
                 <tr className="fin-row fin-row--investment fin-animate-row">
                   <td className="fin-cell-title">
                     <span className="fin-invest-badge">📈</span> Investimento
+                    <HelpTip inline text="Quanto você aplicou no mês. Em 'Carteira' o valor vem automaticamente das compras da sua carteira de investimentos; em 'Manual' você digita o valor à mão." />
                   </td>
                   <td>
                     <div className="fin-invest-est">

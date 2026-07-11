@@ -943,6 +943,15 @@
   z-index: 30;
 }
 .fin-help:hover .fin-help-tip, .fin-help:focus .fin-help-tip { display: block; }
+/* Inline variant: sits next to a header/title instead of a card corner */
+.fin-help--inline {
+  position: relative;
+  top: auto; right: auto;
+  display: inline-flex;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.fin-help--inline .fin-help-tip { text-transform: none; letter-spacing: normal; }
 /* Keep card text clear of the "?" in the corner */
 .fin-card .fin-card-label, .fin-income-card-label { padding-right: 18px; }
 
