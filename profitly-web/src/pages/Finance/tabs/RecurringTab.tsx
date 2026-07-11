@@ -61,7 +61,7 @@ export function RecurringTab({
           <div className="fin-add-row-simple">
             <input className="fin-input" placeholder="Título (ex: Aluguel)" value={recTitle}
               onChange={e=>setRecTitle(e.target.value)} required />
-            <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor esperado (R$)"
+            <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Gastos esperados (R$)"
               value={recEstimated} onChange={e=>setRecEstimated(e.target.value)} disabled={recVariable} />
             <select className="fin-input fin-input--short" value={recType}
               onChange={e=>setRecType(e.target.value as ExpenseType)}>
@@ -91,7 +91,7 @@ export function RecurringTab({
             <thead>
               <tr>
                 <th>Título</th>
-                <th>Valor esperado</th>
+                <th>Gastos esperados</th>
                 <th>Tipo</th>
                 <th className="fin-th--center">Vencimento</th>
                 <th></th>

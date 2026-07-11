@@ -142,16 +142,16 @@ export function CurrentPeriodTab({
 
       {/* ── Summary Cards ── */}
       <div className="fin-cards">
-        <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳"
-          help="Soma de tudo que você já gastou neste período — a coluna Valor gasto de todos os lançamentos." />
         <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
           tone={period.balance >= 0 ? 'pos' : 'neg'}
           help="Total de entradas menos o que você já gastou. É quanto ainda sobra do que entrou até agora." />
-        <SummaryCard label="Valor esperado" value={period.totalEstimated} icon="📋"
-          help="Soma do que você planejou gastar no período — a coluna Valor esperado de cada lançamento." />
+        <SummaryCard label="Gastos Esperados" value={period.totalEstimated} icon="📋"
+          help="Soma do que você planejou gastar no período — a coluna Gastos esperados de cada lançamento." />
+        <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳"
+          help="Soma de tudo que você já gastou neste período — a coluna Valor gasto de todos os lançamentos." />
         <SummaryCard label="Saldo Final Esperado" value={saldoFinalEstimado} icon="🎯"
           tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'}
-          help="Projeção do saldo no fim do período: entradas menos o valor esperado de todos os gastos (incluindo o investimento planejado)." />
+          help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado)." />
       </div>
 
       {/* ── Budget limits ── */}
@@ -257,7 +257,7 @@ export function CurrentPeriodTab({
             <thead>
               <tr>
                 <th>Título</th>
-                <th>Valor esperado
+                <th>Gastos esperados
                   <HelpTip inline text="Quanto você planejou gastar nessa linha. Serve de meta para comparar com o que realmente saiu." />
                 </th>
                 <th className="fin-th--center">Valor gasto
