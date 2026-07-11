@@ -1,8 +1,11 @@
+export type EntryType = 'BUY' | 'SELL'
+
 export interface PositionEntry {
   id: string
   date: string
   quantity: number
   paidPrice: number
+  type: EntryType
   total: number
 }
 
@@ -18,6 +21,7 @@ export interface WalletPositionSummary {
   currentValue: number
   profitOrLoss: number
   profitOrLossPercent: number
+  realizedProfitOrLoss: number
   entries: PositionEntry[]
 }
 
@@ -29,5 +33,6 @@ export interface WalletSummary {
   currentValue: number
   profitOrLoss: number
   profitOrLossPercent: number
+  realizedProfitOrLoss: number
   createdAt: string
 }

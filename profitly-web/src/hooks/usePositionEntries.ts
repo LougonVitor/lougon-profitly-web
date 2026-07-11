@@ -6,6 +6,7 @@ interface EntryPayload {
   date: string
   quantity: number
   paidPrice: number
+  type?: 'BUY' | 'SELL'
 }
 
 export function usePositionEntries() {

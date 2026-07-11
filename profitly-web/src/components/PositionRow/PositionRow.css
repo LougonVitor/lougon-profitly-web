@@ -102,3 +102,21 @@
 
 .entry-btn--delete-all:hover:not(:disabled) { background: var(--bg-badge-down); }
 .entry-btn--delete-all:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.entry-type-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.entry-type-badge--buy {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.entry-type-badge--sell {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}

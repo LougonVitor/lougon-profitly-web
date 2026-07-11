@@ -22,6 +22,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
   const [quantity, setQuantity] = useState(1)
   const [price, setPrice] = useState(0)
+  const [entryType, setEntryType] = useState<'BUY' | 'SELL'>('BUY')
 
   const total = quantity * price
 
@@ -36,7 +37,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!ticker || !date || quantity <= 0 || price <= 0) return
-    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: price })
+    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: price, type: entryType })
     if (updated) onSuccess(updated)
   }
 
@@ -52,6 +53,24 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
+          <div className="modal-field">
+            <div className="entry-type-toggle" role="radiogroup" aria-label="Tipo de operação">
+              <button
+                type="button"
+                className={`entry-type-btn ${entryType === 'BUY' ? 'entry-type-btn--buy' : ''}`}
+                onClick={() => setEntryType('BUY')}
+              >
+                Compra
+              </button>
+              <button
+                type="button"
+                className={`entry-type-btn ${entryType === 'SELL' ? 'entry-type-btn--sell' : ''}`}
+                onClick={() => setEntryType('SELL')}
+              >
+                Venda
+              </button>
+            </div>
+          </div>
           <div className="modal-field">
             <label className="modal-label">{t.modal.ticker}</label>
             <TickerSelect tickers={tickers} value={ticker} onChange={setTicker} />
@@ -97,7 +116,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
           </div>
 
           <div className="modal-total">
-            <span className="modal-total-label">{t.modal.totalInvested}</span>
+            <span className="modal-total-label">{entryType === 'SELL' ? 'Total da venda' : t.modal.totalInvested}</span>
             <span className="modal-total-value">
               {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>

@@ -17,6 +17,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
   const [date, setDate] = useState(entry.date)
   const [quantity, setQuantity] = useState(entry.quantity)
   const [price, setPrice] = useState(entry.paidPrice)
+  const [entryType, setEntryType] = useState<'BUY' | 'SELL'>(entry.type ?? 'BUY')
 
   const total = quantity * price
 
@@ -30,7 +31,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const updated = await updateEntry(walletId, ticker, entry.id, { date, quantity, paidPrice: price })
+    const updated = await updateEntry(walletId, ticker, entry.id, { date, quantity, paidPrice: price, type: entryType })
     if (updated) onSuccess(updated)
   }
 
@@ -46,6 +47,18 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
+          <div className="modal-field">
+            <label className="modal-label">Tipo</label>
+            <select
+              className="modal-input"
+              value={entryType}
+              onChange={e => setEntryType(e.target.value as 'BUY' | 'SELL')}
+            >
+              <option value="BUY">Compra</option>
+              <option value="SELL">Venda</option>
+            </select>
+          </div>
+
           <div className="modal-row">
             <div className="modal-field">
               <label className="modal-label">Date</label>

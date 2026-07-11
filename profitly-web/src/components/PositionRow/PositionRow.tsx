@@ -93,6 +93,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                 <thead>
                   <tr>
                     <th>Date</th>
+                    <th>Tipo</th>
                     <th className="right">Qty</th>
                     <th className="right">Paid price</th>
                     <th className="right">Total</th>
@@ -103,6 +104,11 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                   {position.entries.map(entry => (
                     <tr key={entry.id} className="entry-row">
                       <td>{fmtDate(entry.date)}</td>
+                      <td>
+                        <span className={`entry-type-badge ${entry.type === 'SELL' ? 'entry-type-badge--sell' : 'entry-type-badge--buy'}`}>
+                          {entry.type === 'SELL' ? 'Venda' : 'Compra'}
+                        </span>
+                      </td>
                       <td className="right">{entry.quantity}</td>
                       <td className="right muted">{fmtBRL(entry.paidPrice)}</td>
                       <td className="right muted">{fmtBRL(entry.total)}</td>
