@@ -484,7 +484,19 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
   const [deletingDividendId, setDeletingDividendId] = useState<string | null>(null)
   const [form, setForm] = useState({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
 
-  useEffect(() => { load() }, [walletId])
+  // Opening the tab syncs market dividends first (DB-only, cheap) so new/edited
+  // entries reflect their dividends without requiring a manual sync click.
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      setSyncing(true)
+      try { await api.post(`/api/wallets/${walletId}/dividends/sync`) } catch { /* sync is best-effort here */ }
+      if (!active) return
+      setSyncing(false)
+      await load()
+    })()
+    return () => { active = false }
+  }, [walletId])
 
   async function load() {
     setLoadError(false)
