@@ -672,3 +672,32 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* HelpTip anchoring + error banners */
+.pat-card { position: relative; }
+.pat-card .pat-card-label { padding-right: 18px; }
+
+.prov-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-size: 13px;
+  margin-bottom: 0.75rem;
+}
+
+.prov-ticker-link { text-decoration: none; }
+.prov-ticker-link:hover { text-decoration: underline; }
+
+/* Mobile */
+@media (max-width: 720px) {
+  .pat-cards { grid-template-columns: repeat(2, 1fr); }
+  .prov-summary { flex-direction: column; }
+  .prov-chart-wrap { width: 100%; }
+  .prov-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .prov-form-grid { grid-template-columns: 1fr 1fr; }
+  .pat-breakdown { flex-direction: column; align-items: center; }
+  .pat-legend { width: 100%; }
+  .wallet-view-tabs { width: 100%; overflow-x: auto; }
+}

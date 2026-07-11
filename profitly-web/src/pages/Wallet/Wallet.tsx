@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell,
@@ -7,6 +8,7 @@ import { WalletCard } from '../../components/WalletCard/WalletCard'
 import { PositionTable } from '../../components/PositionTable/PositionTable'
 import { AddPositionModal } from '../../components/AddPositionModal/AddPositionModal'
 import { CreateWalletModal } from '../../components/CreateWalletModal/CreateWalletModal'
+import { HelpTip } from '../Finance/components/HelpTip'
 import { useWallets } from '../../hooks/useWallets'
 import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
@@ -27,6 +29,7 @@ function fmtMonth(ym: string) {
 const ASSET_COLORS = [
   '#378add','#22c55e','#f59e0b','#8b5cf6',
   '#06b6d4','#f97316','#ec4899','#64748b',
+  '#84cc16','#14b8a6','#a855f7','#eab308',
 ]
 
 interface EvolutionPoint {
@@ -85,11 +88,14 @@ function buildAssetTypes(wallet: WalletSummary) {
 export function Wallet() {
   const { wallets, setWallets, loading, error } = useWallets()
   const { t } = useI18n()
+  const tw = t.walletView
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [walletView, setWalletView] = useState<'positions' | 'patrimonio' | 'proventos'>('positions')
   const [addPositionWalletId, setAddPositionWalletId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const activeWalletId = selectedId ?? wallets[0]?.id ?? null
@@ -106,13 +112,21 @@ export function Wallet() {
   }
 
   async function handleDeleteWallet(walletId: string) {
-    await api.delete(`/api/wallets/${walletId}`)
-    setWallets(prev => {
-      const next = prev.filter(w => w.id !== walletId)
-      if (selectedId === walletId) setSelectedId(next[0]?.id ?? null)
-      return next
-    })
-    setDeletingId(null)
+    setDeleteBusy(true)
+    setActionError(null)
+    try {
+      await api.delete(`/api/wallets/${walletId}`)
+      setWallets(prev => {
+        const next = prev.filter(w => w.id !== walletId)
+        if (selectedId === walletId) setSelectedId(next[0]?.id ?? null)
+        return next
+      })
+      setDeletingId(null)
+    } catch {
+      setActionError(tw.actionError)
+    } finally {
+      setDeleteBusy(false)
+    }
   }
 
   if (loading) return (
@@ -127,7 +141,7 @@ export function Wallet() {
 
   if (error) return (
     <div className="page-container wallet-page">
-      <div className="wallet-state wallet-state--error">Failed to load wallets: {error}</div>
+      <div className="wallet-state wallet-state--error">{tw.loadError}</div>
     </div>
   )
 
@@ -146,7 +160,7 @@ export function Wallet() {
               <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V5zM4 11a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4z" />
             </svg>
           </span>
-          <span className="wdd-trigger-name">{activeWallet?.name ?? 'Carteiras'}</span>
+          <span className="wdd-trigger-name">{activeWallet?.name ?? tw.walletsFallback}</span>
           <span className={`wdd-chevron ${dropdownOpen ? 'wdd-chevron--open' : ''}`}>
             <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
               <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -158,7 +172,7 @@ export function Wallet() {
           <>
             <div className="wdd-backdrop" onClick={() => setDropdownOpen(false)} />
             <div className="wdd-menu">
-              <div className="wdd-menu-label">Minhas carteiras</div>
+              <div className="wdd-menu-label">{tw.myWallets}</div>
               {wallets.map(w => (
                 <div
                   key={w.id}
@@ -176,7 +190,7 @@ export function Wallet() {
                   )}
                   <button
                     className="wdd-item-del"
-                    title="Excluir carteira"
+                    title={t.wallet.deleteWallet}
                     onClick={e => { e.stopPropagation(); setDropdownOpen(false); setDeletingId(w.id) }}
                   >
                     <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
@@ -193,7 +207,7 @@ export function Wallet() {
                 onClick={() => { setDropdownOpen(false); setShowCreateModal(true) }}
               >
                 <span className="wdd-new-icon">+</span>
-                Nova carteira
+                {tw.newWallet}
               </button>
             </div>
           </>
@@ -217,7 +231,7 @@ export function Wallet() {
                   className={`wallet-view-tab ${walletView === v ? 'wallet-view-tab--active' : ''}`}
                   onClick={() => setWalletView(v)}
                 >
-                  {v === 'positions' ? 'Posições' : v === 'patrimonio' ? 'Patrimônio' : 'Proventos'}
+                  {v === 'positions' ? tw.tabPositions : v === 'patrimonio' ? tw.tabPatrimony : tw.tabDividends}
                 </button>
               ))}
             </div>
@@ -250,12 +264,13 @@ export function Wallet() {
             <div className="modal modal--confirm" onClick={e => e.stopPropagation()}>
               <div className="modal-title">{t.confirm.deleteWallet}</div>
               <p className="confirm-text">{t.confirm.deleteWalletText(name)}</p>
+              {actionError && <div className="modal-error">{actionError}</div>}
               <div className="modal-actions">
-                <button className="modal-btn-cancel" onClick={() => setDeletingId(null)}>
+                <button className="modal-btn-cancel" onClick={() => setDeletingId(null)} disabled={deleteBusy}>
                   {t.confirm.cancel}
                 </button>
-                <button className="modal-btn-danger" onClick={() => handleDeleteWallet(deletingId)}>
-                  {t.confirm.delete}
+                <button className="modal-btn-danger" onClick={() => handleDeleteWallet(deletingId)} disabled={deleteBusy}>
+                  {deleteBusy ? '…' : t.confirm.delete}
                 </button>
               </div>
             </div>
@@ -284,10 +299,13 @@ export function Wallet() {
 
 // ── Patrimônio view ───────────────────────────────────────────────────────────
 function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
+  const { t } = useI18n()
+  const tw = t.walletView
   const up = wallet.profitOrLoss >= 0
   const assetTypes = buildAssetTypes(wallet)
   const [evolution, setEvolution] = useState<{ month: string; invested: number; marketValue: number }[]>([])
   const [evolutionError, setEvolutionError] = useState(false)
+  const [receivedTotal, setReceivedTotal] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -302,50 +320,74 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
         })))
       })
       .catch(() => { if (active) setEvolutionError(true) })
+    api.get<Dividend[]>(`/api/wallets/${wallet.id}/dividends`)
+      .then(res => {
+        if (!active) return
+        setReceivedTotal(res.data.filter(d => d.received).reduce((s, d) => s + d.totalAmount, 0))
+      })
+      .catch(() => { if (active) setReceivedTotal(null) })
     return () => { active = false }
   }, [wallet.id])
+
+  const totalReturnPct = receivedTotal != null && wallet.totalInvested > 0
+    ? (wallet.profitOrLoss + wallet.realizedProfitOrLoss + receivedTotal) / wallet.totalInvested * 100
+    : null
 
   return (
     <div className="pat-wrap">
       {/* Summary cards */}
       <div className="pat-cards">
         <div className="pat-card">
-          <span className="pat-card-label">Total Investido</span>
+          <HelpTip text={tw.helpInvested} />
+          <span className="pat-card-label">{tw.totalInvested}</span>
           <span className="pat-card-value">{fmtBRL(wallet.totalInvested)}</span>
         </div>
         <div className="pat-card">
-          <span className="pat-card-label">Valor Atual</span>
+          <span className="pat-card-label">{tw.currentValue}</span>
           <span className="pat-card-value">{fmtBRL(wallet.currentValue)}</span>
         </div>
         <div className="pat-card">
-          <span className="pat-card-label">Rendimento</span>
+          <span className="pat-card-label">{tw.yield}</span>
           <span className={`pat-card-value ${up ? 'pat-up' : 'pat-down'}`}>
             {up ? '+' : ''}{fmtBRL(wallet.profitOrLoss)}
           </span>
         </div>
         {wallet.realizedProfitOrLoss !== 0 && (
           <div className="pat-card">
-            <span className="pat-card-label">Lucro Realizado</span>
+            <HelpTip text={tw.helpRealized} />
+            <span className="pat-card-label">{tw.realized}</span>
             <span className={`pat-card-value ${wallet.realizedProfitOrLoss >= 0 ? 'pat-up' : 'pat-down'}`}>
               {wallet.realizedProfitOrLoss >= 0 ? '+' : ''}{fmtBRL(wallet.realizedProfitOrLoss)}
             </span>
           </div>
         )}
         <div className="pat-card">
-          <span className="pat-card-label">Retorno</span>
+          <span className="pat-card-label">{tw.return}</span>
           <span className={`pat-card-badge ${up ? 'pat-card-badge--up' : 'pat-card-badge--down'}`}>
             {up ? '▲' : '▼'} {up ? '+' : ''}{wallet.profitOrLossPercent.toFixed(2)}%
           </span>
         </div>
+        {totalReturnPct != null && (
+          <div className="pat-card">
+            <HelpTip text={tw.helpReturnWithDiv} />
+            <span className="pat-card-label">{tw.returnWithDividends}</span>
+            <span className={`pat-card-badge ${totalReturnPct >= 0 ? 'pat-card-badge--up' : 'pat-card-badge--down'}`}>
+              {totalReturnPct >= 0 ? '▲' : '▼'} {totalReturnPct >= 0 ? '+' : ''}{totalReturnPct.toFixed(2)}%
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Evolution line chart: cost basis vs market value */}
       {evolution.length > 0 && (
         <div className="pat-chart-section">
-          <h3 className="pat-section-title">Evolução do Patrimônio</h3>
+          <h3 className="pat-section-title">
+            {tw.evolutionTitle}
+            <HelpTip inline text={tw.helpEvolution} />
+          </h3>
           <div className="pat-chart-legend">
-            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#94a3b8' }} /> Aportado</span>
-            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#378add' }} /> Patrimônio</span>
+            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#94a3b8' }} /> {tw.contributed}</span>
+            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#378add' }} /> {tw.patrimonyLine}</span>
           </div>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={evolution} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
@@ -358,7 +400,7 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                 tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`}
                 width={52}
               />
-              <Tooltip formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? 'Aportado' : 'Patrimônio']} />
+              <Tooltip formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? tw.contributed : tw.patrimonyLine]} />
               <Line
                 type="monotone"
                 dataKey="invested"
@@ -382,14 +424,14 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
       )}
       {evolutionError && (
         <div className="pat-chart-section">
-          <div className="prov-empty">Não foi possível carregar a evolução do patrimônio.</div>
+          <div className="prov-empty">{tw.evolutionError}</div>
         </div>
       )}
 
       {/* Asset type breakdown */}
       {assetTypes.length > 0 && (
         <div className="pat-chart-section">
-          <h3 className="pat-section-title">Consolidação por tipo de ativo</h3>
+          <h3 className="pat-section-title">{tw.byTypeTitle}</h3>
           <div className="pat-breakdown">
             <ResponsiveContainer width={240} height={240}>
               <PieChart>
@@ -410,14 +452,14 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
             </ResponsiveContainer>
 
             <div className="pat-legend">
-              {assetTypes.map((t, i) => (
-                <div key={t.name} className="pat-legend-row">
+              {assetTypes.map((tp, i) => (
+                <div key={tp.name} className="pat-legend-row">
                   <span className="pat-legend-dot" style={{ background: ASSET_COLORS[i % ASSET_COLORS.length] }} />
-                  <span className="pat-legend-name">{t.name}</span>
-                  <span className="pat-legend-value">{fmtBRL(t.value)}</span>
-                  <span className="pat-legend-pct">{t.pct.toFixed(1)}%</span>
+                  <span className="pat-legend-name">{tp.name}</span>
+                  <span className="pat-legend-value">{fmtBRL(tp.value)}</span>
+                  <span className="pat-legend-pct">{tp.pct.toFixed(1)}%</span>
                   <div className="pat-legend-bar-wrap">
-                    <div className="pat-legend-bar" style={{ width: `${t.pct}%`, background: ASSET_COLORS[i % ASSET_COLORS.length] }} />
+                    <div className="pat-legend-bar" style={{ width: `${tp.pct}%`, background: ASSET_COLORS[i % ASSET_COLORS.length] }} />
                   </div>
                 </div>
               ))}
@@ -431,48 +473,86 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
 
 // ── Proventos view ────────────────────────────────────────────────────────────
 function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletSummary }) {
+  const { t } = useI18n()
+  const tw = t.walletView
   const [dividends, setDividends] = useState<Dividend[]>([])
   const [showAdd, setShowAdd] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [deletingDividendId, setDeletingDividendId] = useState<string | null>(null)
   const [form, setForm] = useState({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
 
   useEffect(() => { load() }, [walletId])
 
   async function load() {
-    const res = await api.get<Dividend[]>(`/api/wallets/${walletId}/dividends`)
-    setDividends(res.data)
+    setLoadError(false)
+    try {
+      const res = await api.get<Dividend[]>(`/api/wallets/${walletId}/dividends`)
+      setDividends(res.data)
+    } catch {
+      setLoadError(true)
+    }
   }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
-    await api.post(`/api/wallets/${walletId}/dividends`, {
-      ticker: form.ticker,
-      totalAmount: parseFloat(form.totalAmount),
-      paymentDate: form.paymentDate,
-      type: form.type,
-      received: form.received,
-    })
-    setShowAdd(false)
-    setForm({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
-    await load()
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.post(`/api/wallets/${walletId}/dividends`, {
+        ticker: form.ticker,
+        totalAmount: parseFloat(form.totalAmount),
+        paymentDate: form.paymentDate,
+        type: form.type,
+        received: form.received,
+      })
+      setShowAdd(false)
+      setForm({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
+      await load()
+    } catch {
+      setActionError(tw.actionError)
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleToggle(id: string) {
-    await api.patch(`/api/wallets/${walletId}/dividends/${id}/toggle`)
-    await load()
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.patch(`/api/wallets/${walletId}/dividends/${id}/toggle`)
+      await load()
+    } catch {
+      setActionError(tw.actionError)
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remover este provento?')) return
-    await api.delete(`/api/wallets/${walletId}/dividends/${id}`)
-    await load()
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.delete(`/api/wallets/${walletId}/dividends/${id}`)
+      setDeletingDividendId(null)
+      await load()
+    } catch {
+      setActionError(tw.actionError)
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function handleSync() {
     setSyncing(true)
+    setActionError(null)
     try {
       await api.post(`/api/wallets/${walletId}/dividends/sync`)
       await load()
+    } catch {
+      setActionError(tw.actionError)
     } finally {
       setSyncing(false)
     }
@@ -487,23 +567,42 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
   const last12 = received.filter(d => d.paymentDate.slice(0, 7) >= twelveMonthsAgo)
   const total12 = last12.reduce((s, d) => s + d.totalAmount, 0)
   const monthlyAvg = total12 / 12
+  const yieldOnCost = wallet.totalInvested > 0 ? total12 / wallet.totalInvested * 100 : null
 
   const evolution = buildDividendEvolution(received)
   const byTicker = buildDividendByTicker(received)
+  const legendTop = byTicker.slice(0, 7)
+  const legendRest = byTicker.slice(7)
+  const legendRestPct = legendRest.reduce((s, x) => s + x.pct, 0)
 
   return (
     <div className="prov-wrap">
+      {loadError && <div className="prov-error">{tw.loadError}</div>}
+      {actionError && <div className="prov-error">{actionError}</div>}
+
       {/* Summary */}
       <div className="prov-summary">
         <div className="prov-summary-left">
-          <div className="prov-summary-label">Média mensal (12m)</div>
+          <div className="prov-summary-label">
+            {tw.monthlyAvg}
+            <HelpTip inline text={tw.helpMonthlyAvg} />
+          </div>
           <div className="prov-summary-main">{fmtBRL(monthlyAvg)}</div>
-          <div className="prov-summary-sub">Total 12 meses: <strong>{fmtBRL(total12)}</strong></div>
-          <div className="prov-summary-sub">Total recebido: <strong>{fmtBRL(totalReceived)}</strong></div>
-          <div className="prov-summary-sub prov-pending">A receber: <strong>{fmtBRL(totalPending)}</strong></div>
+          <div className="prov-summary-sub">{tw.total12}: <strong>{fmtBRL(total12)}</strong></div>
+          <div className="prov-summary-sub">{tw.totalReceived}: <strong>{fmtBRL(totalReceived)}</strong></div>
+          {yieldOnCost != null && (
+            <div className="prov-summary-sub">
+              {tw.yieldOnCost}: <strong>{yieldOnCost.toFixed(2)}%</strong>
+              <HelpTip inline text={tw.helpYieldOnCost} />
+            </div>
+          )}
+          <div className="prov-summary-sub prov-pending">
+            {tw.pending}: <strong>{fmtBRL(totalPending)}</strong>
+            <HelpTip inline text={tw.helpPending} />
+          </div>
           {byTicker.length > 0 && (
             <div className="prov-donut-wrap">
-              <div className="prov-donut-title">Distribuição por ativo</div>
+              <div className="prov-donut-title">{tw.distribution}</div>
               <div className="prov-donut-row">
                 <ResponsiveContainer width={140} height={140}>
                   <PieChart>
@@ -514,13 +613,20 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="prov-donut-legend">
-                  {byTicker.slice(0, 5).map((t, i) => (
-                    <div key={t.name} className="prov-donut-row-item">
+                  {legendTop.map((tk, i) => (
+                    <div key={tk.name} className="prov-donut-row-item">
                       <span className="pat-legend-dot" style={{ background: ASSET_COLORS[i % ASSET_COLORS.length] }} />
-                      <span>{t.name}</span>
-                      <span className="prov-pct">{t.pct.toFixed(1)}%</span>
+                      <span>{tk.name}</span>
+                      <span className="prov-pct">{tk.pct.toFixed(1)}%</span>
                     </div>
                   ))}
+                  {legendRest.length > 0 && (
+                    <div className="prov-donut-row-item">
+                      <span className="pat-legend-dot" style={{ background: 'var(--border)' }} />
+                      <span>{tw.others} ({legendRest.length})</span>
+                      <span className="prov-pct">{legendRestPct.toFixed(1)}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -529,12 +635,12 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
 
         <div className="prov-chart-wrap">
           <div className="prov-chart-header">
-            <span className="pat-section-title">Evolução de Proventos</span>
+            <span className="pat-section-title">{tw.divEvolution}</span>
             <div className="prov-actions">
               <button className="prov-sync-btn" onClick={handleSync} disabled={syncing}>
-                {syncing ? 'Sincronizando…' : '⟳ Sincronizar'}
+                {syncing ? tw.syncing : tw.sync}
               </button>
-              <button className="prov-add-btn" onClick={() => setShowAdd(v => !v)}>+ Lançar</button>
+              <button className="prov-add-btn" onClick={() => setShowAdd(v => !v)}>{tw.launch}</button>
             </div>
           </div>
           {evolution.length > 0 ? (
@@ -544,12 +650,12 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false}
                   tickFormatter={(v: number) => `R$${v.toFixed(0)}`} width={48} />
-                <Tooltip formatter={(v) => [fmtBRL(Number(v)), 'Recebido']} />
+                <Tooltip formatter={(v) => [fmtBRL(Number(v)), tw.received]} />
                 <Bar dataKey="amount" fill="#378add" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="prov-empty">Nenhum provento recebido ainda.</div>
+            <div className="prov-empty">{tw.noDividends}</div>
           )}
         </div>
       </div>
@@ -557,10 +663,10 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
       {/* Add form */}
       {showAdd && (
         <form className="prov-form" onSubmit={handleAdd}>
-          <h4 className="prov-form-title">Lançar provento</h4>
+          <h4 className="prov-form-title">{tw.launchTitle}</h4>
           <div className="prov-form-grid">
             <div className="prov-field">
-              <label>Ativo</label>
+              <label>{tw.asset}</label>
               <input list="prov-tickers" className="prov-input" placeholder="BTHF11"
                 value={form.ticker} onChange={e => setForm(f => ({ ...f, ticker: e.target.value.toUpperCase() }))} required />
               <datalist id="prov-tickers">
@@ -568,29 +674,29 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
               </datalist>
             </div>
             <div className="prov-field">
-              <label>Valor total (R$)</label>
+              <label>{tw.amount}</label>
               <input className="prov-input" type="number" step="0.01" placeholder="0,00"
                 value={form.totalAmount} onChange={e => setForm(f => ({ ...f, totalAmount: e.target.value }))} required />
             </div>
             <div className="prov-field">
-              <label>Data de pagamento</label>
+              <label>{tw.payDate}</label>
               <input className="prov-input" type="date"
                 value={form.paymentDate} onChange={e => setForm(f => ({ ...f, paymentDate: e.target.value }))} required />
             </div>
             <div className="prov-field">
-              <label>Tipo</label>
+              <label>{tw.type}</label>
               <select className="prov-input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                {DIVIDEND_TYPES.map(t => <option key={t} value={t}>{DIVIDEND_TYPE_LABELS[t] ?? t}</option>)}
+                {DIVIDEND_TYPES.map(dt => <option key={dt} value={dt}>{DIVIDEND_TYPE_LABELS[dt] ?? dt}</option>)}
               </select>
             </div>
           </div>
           <label className="prov-check">
             <input type="checkbox" checked={form.received} onChange={e => setForm(f => ({ ...f, received: e.target.checked }))} />
-            Já recebido
+            {tw.alreadyReceived}
           </label>
           <div className="prov-form-footer">
-            <button type="button" className="prov-btn-cancel" onClick={() => setShowAdd(false)}>Cancelar</button>
-            <button type="submit" className="prov-btn-save">Salvar</button>
+            <button type="button" className="prov-btn-cancel" onClick={() => setShowAdd(false)} disabled={busy}>{tw.cancel}</button>
+            <button type="submit" className="prov-btn-save" disabled={busy}>{busy ? '…' : tw.save}</button>
           </div>
         </form>
       )}
@@ -601,34 +707,53 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
           <table className="prov-table">
             <thead>
               <tr>
-                <th>Ativo</th>
-                <th>Tipo</th>
-                <th>Data</th>
-                <th className="prov-right">Valor</th>
-                <th className="prov-center">Status</th>
+                <th>{tw.asset}</th>
+                <th>{tw.type}</th>
+                <th>{tw.date}</th>
+                <th className="prov-right">{tw.value}</th>
+                <th className="prov-center">{tw.status}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {dividends.map(d => (
                 <tr key={d.id}>
-                  <td><span className="prov-ticker">{d.ticker}</span></td>
+                  <td>
+                    <Link className="prov-ticker prov-ticker-link" to={`/ticker/${d.ticker}`}>{d.ticker}</Link>
+                  </td>
                   <td><span className="prov-type-badge">{DIVIDEND_TYPE_LABELS[d.type] ?? d.type}</span></td>
                   <td className="prov-date">{new Date(d.paymentDate + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
                   <td className="prov-right prov-amount">{fmtBRL(d.totalAmount)}</td>
                   <td className="prov-center">
                     <button className={`prov-status-btn ${d.received ? 'prov-status-btn--received' : 'prov-status-btn--pending'}`}
-                      onClick={() => handleToggle(d.id)}>
-                      {d.received ? 'Recebido' : 'A receber'}
+                      onClick={() => handleToggle(d.id)} disabled={busy}>
+                      {d.received ? tw.received : tw.toReceive}
                     </button>
                   </td>
                   <td>
-                    <button className="prov-del-btn" onClick={() => handleDelete(d.id)}>✕</button>
+                    <button className="prov-del-btn" onClick={() => setDeletingDividendId(d.id)} disabled={busy}>✕</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {deletingDividendId && (
+        <div className="modal-backdrop" onClick={() => setDeletingDividendId(null)}>
+          <div className="modal modal--confirm" onClick={e => e.stopPropagation()}>
+            <div className="modal-title">{tw.deleteDividendTitle}</div>
+            <p className="confirm-text">{tw.deleteDividendText}</p>
+            <div className="modal-actions">
+              <button className="modal-btn-cancel" onClick={() => setDeletingDividendId(null)} disabled={busy}>
+                {tw.cancel}
+              </button>
+              <button className="modal-btn-danger" onClick={() => handleDelete(deletingDividendId)} disabled={busy}>
+                {busy ? '…' : tw.remove}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

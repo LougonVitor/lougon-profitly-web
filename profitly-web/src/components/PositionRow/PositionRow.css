@@ -120,3 +120,15 @@
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
+
+.position-ticker-link {
+  color: inherit;
+  text-decoration: none;
+}
+.position-ticker-link:hover { color: #378add; text-decoration: underline; }
+
+.no-quote { opacity: 0.6; }
+.badge--neutral {
+  background: rgba(120, 120, 140, 0.12);
+  color: var(--text-muted);
+}

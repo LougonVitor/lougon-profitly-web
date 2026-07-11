@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { PositionEntry, WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { EditEntryModal } from '../EditEntryModal/EditEntryModal'
@@ -22,6 +23,7 @@ function fmtDate(iso: string): string {
 
 export function PositionRow({ walletId, position, index, onWalletUpdate }: PositionRowProps) {
   const up = position.profitOrLoss >= 0
+  const hasQuote = position.currentPrice != null && position.currentPrice > 0
   const [expanded, setExpanded] = useState(false)
   const [editingEntry, setEditingEntry] = useState<PositionEntry | null>(null)
   const { deleteEntry, deletePosition, loading } = usePositionEntries()
@@ -62,23 +64,33 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
               )}
             </div>
             <div>
-              <span className="position-ticker">{position.ticker}</span>
-              <span className="position-entries-count">{position.entries.length} entr{position.entries.length !== 1 ? 'ies' : 'y'}</span>
+              <Link
+                className="position-ticker position-ticker-link"
+                to={`/ticker/${position.ticker}`}
+                onClick={e => e.stopPropagation()}
+              >
+                {position.ticker}
+              </Link>
+              <span className="position-entries-count">{position.entries.length} lançamento{position.entries.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </td>
         <td className="right"><strong>{position.quantity}</strong></td>
         <td className="right muted">{fmtBRL(position.averagePrice)}</td>
-        <td className="right muted">{fmtBRL(position.currentPrice)}</td>
+        <td className="right muted">{hasQuote ? fmtBRL(position.currentPrice) : <span className="no-quote" title="Sem cotação disponível">—</span>}</td>
         <td className="right muted">{fmtBRL(position.totalInvested)}</td>
-        <td className="right muted">{fmtBRL(position.currentValue)}</td>
-        <td className={`right ${up ? 'positive' : 'negative'}`}>
-          {up ? '+' : ''}{fmtBRL(position.profitOrLoss)}
+        <td className="right muted">{hasQuote ? fmtBRL(position.currentValue) : <span className="no-quote">—</span>}</td>
+        <td className={`right ${!hasQuote ? 'muted' : up ? 'positive' : 'negative'}`}>
+          {hasQuote ? <>{up ? '+' : ''}{fmtBRL(position.profitOrLoss)}</> : <span className="no-quote">—</span>}
         </td>
         <td className="right">
-          <span className={`badge ${up ? 'badge--up' : 'badge--down'}`}>
-            {up ? '↑' : '↓'} {up ? '+' : ''}{(position.profitOrLossPercent ?? 0).toFixed(2)}%
-          </span>
+          {hasQuote ? (
+            <span className={`badge ${up ? 'badge--up' : 'badge--down'}`}>
+              {up ? '↑' : '↓'} {up ? '+' : ''}{(position.profitOrLossPercent ?? 0).toFixed(2)}%
+            </span>
+          ) : (
+            <span className="badge badge--neutral" title="Sem cotação disponível">—</span>
+          )}
         </td>
         <td className="right">
           <span className="expand-icon">{expanded ? '▲' : '▼'}</span>

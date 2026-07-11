@@ -168,3 +168,9 @@
 }
 
 .asset-card-body tr:last-child > td { border-bottom: none; }
+
+/* Mobile: let position tables scroll horizontally instead of breaking layout */
+@media (max-width: 720px) {
+  .asset-card-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .asset-card-stats { flex-wrap: wrap; gap: 8px; }
+}
