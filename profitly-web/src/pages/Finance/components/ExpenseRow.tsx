@@ -52,7 +52,7 @@ export function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChan
             </span>
           )}
           {exp.estimatedValue != null && exp.realValue < exp.estimatedValue && (
-            <button className="fin-pay-btn" onClick={()=>onMarkPaid(exp)} title="Marcar como pago (preencher valor estimado)">✓</button>
+            <button className="fin-pay-btn" onClick={()=>onMarkPaid(exp)} title="Marcar como pago (preencher com o valor esperado)">✓</button>
           )}
         </div>
       </td>

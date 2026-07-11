@@ -142,8 +142,8 @@ export function CurrentPeriodTab({
         <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
         <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
           tone={period.balance >= 0 ? 'pos' : 'neg'} />
-        <SummaryCard label="Gastos Estimados" value={period.totalEstimated} icon="📋" />
-        <SummaryCard label="Saldo Final Estimado" value={saldoFinalEstimado} icon="🎯"
+        <SummaryCard label="Valor esperado" value={period.totalEstimated} icon="📋" />
+        <SummaryCard label="Saldo Final Esperado" value={saldoFinalEstimado} icon="🎯"
           tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'} />
       </div>
 
@@ -248,8 +248,8 @@ export function CurrentPeriodTab({
             <thead>
               <tr>
                 <th>Título</th>
-                <th>Estimado</th>
-                <th className="fin-th--center">Real</th>
+                <th>Valor esperado</th>
+                <th className="fin-th--center">Valor gasto</th>
                 <th className="fin-th--center">Tipo</th>
                 <th className="fin-th--center">Status</th>
                 <th></th>
@@ -420,7 +420,7 @@ export function CurrentPeriodTab({
           <div className="fin-chart-section fin-animate-in">
             <div className="fin-cat-header">
               <h3 className="fin-section-title">Gastos por categoria</h3>
-              <span className="fin-cat-caption">barra: estimado (clara) vs real (sólida)</span>
+              <span className="fin-cat-caption">barra: esperado (clara) vs gasto (sólida)</span>
             </div>
             <div className="fin-breakdown">
               {donutData.length > 0 && (

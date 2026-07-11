@@ -75,7 +75,7 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
                       {mom.accuracyPct != null ? `${mom.accuracyPct.toFixed(0)}%` : '—'}
                     </div>
                     <div className="fin-mom-sub">
-                      Real {fmtBRL(mom.curr.total)} de {fmtBRL(mom.estimated)} estimado
+                      Gasto {fmtBRL(mom.curr.total)} de {fmtBRL(mom.estimated)} esperado
                     </div>
                   </div>
                 </div>
