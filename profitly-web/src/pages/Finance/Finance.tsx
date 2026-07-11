@@ -50,6 +50,7 @@ export function Finance() {
   const [recIncDesc, setRecIncDesc] = useState('')
   const [recIncAmount, setRecIncAmount] = useState('')
   const [recIncDueDay, setRecIncDueDay] = useState('')
+  const [editingRecIncomeId, setEditingRecIncomeId] = useState<number | null>(null)
 
   // Inline cell editing
   const [editCell, setEditCell] = useState<{id:number; field:'title'|'estimated'|'real'|'type'} | null>(null)
@@ -278,14 +279,38 @@ export function Finance() {
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
+  function resetRecIncomeForm() {
+    setRecIncDesc(''); setRecIncAmount(''); setRecIncDueDay('')
+    setEditingRecIncomeId(null); setShowAddRecIncome(false)
+  }
+
+  function startEditRecIncome(r: RecurringIncome) {
+    setRecIncDesc(r.description)
+    setRecIncAmount(r.amount.toString())
+    setRecIncDueDay(r.dueDay != null ? r.dueDay.toString() : '')
+    setEditingRecIncomeId(r.id)
+    setShowAddRecIncome(true)
+  }
+
+  function toggleRecIncomeForm() {
+    if (showAddRecIncome) resetRecIncomeForm()
+    else {
+      setEditingRecIncomeId(null)
+      setRecIncDesc(''); setRecIncAmount(''); setRecIncDueDay('')
+      setShowAddRecIncome(true)
+    }
+  }
+
   async function handleAddRecIncome(e: React.FormEvent) {
     e.preventDefault()
-    await api.post('/api/finance/recurring-income', {
+    const body = {
       description: recIncDesc,
       amount: parseFloat(recIncAmount),
       dueDay: recIncDueDay ? parseInt(recIncDueDay) : null,
-    })
-    setRecIncDesc(''); setRecIncAmount(''); setRecIncDueDay(''); setShowAddRecIncome(false)
+    }
+    if (editingRecIncomeId != null) await api.put(`/api/finance/recurring-income/${editingRecIncomeId}`, body)
+    else await api.post('/api/finance/recurring-income', body)
+    resetRecIncomeForm()
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
@@ -424,7 +449,8 @@ export function Finance() {
             recVariable={recVariable} setRecVariable={setRecVariable}
             onAddRecurring={handleAddRecurring}
             onDeleteRecurring={handleDeleteRecurring}
-            showAddRecIncome={showAddRecIncome} setShowAddRecIncome={setShowAddRecIncome}
+            showAddRecIncome={showAddRecIncome} onToggleRecIncomeForm={toggleRecIncomeForm}
+            editingRecIncomeId={editingRecIncomeId} onStartEditRecIncome={startEditRecIncome}
             recIncDesc={recIncDesc} setRecIncDesc={setRecIncDesc}
             recIncAmount={recIncAmount} setRecIncAmount={setRecIncAmount}
             recIncDueDay={recIncDueDay} setRecIncDueDay={setRecIncDueDay}

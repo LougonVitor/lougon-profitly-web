@@ -19,7 +19,9 @@ interface RecurringTabProps {
   onAddRecurring: (e: FormEvent) => void
   onDeleteRecurring: (id: number) => void
   // Recurring income form
-  showAddRecIncome: boolean; setShowAddRecIncome: Dispatch<SetStateAction<boolean>>
+  showAddRecIncome: boolean; onToggleRecIncomeForm: () => void
+  editingRecIncomeId: number | null
+  onStartEditRecIncome: (r: RecurringIncome) => void
   recIncDesc: string; setRecIncDesc: Dispatch<SetStateAction<string>>
   recIncAmount: string; setRecIncAmount: Dispatch<SetStateAction<string>>
   recIncDueDay: string; setRecIncDueDay: Dispatch<SetStateAction<string>>
@@ -33,7 +35,7 @@ export function RecurringTab({
   recTitle, setRecTitle, recEstimated, setRecEstimated, recType, setRecType,
   recDueDay, setRecDueDay, recVariable, setRecVariable,
   onAddRecurring, onDeleteRecurring,
-  showAddRecIncome, setShowAddRecIncome,
+  showAddRecIncome, onToggleRecIncomeForm, editingRecIncomeId, onStartEditRecIncome,
   recIncDesc, setRecIncDesc, recIncAmount, setRecIncAmount, recIncDueDay, setRecIncDueDay,
   onAddRecIncome, onDeleteRecIncome,
 }: RecurringTabProps) {
@@ -129,7 +131,7 @@ export function RecurringTab({
       {/* ── Recurring incomes ── */}
       <div className="fin-table-header" style={{marginTop:'2rem'}}>
         <h3 className="fin-section-title">Rendas Recorrentes</h3>
-        <button className="fin-link-btn" onClick={()=>setShowAddRecIncome(v=>!v)}>
+        <button className="fin-link-btn" onClick={onToggleRecIncomeForm}>
           {showAddRecIncome ? '✕ fechar' : '+ nova renda recorrente'}
         </button>
       </div>
@@ -139,6 +141,11 @@ export function RecurringTab({
 
       {showAddRecIncome && (
         <form className="fin-add-form fin-animate-in" onSubmit={onAddRecIncome}>
+          {editingRecIncomeId != null && (
+            <p className="fin-recurring-desc" style={{margin:'0 0 0.75rem'}}>
+              Editando uma renda recorrente — as mudanças valem para os próximos períodos.
+            </p>
+          )}
           <div className="fin-add-row-simple">
             <input className="fin-input" placeholder="Descrição (ex: Aluguel recebido)" value={recIncDesc}
               onChange={e=>setRecIncDesc(e.target.value)} required />
@@ -146,7 +153,9 @@ export function RecurringTab({
               value={recIncAmount} onChange={e=>setRecIncAmount(e.target.value)} required />
             <input className="fin-input fin-input--tiny" type="number" min="1" max="31" placeholder="Dia"
               value={recIncDueDay} onChange={e=>setRecIncDueDay(e.target.value)} title="Dia do recebimento (1-31)" />
-            <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
+            <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">
+              {editingRecIncomeId != null ? 'Salvar' : 'Adicionar'}
+            </button>
           </div>
         </form>
       )}
@@ -174,7 +183,13 @@ export function RecurringTab({
                   <td>{fmtBRL(r.amount)}</td>
                   <td className="fin-td--center">{r.dueDay ? `dia ${r.dueDay}` : '—'}</td>
                   <td>
-                    <button className="fin-del-btn" onClick={()=>onDeleteRecIncome(r.id)} title="Remover">✕</button>
+                    <div className="fin-row-actions">
+                      <button
+                        className={`fin-edit-btn ${editingRecIncomeId === r.id ? 'fin-edit-btn--active' : ''}`}
+                        onClick={()=>onStartEditRecIncome(r)} title="Editar"
+                      >✎</button>
+                      <button className="fin-del-btn" onClick={()=>onDeleteRecIncome(r.id)} title="Remover">✕</button>
+                    </div>
                   </td>
                 </tr>
               ))}
