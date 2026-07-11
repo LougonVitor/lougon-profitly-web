@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { useTickers } from '../../hooks/useTickers'
+import { api } from '../../lib/api'
+import type { Ticker } from '../../types/Ticker'
 import { TickerSelect } from '../TickerSelect/TickerSelect'
 import { useI18n } from '../../i18n/I18nContext'
 import type { WalletSummary } from '../../types/WalletSummary'
@@ -17,6 +19,24 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
   const { tickers } = useTickers()
   const { addEntry, loading, error } = usePositionEntries()
   const { t } = useI18n()
+  const [cryptoTickers, setCryptoTickers] = useState<Ticker[]>([])
+
+  useEffect(() => {
+    interface CryptoQuote { coin: string; coinName: string | null; imageUrl: string | null }
+    api.get<CryptoQuote[]>('/api/crypto/quotes')
+      .then(res => setCryptoTickers(res.data.map(q => ({
+        symbol: q.coin,
+        name: q.coinName ?? q.coin,
+        longName: q.coinName ?? q.coin,
+        logoUrl: q.imageUrl,
+      } as Ticker))))
+      .catch(() => setCryptoTickers([]))
+  }, [])
+
+  const allTickers = useMemo(() => {
+    const known = new Set(tickers.map(tk => tk.symbol))
+    return [...tickers, ...cryptoTickers.filter(c => !known.has(c.symbol))]
+  }, [tickers, cryptoTickers])
 
   const [ticker, setTicker] = useState('')
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
@@ -73,7 +93,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
           </div>
           <div className="modal-field">
             <label className="modal-label">{t.modal.ticker}</label>
-            <TickerSelect tickers={tickers} value={ticker} onChange={setTicker} />
+            <TickerSelect tickers={allTickers} value={ticker} onChange={setTicker} />
           </div>
 
           <div className="modal-row">

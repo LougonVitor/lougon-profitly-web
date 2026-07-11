@@ -101,7 +101,24 @@ function OtherIcon() {
   </svg>
 }
 
+function TreasuryIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 21h18M4 18h16M6 10v8M10 10v8M14 10v8M18 10v8" />
+    <path d="M12 3L3 8h18l-9-5z" />
+  </svg>
+}
+
+function CryptoIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9 8h4a2 2 0 1 1 0 4H9h4.5a2 2 0 1 1 0 4H9" />
+    <path d="M10 6v2M10 16v2M13 6v2M13 16v2" />
+  </svg>
+}
+
 const ICON_MAP: Record<string, () => ReactElement> = {
+  treasury: TreasuryIcon,
+  crypto: CryptoIcon,
   stock: StockIcon,
   unit: UnitIcon,
   fii: FiiIcon,
