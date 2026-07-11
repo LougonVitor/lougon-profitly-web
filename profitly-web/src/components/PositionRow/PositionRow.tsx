@@ -104,10 +104,10 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
               <table className="entries-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th>Data</th>
                     <th>Tipo</th>
-                    <th className="right">Qty</th>
-                    <th className="right">Paid price</th>
+                    <th className="right">Qtd</th>
+                    <th className="right">Preço pago</th>
                     <th className="right">Total</th>
                     <th></th>
                   </tr>
@@ -129,17 +129,17 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                           <button
                             className="entry-btn entry-btn--edit"
                             onClick={e => { e.stopPropagation(); setEditingEntry(entry) }}
-                            title="Edit"
+                            title="Editar"
                           >
-                            Edit
+                            Editar
                           </button>
                           <button
                             className="entry-btn entry-btn--delete"
                             onClick={e => { e.stopPropagation(); handleDeleteEntry(entry.id) }}
                             disabled={loading}
-                            title="Delete entry"
+                            title="Excluir lançamento"
                           >
-                            Delete
+                            Excluir
                           </button>
                         </div>
                       </td>
@@ -154,7 +154,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                   onClick={e => { e.stopPropagation(); handleDeletePosition() }}
                   disabled={loading}
                 >
-                  Remove entire position
+                  Remover posição inteira
                 </button>
               </div>
             </div>

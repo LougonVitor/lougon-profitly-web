@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { PositionEntry, WalletSummary } from '../../types/WalletSummary'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import './EditEntryModal.css'
@@ -35,12 +36,14 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
     if (updated) onSuccess(updated)
   }
 
-  return (
+  // Portal: this modal is triggered from inside a <table>, where a div is invalid
+  // and gets clipped by the table layout — render on document.body instead.
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">Edit entry</div>
+            <div className="modal-title">Editar lançamento</div>
             <div className="modal-subtitle">{ticker}</div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -61,7 +64,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
 
           <div className="modal-row">
             <div className="modal-field">
-              <label className="modal-label">Date</label>
+              <label className="modal-label">Data</label>
               <input
                 className="modal-input"
                 type="date"
@@ -72,7 +75,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Quantity</label>
+              <label className="modal-label">Quantidade</label>
               <input
                 className="modal-input"
                 type="number"
@@ -85,7 +88,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
             </div>
 
             <div className="modal-field">
-              <label className="modal-label">Paid price (R$)</label>
+              <label className="modal-label">Preço pago (R$)</label>
               <input
                 className="modal-input"
                 type="number"
@@ -99,7 +102,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
           </div>
 
           <div className="modal-total">
-            <span className="modal-total-label">Total invested</span>
+            <span className="modal-total-label">{entryType === 'SELL' ? 'Total da venda' : 'Total investido'}</span>
             <span className="modal-total-value">
               {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
@@ -109,14 +112,15 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
 
           <div className="modal-actions">
             <button type="button" className="modal-btn-cancel" onClick={onClose}>
-              Cancel
+              Cancelar
             </button>
             <button type="submit" className="modal-btn-submit" disabled={loading}>
-              {loading ? 'Saving...' : 'Save changes'}
+              {loading ? 'Salvando…' : 'Salvar alterações'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
