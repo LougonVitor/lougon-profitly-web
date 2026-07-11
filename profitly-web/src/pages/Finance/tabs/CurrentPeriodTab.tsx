@@ -5,6 +5,7 @@ import { TYPE_LABELS, TYPE_COLORS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from 
 import { fmtBRL, buildCategoryBreakdown, spentForType } from '../helpers'
 import { SummaryCard } from '../components/SummaryCard'
 import { ExpenseRow } from '../components/ExpenseRow'
+import { HelpTip } from '../components/HelpTip'
 
 interface CurrentPeriodTabProps {
   period: CurrentPeriod
@@ -87,6 +88,7 @@ export function CurrentPeriodTab({
         <div className="fin-income-row">
           {/* Salary card */}
           <div className="fin-income-card fin-income-card--salary">
+            <HelpTip text="O quanto você recebe por mês já com os descontos. É a base das suas entradas — clique no valor para editar." />
             <div className="fin-income-card-label">Salário Líquido</div>
             {editingSalary ? (
               <div className="fin-salary-edit">
@@ -121,6 +123,7 @@ export function CurrentPeriodTab({
 
           {/* Total income */}
           <div className="fin-income-card fin-income-card--total">
+            <HelpTip text="Salário líquido mais todas as rendas adicionais e recorrentes lançadas neste período." />
             <div className="fin-income-card-label">Total de Entradas</div>
             <div className="fin-income-value fin-income-value--strong">{fmtBRL(period.totalIncome)}</div>
           </div>
@@ -139,12 +142,16 @@ export function CurrentPeriodTab({
 
       {/* ── Summary Cards ── */}
       <div className="fin-cards">
-        <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳" />
+        <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳"
+          help="Soma de tudo que você já gastou neste período — a coluna Valor gasto de todos os lançamentos." />
         <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
-          tone={period.balance >= 0 ? 'pos' : 'neg'} />
-        <SummaryCard label="Valor esperado" value={period.totalEstimated} icon="📋" />
+          tone={period.balance >= 0 ? 'pos' : 'neg'}
+          help="Total de entradas menos o que você já gastou. É quanto ainda sobra do que entrou até agora." />
+        <SummaryCard label="Valor esperado" value={period.totalEstimated} icon="📋"
+          help="Soma do que você planejou gastar no período — a coluna Valor esperado de cada lançamento." />
         <SummaryCard label="Saldo Final Esperado" value={saldoFinalEstimado} icon="🎯"
-          tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'} />
+          tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'}
+          help="Projeção do saldo no fim do período: entradas menos o valor esperado de todos os gastos (incluindo o investimento planejado)." />
       </div>
 
       {/* ── Budget limits ── */}
