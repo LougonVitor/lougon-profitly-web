@@ -605,6 +605,21 @@
 }
 .fin-del-btn:hover { opacity: 1; background: #fee2e2; color: #dc2626; }
 
+.fin-row-actions { display: inline-flex; align-items: center; gap: 2px; }
+.fin-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0.4;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.fin-edit-btn:hover { opacity: 1; background: rgba(55,138,221,0.1); color: #378add; }
+.fin-edit-btn--active { opacity: 1; background: rgba(55,138,221,0.12); color: #378add; }
+
 .fin-total-row td {
   padding: 10px 12px;
   font-weight: 700;

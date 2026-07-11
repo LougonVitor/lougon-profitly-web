@@ -42,6 +42,7 @@ export function Finance() {
   const [recType, setRecType] = useState<ExpenseType>('HOME')
   const [recDueDay, setRecDueDay] = useState('')
   const [recVariable, setRecVariable] = useState(false)
+  const [editingRecurringId, setEditingRecurringId] = useState<number | null>(null)
 
   // Recurring incomes
   const [recurringIncomeList, setRecurringIncomeList] = useState<RecurringIncome[]>([])
@@ -232,16 +233,42 @@ export function Finance() {
     await refreshPeriod()
   }
 
+  function resetRecurringForm() {
+    setRecTitle(''); setRecEstimated(''); setRecDueDay(''); setRecVariable(false)
+    setRecType('HOME'); setEditingRecurringId(null); setShowAddRecurring(false)
+  }
+
+  function startEditRecurring(r: RecurringExpense) {
+    setRecTitle(r.title)
+    setRecEstimated(r.estimatedValue != null ? r.estimatedValue.toString() : '')
+    setRecType(r.type)
+    setRecDueDay(r.dueDay != null ? r.dueDay.toString() : '')
+    setRecVariable(r.variable)
+    setEditingRecurringId(r.id)
+    setShowAddRecurring(true)
+  }
+
+  function toggleRecurringForm() {
+    if (showAddRecurring) resetRecurringForm()
+    else {
+      setEditingRecurringId(null)
+      setRecTitle(''); setRecEstimated(''); setRecDueDay(''); setRecVariable(false); setRecType('HOME')
+      setShowAddRecurring(true)
+    }
+  }
+
   async function handleAddRecurring(e: React.FormEvent) {
     e.preventDefault()
-    await api.post('/api/finance/recurring', {
+    const body = {
       title: recTitle,
       estimatedValue: recEstimated ? parseFloat(recEstimated) : null,
       type: recType,
       dueDay: recDueDay ? parseInt(recDueDay) : null,
       variable: recVariable,
-    })
-    setRecTitle(''); setRecEstimated(''); setRecDueDay(''); setRecVariable(false); setShowAddRecurring(false)
+    }
+    if (editingRecurringId != null) await api.put(`/api/finance/recurring/${editingRecurringId}`, body)
+    else await api.post('/api/finance/recurring', body)
+    resetRecurringForm()
     await Promise.all([loadRecurring(), refreshPeriod()])
   }
 
@@ -387,7 +414,9 @@ export function Finance() {
             recurringList={recurringList}
             recurringIncomeList={recurringIncomeList}
             showAddRecurring={showAddRecurring}
-            setShowAddRecurring={setShowAddRecurring}
+            onToggleRecurringForm={toggleRecurringForm}
+            editingRecurringId={editingRecurringId}
+            onStartEditRecurring={startEditRecurring}
             recTitle={recTitle} setRecTitle={setRecTitle}
             recEstimated={recEstimated} setRecEstimated={setRecEstimated}
             recType={recType} setRecType={setRecType}

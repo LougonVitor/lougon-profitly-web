@@ -8,7 +8,9 @@ interface RecurringTabProps {
   recurringIncomeList: RecurringIncome[]
   // Recurring expense form
   showAddRecurring: boolean
-  setShowAddRecurring: Dispatch<SetStateAction<boolean>>
+  onToggleRecurringForm: () => void
+  editingRecurringId: number | null
+  onStartEditRecurring: (r: RecurringExpense) => void
   recTitle: string; setRecTitle: Dispatch<SetStateAction<string>>
   recEstimated: string; setRecEstimated: Dispatch<SetStateAction<string>>
   recType: ExpenseType; setRecType: Dispatch<SetStateAction<ExpenseType>>
@@ -27,7 +29,7 @@ interface RecurringTabProps {
 
 export function RecurringTab({
   recurringList, recurringIncomeList,
-  showAddRecurring, setShowAddRecurring,
+  showAddRecurring, onToggleRecurringForm, editingRecurringId, onStartEditRecurring,
   recTitle, setRecTitle, recEstimated, setRecEstimated, recType, setRecType,
   recDueDay, setRecDueDay, recVariable, setRecVariable,
   onAddRecurring, onDeleteRecurring,
@@ -39,7 +41,7 @@ export function RecurringTab({
     <div className="fin-recurring fin-animate-in">
       <div className="fin-table-header">
         <h3 className="fin-section-title">Gastos Recorrentes</h3>
-        <button className="fin-link-btn" onClick={()=>setShowAddRecurring(v=>!v)}>
+        <button className="fin-link-btn" onClick={onToggleRecurringForm}>
           {showAddRecurring ? '✕ fechar' : '+ novo recorrente'}
         </button>
       </div>
@@ -49,6 +51,11 @@ export function RecurringTab({
 
       {showAddRecurring && (
         <form className="fin-add-form fin-animate-in" onSubmit={onAddRecurring}>
+          {editingRecurringId != null && (
+            <p className="fin-recurring-desc" style={{margin:'0 0 0.75rem'}}>
+              Editando um recorrente — as mudanças valem para os próximos períodos.
+            </p>
+          )}
           <div className="fin-add-row-simple">
             <input className="fin-input" placeholder="Título (ex: Aluguel)" value={recTitle}
               onChange={e=>setRecTitle(e.target.value)} required />
@@ -64,7 +71,9 @@ export function RecurringTab({
               <input type="checkbox" checked={recVariable}
                 onChange={e=>setRecVariable(e.target.checked)} /> Valor variável
             </label>
-            <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
+            <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">
+              {editingRecurringId != null ? 'Salvar' : 'Adicionar'}
+            </button>
           </div>
         </form>
       )}
@@ -102,7 +111,13 @@ export function RecurringTab({
                   </td>
                   <td className="fin-td--center">{r.dueDay ? `dia ${r.dueDay}` : '—'}</td>
                   <td>
-                    <button className="fin-del-btn" onClick={()=>onDeleteRecurring(r.id)} title="Remover">✕</button>
+                    <div className="fin-row-actions">
+                      <button
+                        className={`fin-edit-btn ${editingRecurringId === r.id ? 'fin-edit-btn--active' : ''}`}
+                        onClick={()=>onStartEditRecurring(r)} title="Editar"
+                      >✎</button>
+                      <button className="fin-del-btn" onClick={()=>onDeleteRecurring(r.id)} title="Remover">✕</button>
+                    </div>
                   </td>
                 </tr>
               ))}
