@@ -12,9 +12,10 @@ interface HistoryTabProps {
   onHistFromChange: (v: string) => void
   onHistToChange: (v: string) => void
   onExport: (url: string, filename: string) => void
+  onDeleteMonth: (yearMonth: string) => void
 }
 
-export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHistToChange, onExport }: HistoryTabProps) {
+export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHistToChange, onExport, onDeleteMonth }: HistoryTabProps) {
   return (
     <div className="fin-history fin-animate-in">
       <div className="fin-history-filters">
@@ -133,7 +134,14 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
               <div key={month.yearMonth} className="fin-month-card fin-animate-in">
                 <div className="fin-month-header">
                   <span className="fin-month-label">{fmtMonth(month.yearMonth)}</span>
-                  <span className="fin-month-total">{fmtBRL(month.total)}</span>
+                  <div className="fin-month-header-right">
+                    <span className="fin-month-total">{fmtBRL(month.total)}</span>
+                    <button
+                      className="fin-del-btn"
+                      onClick={() => { if (confirm(`Excluir ${fmtMonth(month.yearMonth)} do histórico? Esta ação não pode ser desfeita.`)) onDeleteMonth(month.yearMonth) }}
+                      title="Excluir este mês do histórico"
+                    >✕</button>
+                  </div>
                 </div>
                 <div className="fin-month-types">
                   {month.byType.map(t => (

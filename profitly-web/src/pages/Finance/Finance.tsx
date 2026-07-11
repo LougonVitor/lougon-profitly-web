@@ -129,6 +129,11 @@ export function Finance() {
     setHistory(res.data)
   }
 
+  async function handleDeleteHistoryMonth(yearMonth: string) {
+    await api.delete(`/api/finance/history/${yearMonth}`)
+    await loadHistory()
+  }
+
   async function loadRecurring() {
     const [rec, inc] = await Promise.all([
       api.get<RecurringExpense[]>('/api/finance/recurring'),
@@ -468,6 +473,7 @@ export function Finance() {
             onHistFromChange={setHistFrom}
             onHistToChange={setHistTo}
             onExport={downloadCsv}
+            onDeleteMonth={handleDeleteHistoryMonth}
           />
         )}
       </div>
