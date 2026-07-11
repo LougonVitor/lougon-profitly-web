@@ -29,21 +29,10 @@ const ASSET_COLORS = [
   '#06b6d4','#f97316','#ec4899','#64748b',
 ]
 
-function buildEvolution(wallet: WalletSummary) {
-  const allEntries = wallet.positions.flatMap(p =>
-    p.entries.map(e => ({ date: e.date, value: e.quantity * e.paidPrice }))
-  )
-  allEntries.sort((a, b) => a.date.localeCompare(b.date))
-  const byMonth: Record<string, number> = {}
-  for (const e of allEntries) {
-    const m = e.date.slice(0, 7)
-    byMonth[m] = (byMonth[m] ?? 0) + e.value
-  }
-  let cum = 0
-  return Object.keys(byMonth).sort().map(m => {
-    cum += byMonth[m]
-    return { month: fmtMonth(m), invested: parseFloat(cum.toFixed(2)) }
-  })
+interface EvolutionPoint {
+  month: string
+  invested: number
+  marketValue: number
 }
 
 // ── Dividend types & helpers ──────────────────────────────────────────────────
@@ -296,8 +285,25 @@ export function Wallet() {
 // ── Patrimônio view ───────────────────────────────────────────────────────────
 function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
   const up = wallet.profitOrLoss >= 0
-  const evolution = buildEvolution(wallet)
   const assetTypes = buildAssetTypes(wallet)
+  const [evolution, setEvolution] = useState<{ month: string; invested: number; marketValue: number }[]>([])
+  const [evolutionError, setEvolutionError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    setEvolutionError(false)
+    api.get<EvolutionPoint[]>(`/api/wallets/${wallet.id}/evolution`)
+      .then(res => {
+        if (!active) return
+        setEvolution(res.data.map(p => ({
+          month: fmtMonth(p.month),
+          invested: p.invested,
+          marketValue: p.marketValue,
+        })))
+      })
+      .catch(() => { if (active) setEvolutionError(true) })
+    return () => { active = false }
+  }, [wallet.id])
 
   return (
     <div className="pat-wrap">
@@ -317,6 +323,14 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
             {up ? '+' : ''}{fmtBRL(wallet.profitOrLoss)}
           </span>
         </div>
+        {wallet.realizedProfitOrLoss !== 0 && (
+          <div className="pat-card">
+            <span className="pat-card-label">Lucro Realizado</span>
+            <span className={`pat-card-value ${wallet.realizedProfitOrLoss >= 0 ? 'pat-up' : 'pat-down'}`}>
+              {wallet.realizedProfitOrLoss >= 0 ? '+' : ''}{fmtBRL(wallet.realizedProfitOrLoss)}
+            </span>
+          </div>
+        )}
         <div className="pat-card">
           <span className="pat-card-label">Retorno</span>
           <span className={`pat-card-badge ${up ? 'pat-card-badge--up' : 'pat-card-badge--down'}`}>
@@ -325,10 +339,14 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
         </div>
       </div>
 
-      {/* Evolution line chart */}
+      {/* Evolution line chart: cost basis vs market value */}
       {evolution.length > 0 && (
         <div className="pat-chart-section">
           <h3 className="pat-section-title">Evolução do Patrimônio</h3>
+          <div className="pat-chart-legend">
+            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#94a3b8' }} /> Aportado</span>
+            <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#378add' }} /> Patrimônio</span>
+          </div>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={evolution} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -340,10 +358,19 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                 tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`}
                 width={52}
               />
-              <Tooltip formatter={(v) => [fmtBRL(Number(v)), 'Total Investido']} />
+              <Tooltip formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? 'Aportado' : 'Patrimônio']} />
               <Line
                 type="monotone"
                 dataKey="invested"
+                stroke="#94a3b8"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="marketValue"
                 stroke="#378add"
                 strokeWidth={2.5}
                 dot={{ r: 3, fill: '#378add' }}
@@ -351,6 +378,11 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      )}
+      {evolutionError && (
+        <div className="pat-chart-section">
+          <div className="prov-empty">Não foi possível carregar a evolução do patrimônio.</div>
         </div>
       )}
 
