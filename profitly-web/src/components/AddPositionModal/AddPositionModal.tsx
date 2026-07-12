@@ -6,6 +6,7 @@ import type { Ticker } from '../../types/Ticker'
 import { TickerSelect } from '../TickerSelect/TickerSelect'
 import { useI18n } from '../../i18n/I18nContext'
 import type { WalletSummary } from '../../types/WalletSummary'
+import { AddFixedIncomeForm } from './AddFixedIncomeForm'
 import './AddPositionModal.css'
 
 interface AddPositionModalProps {
@@ -38,6 +39,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
     return [...tickers, ...cryptoTickers.filter(c => !known.has(c.symbol))]
   }, [tickers, cryptoTickers])
 
+  const [assetKind, setAssetKind] = useState<'market' | 'fixed-income'>('market')
   const [ticker, setTicker] = useState('')
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
   const [quantity, setQuantity] = useState('1')
@@ -74,6 +76,21 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
+        <div className="modal-field" style={{ marginBottom: '1rem' }}>
+          <label className="modal-label">{t.fixedIncome.selectorLabel}</label>
+          <select
+            className="modal-input"
+            value={assetKind}
+            onChange={e => setAssetKind(e.target.value as 'market' | 'fixed-income')}
+          >
+            <option value="market">{t.fixedIncome.market}</option>
+            <option value="fixed-income">{t.fixedIncome.optionLabel}</option>
+          </select>
+        </div>
+
+        {assetKind === 'fixed-income' ? (
+          <AddFixedIncomeForm walletId={walletId} onClose={onClose} onSuccess={onSuccess} />
+        ) : (
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="modal-field">
             <div className="entry-type-toggle" role="radiogroup" aria-label="Tipo de operação">
@@ -155,6 +172,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   )
