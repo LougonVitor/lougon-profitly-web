@@ -507,6 +507,10 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
   const [actionError, setActionError] = useState<string | null>(null)
   const [deletingDividendId, setDeletingDividendId] = useState<string | null>(null)
   const [form, setForm] = useState({ ticker: '', totalAmount: '', paymentDate: '', type: 'DIVIDENDO', received: true })
+  const [filterFrom, setFilterFrom] = useState('')
+  const [filterTo, setFilterTo] = useState('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 10
 
   // Opening the tab syncs market dividends first (DB-only, cheap) so new/edited
   // entries reflect their dividends without requiring a manual sync click.
@@ -612,6 +616,19 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
 
   const evolution = buildDividendEvolution(received)
   const byTicker = buildDividendByTicker(received)
+
+  // Table: date-range filter + pagination (newest first)
+  const filtered = dividends
+    .filter(d => (!filterFrom || d.paymentDate >= filterFrom) && (!filterTo || d.paymentDate <= filterTo))
+    .sort((a, b) => b.paymentDate.localeCompare(a.paymentDate))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function changeFilter(setter: (v: string) => void, value: string) {
+    setter(value)
+    setPage(1)
+  }
   const legendTop = byTicker.slice(0, 7)
   const legendRest = byTicker.slice(7)
   const legendRestPct = legendRest.reduce((s, x) => s + x.pct, 0)
@@ -750,6 +767,24 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
       {/* List */}
       {dividends.length > 0 && (
         <div className="prov-table-wrap">
+          <div className="prov-filter-bar">
+            <label className="prov-filter-field">
+              <span>{tw.filterFrom}</span>
+              <input type="date" className="prov-input prov-filter-input" value={filterFrom}
+                onChange={e => changeFilter(setFilterFrom, e.target.value)} />
+            </label>
+            <label className="prov-filter-field">
+              <span>{tw.filterTo}</span>
+              <input type="date" className="prov-input prov-filter-input" value={filterTo}
+                onChange={e => changeFilter(setFilterTo, e.target.value)} />
+            </label>
+            {(filterFrom || filterTo) && (
+              <button className="prov-filter-clear" onClick={() => { setFilterFrom(''); setFilterTo(''); setPage(1) }}>
+                {tw.filterClear}
+              </button>
+            )}
+            <span className="prov-filter-count">{tw.filterCount(filtered.length)}</span>
+          </div>
           <table className="prov-table">
             <thead>
               <tr>
@@ -762,7 +797,7 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
               </tr>
             </thead>
             <tbody>
-              {dividends.map(d => (
+              {pageRows.map(d => (
                 <tr key={d.id}>
                   <td>
                     <Link className="prov-ticker prov-ticker-link" to={`/ticker/${d.ticker}`}>{d.ticker}</Link>
@@ -781,8 +816,22 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                   </td>
                 </tr>
               ))}
+              {pageRows.length === 0 && (
+                <tr><td colSpan={6} className="prov-empty-row">{tw.filterEmpty}</td></tr>
+              )}
             </tbody>
           </table>
+          {totalPages > 1 && (
+            <div className="prov-pagination">
+              <button className="prov-page-btn" disabled={currentPage <= 1} onClick={() => setPage(p => p - 1)}>
+                ‹ {tw.pagePrev}
+              </button>
+              <span className="prov-page-info">{tw.pageOf(currentPage, totalPages)}</span>
+              <button className="prov-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage(p => p + 1)}>
+                {tw.pageNext} ›
+              </button>
+            </div>
+          )}
         </div>
       )}
 

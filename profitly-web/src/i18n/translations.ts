@@ -79,6 +79,14 @@ export const translations = {
       helpRealized: 'Lucro ou prejuízo de vendas já realizadas: (preço de venda − preço médio) × quantidade vendida.',
       helpReturnWithDiv: 'Retorno considerando valorização + lucro realizado + proventos recebidos, sobre o total investido.',
       helpEvolution: 'Linha cheia: valor de mercado da carteira ao fim de cada mês. Linha tracejada: total aportado (custo).',
+      filterFrom: 'De',
+      filterTo: 'Até',
+      filterClear: 'Limpar',
+      filterCount: (n: number) => `${n} provento${n !== 1 ? 's' : ''}`,
+      filterEmpty: 'Nenhum provento no período.',
+      pagePrev: 'Anterior',
+      pageNext: 'Próxima',
+      pageOf: (p: number, t: number) => `Página ${p} de ${t}`,
     },
 
     chart: {
@@ -236,6 +244,14 @@ export const translations = {
       helpRealized: 'Profit or loss from completed sells: (sell price − average price) × quantity sold.',
       helpReturnWithDiv: 'Return considering appreciation + realized profit + dividends received, over the total invested.',
       helpEvolution: 'Solid line: market value of the wallet at each month end. Dashed line: total contributed (cost).',
+      filterFrom: 'From',
+      filterTo: 'To',
+      filterClear: 'Clear',
+      filterCount: (n: number) => `${n} dividend${n !== 1 ? 's' : ''}`,
+      filterEmpty: 'No dividends in this period.',
+      pagePrev: 'Previous',
+      pageNext: 'Next',
+      pageOf: (p: number, t: number) => `Page ${p} of ${t}`,
     },
 
     chart: {
@@ -393,6 +409,14 @@ export const translations = {
       helpRealized: 'Ganancia o pérdida de ventas realizadas: (precio de venta − precio promedio) × cantidad vendida.',
       helpReturnWithDiv: 'Retorno considerando valorización + ganancia realizada + dividendos recibidos, sobre el total invertido.',
       helpEvolution: 'Línea sólida: valor de mercado al cierre de cada mes. Línea punteada: total aportado (costo).',
+      filterFrom: 'Desde',
+      filterTo: 'Hasta',
+      filterClear: 'Limpiar',
+      filterCount: (n: number) => `${n} dividendo${n !== 1 ? 's' : ''}`,
+      filterEmpty: 'Ningún dividendo en el período.',
+      pagePrev: 'Anterior',
+      pageNext: 'Siguiente',
+      pageOf: (p: number, t: number) => `Página ${p} de ${t}`,
     },
 
     chart: {
