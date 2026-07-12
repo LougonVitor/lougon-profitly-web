@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import type { PositionEntry, WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { EditEntryModal } from '../EditEntryModal/EditEntryModal'
+import { RedeemModal } from '../RedeemModal/RedeemModal'
+import { useI18n } from '../../i18n/I18nContext'
 import './PositionRow.css'
 
 interface PositionRowProps {
@@ -26,17 +28,30 @@ function fmtQty(v: number): string {
   return v.toLocaleString('pt-BR', { maximumFractionDigits: 8 })
 }
 
+const INDEXER_LABEL_KEYS = {
+  CDI: 'indexerCdi', SELIC: 'indexerSelic', IPCA: 'indexerIpca', PREFIXADO: 'indexerPrefixado',
+} as const
+
 export function PositionRow({ walletId, position, index, onWalletUpdate }: PositionRowProps) {
+  const { t } = useI18n()
+  const fi = t.fixedIncome
   const up = position.profitOrLoss >= 0
   const hasQuote = position.currentPrice != null && position.currentPrice > 0
-  // Treasury tickers are slugs (tesouro-ipca-15052029) — show the official bond name
+  const isFixedIncome = position.assetType?.toLowerCase() === 'fixed-income'
+  // Treasury tickers are slugs (tesouro-ipca-15052029) — show the official bond name;
+  // renda-fixa tickers are synthetic (rf-<uuid>) — always show the issuer/instrument name.
   const isTreasury = position.ticker.startsWith('tesouro-')
-  const displayName = isTreasury ? (position.name ?? position.ticker) : position.ticker
+  const displayName = (isTreasury || isFixedIncome) ? (position.name ?? position.ticker) : position.ticker
   const [expanded, setExpanded] = useState(false)
   const [editingEntry, setEditingEntry] = useState<PositionEntry | null>(null)
+  const [redeeming, setRedeeming] = useState(false)
   const { deleteEntry, deletePosition, loading } = usePositionEntries()
 
   const colSpan = 9
+
+  const fixedIncomeSubtitle = isFixedIncome && position.indexer
+    ? `${fi[INDEXER_LABEL_KEYS[position.indexer]]} ${position.ratePercent}% · ${fi.maturityLabel} ${fmtDate(position.maturityDate!)}`
+    : null
 
   async function handleDeleteEntry(entryId: string) {
     const updated = await deleteEntry(walletId, position.ticker, entryId)
@@ -68,18 +83,26 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                   onError={e => (e.currentTarget.style.display = 'none')}
                 />
               ) : (
-                <div className="position-logo-fallback">{position.ticker[0]}</div>
+                <div className="position-logo-fallback">{displayName[0]}</div>
               )}
             </div>
             <div>
-              <Link
-                className="position-ticker position-ticker-link"
-                to={`/ticker/${position.ticker}`}
-                onClick={e => e.stopPropagation()}
-              >
-                {displayName}
-              </Link>
-              <span className="position-entries-count">{position.entries.length} lançamento{position.entries.length !== 1 ? 's' : ''}</span>
+              {isFixedIncome ? (
+                <span className="position-ticker">{displayName}</span>
+              ) : (
+                <Link
+                  className="position-ticker position-ticker-link"
+                  to={`/ticker/${position.ticker}`}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {displayName}
+                </Link>
+              )}
+              {fixedIncomeSubtitle ? (
+                <span className="position-entries-count">{fixedIncomeSubtitle}</span>
+              ) : (
+                <span className="position-entries-count">{position.entries.length} lançamento{position.entries.length !== 1 ? 's' : ''}</span>
+              )}
             </div>
           </div>
         </td>
@@ -157,6 +180,14 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
               </table>
 
               <div className="entries-footer">
+                {isFixedIncome && position.quantity > 0 && (
+                  <button
+                    className="entry-btn entry-btn--edit"
+                    onClick={e => { e.stopPropagation(); setRedeeming(true) }}
+                  >
+                    {fi.redeem}
+                  </button>
+                )}
                 <button
                   className="entry-btn entry-btn--delete-all"
                   onClick={e => { e.stopPropagation(); handleDeletePosition() }}
@@ -170,11 +201,22 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
         </tr>
       )}
 
+      {redeeming && (
+        <RedeemModal
+          walletId={walletId}
+          ticker={position.ticker}
+          positionName={displayName}
+          onClose={() => setRedeeming(false)}
+          onSuccess={updated => { onWalletUpdate(updated); setRedeeming(false) }}
+        />
+      )}
+
       {editingEntry && (
         <EditEntryModal
           walletId={walletId}
           ticker={position.ticker}
           entry={editingEntry}
+          isFixedIncome={isFixedIncome}
           onClose={() => setEditingEntry(null)}
           onSuccess={updated => { onWalletUpdate(updated); setEditingEntry(null) }}
         />

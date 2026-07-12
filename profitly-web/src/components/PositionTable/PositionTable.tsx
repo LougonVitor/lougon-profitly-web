@@ -12,13 +12,14 @@ interface PositionTableProps {
 const ASSET_TYPE_LABELS_STATIC: Record<string, string> = {
   stock: 'Ações', unit: 'Units', fii: 'FIIs', etf: 'ETFs', bdr: 'BDRs',
   'fi-infra': 'FI-Infra', 'fi-agro': 'FI-Agro', fip: 'FIPs', fidc: 'FIDCs',
-  treasury: 'Tesouro Direto', crypto: 'Criptoativos', fund: 'Fundos', outros: 'Outros',
+  treasury: 'Tesouro Direto', crypto: 'Criptoativos', fund: 'Fundos',
+  'fixed-income': 'Renda Fixa', outros: 'Outros',
 }
 
 const TYPE_ORDER: Record<string, number> = {
   stock: 0, unit: 1, fii: 2, etf: 3, bdr: 4,
   'fi-infra': 5, 'fi-agro': 6, fip: 7, fidc: 8,
-  fund: 9, treasury: 10, crypto: 11,
+  fund: 9, treasury: 10, 'fixed-income': 11, crypto: 12,
 }
 
 function sortOrder(assetType: string): number {

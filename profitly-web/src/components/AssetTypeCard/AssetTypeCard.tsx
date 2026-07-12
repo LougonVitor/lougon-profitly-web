@@ -116,6 +116,13 @@ function CryptoIcon() {
   </svg>
 }
 
+function FixedIncomeIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <path d="M12 9v6M9.5 10.5a2.5 2.5 0 0 1 2.5-1.5h1a1.75 1.75 0 0 1 0 3.5h-1a1.75 1.75 0 0 0 0 3.5h1a2.5 2.5 0 0 0 2.5-1.5" />
+  </svg>
+}
+
 function FundIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -137,6 +144,7 @@ const ICON_MAP: Record<string, () => ReactElement> = {
   'fi-agro': AgroIcon,
   fip: FipIcon,
   fidc: FidcIcon,
+  'fixed-income': FixedIncomeIcon,
 }
 
 function AssetIcon({ assetType }: { assetType: string }) {

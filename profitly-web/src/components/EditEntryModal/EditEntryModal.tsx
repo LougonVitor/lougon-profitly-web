@@ -8,11 +8,12 @@ interface EditEntryModalProps {
   walletId: string
   ticker: string
   entry: PositionEntry
+  isFixedIncome?: boolean
   onClose: () => void
   onSuccess: (updated: WalletSummary) => void
 }
 
-export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: EditEntryModalProps) {
+export function EditEntryModal({ walletId, ticker, entry, isFixedIncome, onClose, onSuccess }: EditEntryModalProps) {
   const { updateEntry, loading, error } = usePositionEntries()
 
   const [date, setDate] = useState(entry.date)
@@ -53,17 +54,19 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
-          <div className="modal-field">
-            <label className="modal-label">Tipo</label>
-            <select
-              className="modal-input"
-              value={entryType}
-              onChange={e => setEntryType(e.target.value as 'BUY' | 'SELL')}
-            >
-              <option value="BUY">Compra</option>
-              <option value="SELL">Venda</option>
-            </select>
-          </div>
+          {!isFixedIncome && (
+            <div className="modal-field">
+              <label className="modal-label">Tipo</label>
+              <select
+                className="modal-input"
+                value={entryType}
+                onChange={e => setEntryType(e.target.value as 'BUY' | 'SELL')}
+              >
+                <option value="BUY">Compra</option>
+                <option value="SELL">Venda</option>
+              </select>
+            </div>
+          )}
 
           <div className="modal-row">
             <div className="modal-field">
@@ -99,6 +102,7 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
                 placeholder="0,00"
                 value={price}
                 onChange={e => setPrice(e.target.value.replace(/[^\d.,]/g, ''))}
+                disabled={isFixedIncome}
                 required
               />
             </div>

@@ -179,7 +179,9 @@
 .asset-icon--treasury { background: #e7f0ee; color: #0f766e; }
 .asset-icon--crypto   { background: #fff2e0; color: #d97706; }
 .asset-icon--fund     { background: #e0edff; color: #1d4ed8; }
+.asset-icon--fixed_income { background: #eef2ff; color: #4338ca; }
 
 [data-theme="dark"] .asset-icon--treasury { background: #0a2723; color: #2dd4bf; }
 [data-theme="dark"] .asset-icon--crypto   { background: #2b1c07; color: #f59e0b; }
 [data-theme="dark"] .asset-icon--fund     { background: #101f3d; color: #60a5fa; }
+[data-theme="dark"] .asset-icon--fixed_income { background: #1e1b4b; color: #818cf8; }
