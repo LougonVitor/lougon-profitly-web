@@ -17,7 +17,10 @@ api.interceptors.response.use(
       const hadToken = !!localStorage.getItem('profitly_token')
       localStorage.removeItem('profitly_token')
       localStorage.removeItem('profitly_username')
-      if (hadToken) window.location.href = '/login'
+      // Keep the current protected route so PrivateRoute renders its login modal
+      // over the blurred page. Redirecting to /login bypasses that route and
+      // produces the standalone white login screen.
+      if (hadToken) window.location.reload()
     }
     return Promise.reject(err)
   }
