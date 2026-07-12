@@ -12,6 +12,7 @@ export interface PositionEntry {
 export interface WalletPositionSummary {
   id: string
   ticker: string
+  name: string | null
   logoUrl: string | null
   assetType: string | null
   quantity: number

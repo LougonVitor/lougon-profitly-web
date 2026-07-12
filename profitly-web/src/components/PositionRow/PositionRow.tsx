@@ -29,6 +29,9 @@ function fmtQty(v: number): string {
 export function PositionRow({ walletId, position, index, onWalletUpdate }: PositionRowProps) {
   const up = position.profitOrLoss >= 0
   const hasQuote = position.currentPrice != null && position.currentPrice > 0
+  // Treasury tickers are slugs (tesouro-ipca-15052029) — show the official bond name
+  const isTreasury = position.ticker.startsWith('tesouro-')
+  const displayName = isTreasury ? (position.name ?? position.ticker) : position.ticker
   const [expanded, setExpanded] = useState(false)
   const [editingEntry, setEditingEntry] = useState<PositionEntry | null>(null)
   const { deleteEntry, deletePosition, loading } = usePositionEntries()
@@ -74,7 +77,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                 to={`/ticker/${position.ticker}`}
                 onClick={e => e.stopPropagation()}
               >
-                {position.ticker}
+                {displayName}
               </Link>
               <span className="position-entries-count">{position.entries.length} lançamento{position.entries.length !== 1 ? 's' : ''}</span>
             </div>
