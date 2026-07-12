@@ -41,8 +41,8 @@ export function AddFixedIncomeForm({ walletId, onClose, onSuccess }: AddFixedInc
     : indexer === 'IPCA' ? fi.rateIpca
     : fi.ratePrefixado
 
-  const valid = issuer.trim() !== '' && rateValue > 0 && principalValue > 0
-    && transactionDate !== '' && maturityDate !== '' && maturityDate > transactionDate
+  const valid = issuer.trim() !== '' && rateValue > 0 && principalValue > 0 && transactionDate !== ''
+    && (dailyLiquidity || (maturityDate !== '' && maturityDate > transactionDate))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,7 +55,7 @@ export function AddFixedIncomeForm({ walletId, onClose, onSuccess }: AddFixedInc
       dailyLiquidity,
       principal: principalValue,
       transactionDate,
-      maturityDate,
+      maturityDate: dailyLiquidity ? null : maturityDate,
     })
     if (updated) onSuccess(updated)
   }
@@ -156,10 +156,11 @@ export function AddFixedIncomeForm({ walletId, onClose, onSuccess }: AddFixedInc
           <input
             className="modal-input"
             type="date"
-            value={maturityDate}
+            value={dailyLiquidity ? '' : maturityDate}
             onChange={e => setMaturityDate(e.target.value)}
             min={transactionDate}
-            required
+            disabled={dailyLiquidity}
+            required={!dailyLiquidity}
           />
         </div>
       </div>

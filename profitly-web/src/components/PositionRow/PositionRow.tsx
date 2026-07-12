@@ -50,7 +50,8 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
   const colSpan = 9
 
   const fixedIncomeSubtitle = isFixedIncome && position.indexer
-    ? `${fi[INDEXER_LABEL_KEYS[position.indexer]]} ${position.ratePercent}% · ${fi.maturityLabel} ${fmtDate(position.maturityDate!)}`
+    ? `${fi[INDEXER_LABEL_KEYS[position.indexer]]} ${position.ratePercent}%`
+      + (position.maturityDate ? ` · ${fi.maturityLabel} ${fmtDate(position.maturityDate)}` : ` · ${fi.dailyLiquidity}`)
     : null
 
   async function handleDeleteEntry(entryId: string) {

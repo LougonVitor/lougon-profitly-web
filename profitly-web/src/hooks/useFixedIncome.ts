@@ -10,7 +10,7 @@ interface AddFixedIncomePayload {
   dailyLiquidity: boolean
   principal: number
   transactionDate: string
-  maturityDate: string
+  maturityDate: string | null
 }
 
 export function useFixedIncome() {
