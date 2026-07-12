@@ -687,8 +687,9 @@
   margin-bottom: 0.75rem;
 }
 
-.prov-ticker-link { text-decoration: none; }
-.prov-ticker-link:hover { text-decoration: underline; }
+.prov-ticker-link,
+.prov-ticker-link:visited { color: var(--text-primary); text-decoration: none; }
+.prov-ticker-link:hover { color: #378add; text-decoration: underline; }
 
 /* Mobile */
 @media (max-width: 720px) {
