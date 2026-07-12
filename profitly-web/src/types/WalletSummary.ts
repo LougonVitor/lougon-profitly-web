@@ -9,6 +9,9 @@ export interface PositionEntry {
   total: number
 }
 
+export type FixedIncomeIndexer = 'CDI' | 'SELIC' | 'IPCA' | 'PREFIXADO'
+export type FixedIncomeInstrumentType = 'CDB' | 'LCI' | 'LCA' | 'LC' | 'LF' | 'RDB'
+
 export interface WalletPositionSummary {
   id: string
   ticker: string
@@ -24,6 +27,12 @@ export interface WalletPositionSummary {
   profitOrLossPercent: number
   realizedProfitOrLoss: number
   entries: PositionEntry[]
+  issuer: string | null
+  instrumentType: FixedIncomeInstrumentType | null
+  indexer: FixedIncomeIndexer | null
+  ratePercent: number | null
+  dailyLiquidity: boolean | null
+  maturityDate: string | null
 }
 
 export interface WalletSummary {
