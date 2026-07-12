@@ -162,7 +162,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1.25rem 1.5rem;
-  overflow: hidden;
+  /* no overflow:hidden — it clipped the chart tooltip at the card's right edge */
 }
 
 .pat-section-title {

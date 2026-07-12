@@ -26,6 +26,22 @@ function fmtMonth(ym: string) {
   return `${months[parseInt(m) - 1]}/${y.slice(2)}`
 }
 
+// Axis labels: R$950 / R$1,5k / R$12k — one decimal below 10k so close ticks don't collide
+function fmtAxisBRL(v: number) {
+  if (Math.abs(v) < 1000) return `R$${v.toFixed(0)}`
+  const k = v / 1000
+  const label = Math.abs(k) < 10 ? k.toFixed(1).replace('.', ',').replace(',0', '') : k.toFixed(0)
+  return `R$${label}k`
+}
+
+const CHART_TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  border: '1px solid var(--border)',
+  background: 'var(--bg-card)',
+  color: 'var(--text-primary)',
+} as const
+
 const ASSET_COLORS = [
   '#378add','#22c55e','#f59e0b','#8b5cf6',
   '#06b6d4','#f97316','#ec4899','#64748b',
@@ -397,10 +413,15 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                 tick={{ fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`}
-                width={52}
+                tickFormatter={(v: number) => fmtAxisBRL(v)}
+                width={58}
               />
-              <Tooltip formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? tw.contributed : tw.patrimonyLine]} />
+              <Tooltip
+                cursor={{ stroke: 'var(--border)' }}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                itemStyle={{ color: 'var(--text-primary)' }}
+                formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? tw.contributed : tw.patrimonyLine]}
+              />
               <Line
                 type="monotone"
                 dataKey="invested"
@@ -661,8 +682,13 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false}
-                  tickFormatter={(v: number) => `R$${v.toFixed(0)}`} width={48} />
-                <Tooltip formatter={(v) => [fmtBRL(Number(v)), tw.received]} />
+                  tickFormatter={(v: number) => fmtAxisBRL(v)} width={54} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                  formatter={(v) => [fmtBRL(Number(v)), tw.received]}
+                />
                 <Bar dataKey="amount" fill="#378add" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
