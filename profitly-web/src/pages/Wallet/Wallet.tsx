@@ -493,6 +493,9 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
 }
 
 // ── Proventos view ────────────────────────────────────────────────────────────
+// Wallets already auto-synced this session (module-level so StrictMode remounts share it)
+const autoSyncedWallets = new Set<string>()
+
 function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletSummary }) {
   const { t } = useI18n()
   const tw = t.walletView
@@ -510,10 +513,15 @@ function ProventosView({ walletId, wallet }: { walletId: string; wallet: WalletS
   useEffect(() => {
     let active = true
     ;(async () => {
-      setSyncing(true)
-      try { await api.post(`/api/wallets/${walletId}/dividends/sync`) } catch { /* sync is best-effort here */ }
-      if (!active) return
-      setSyncing(false)
+      // autoSyncedWallets: StrictMode mounts the effect twice — two concurrent
+      // syncs would race the dedup check and import everything in duplicate.
+      if (!autoSyncedWallets.has(walletId)) {
+        autoSyncedWallets.add(walletId)
+        setSyncing(true)
+        try { await api.post(`/api/wallets/${walletId}/dividends/sync`) } catch { /* sync is best-effort here */ }
+        if (!active) return
+        setSyncing(false)
+      }
       await load()
     })()
     return () => { active = false }
