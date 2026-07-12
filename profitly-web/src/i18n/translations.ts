@@ -96,6 +96,9 @@ export const translations = {
       'fi-agro': 'FI-Agro',
       fip: 'FIPs',
       fidc: 'FIDCs',
+      treasury: 'Tesouro Direto',
+      crypto: 'Criptoativos',
+      fund: 'Fundos',
       outros: 'Outros',
     },
 
@@ -250,6 +253,9 @@ export const translations = {
       'fi-agro': 'FI-Agro',
       fip: 'FIPs',
       fidc: 'FIDCs',
+      treasury: 'Treasury Bonds',
+      crypto: 'Crypto',
+      fund: 'Funds',
       outros: 'Other',
     },
 
@@ -404,6 +410,9 @@ export const translations = {
       'fi-agro': 'FI-Agro',
       fip: 'FIPs',
       fidc: 'FIDCs',
+      treasury: 'Tesoro Directo',
+      crypto: 'Criptoactivos',
+      fund: 'Fondos',
       outros: 'Otros',
     },
 

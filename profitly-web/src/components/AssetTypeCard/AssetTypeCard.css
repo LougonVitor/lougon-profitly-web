@@ -174,3 +174,12 @@
   .asset-card-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .asset-card-stats { flex-wrap: wrap; gap: 8px; }
 }
+
+/* Per-type colors: treasury / crypto / generic funds */
+.asset-icon--treasury { background: #e7f0ee; color: #0f766e; }
+.asset-icon--crypto   { background: #fff2e0; color: #d97706; }
+.asset-icon--fund     { background: #e0edff; color: #1d4ed8; }
+
+[data-theme="dark"] .asset-icon--treasury { background: #0a2723; color: #2dd4bf; }
+[data-theme="dark"] .asset-icon--crypto   { background: #2b1c07; color: #f59e0b; }
+[data-theme="dark"] .asset-icon--fund     { background: #101f3d; color: #60a5fa; }
