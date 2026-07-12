@@ -21,6 +21,11 @@ function fmtDate(iso: string): string {
   return new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR')
 }
 
+// Treasury/crypto quantities are fractional — show decimals only when present
+function fmtQty(v: number): string {
+  return v.toLocaleString('pt-BR', { maximumFractionDigits: 8 })
+}
+
 export function PositionRow({ walletId, position, index, onWalletUpdate }: PositionRowProps) {
   const up = position.profitOrLoss >= 0
   const hasQuote = position.currentPrice != null && position.currentPrice > 0
@@ -75,7 +80,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
             </div>
           </div>
         </td>
-        <td className="right"><strong>{position.quantity}</strong></td>
+        <td className="right"><strong>{fmtQty(position.quantity)}</strong></td>
         <td className="right muted">{fmtBRL(position.averagePrice)}</td>
         <td className="right muted">{hasQuote ? fmtBRL(position.currentPrice) : <span className="no-quote" title="Sem cotação disponível">—</span>}</td>
         <td className="right muted">{fmtBRL(position.totalInvested)}</td>
@@ -121,7 +126,7 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
                           {entry.type === 'SELL' ? 'Venda' : 'Compra'}
                         </span>
                       </td>
-                      <td className="right">{entry.quantity}</td>
+                      <td className="right">{fmtQty(entry.quantity)}</td>
                       <td className="right muted">{fmtBRL(entry.paidPrice)}</td>
                       <td className="right muted">{fmtBRL(entry.total)}</td>
                       <td className="right">

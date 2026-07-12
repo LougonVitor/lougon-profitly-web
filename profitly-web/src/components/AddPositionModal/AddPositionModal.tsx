@@ -40,12 +40,13 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
   const [ticker, setTicker] = useState('')
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
-  const [quantity, setQuantity] = useState(1)
+  const [quantity, setQuantity] = useState('1')
   const [price, setPrice] = useState('')
   const [entryType, setEntryType] = useState<'BUY' | 'SELL'>('BUY')
   const priceValue = parseFloat(price.replace(',', '.')) || 0
+  const quantityValue = parseFloat(quantity.replace(',', '.')) || 0
 
-  const total = quantity * priceValue
+  const total = quantityValue * priceValue
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -57,8 +58,8 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!ticker || !date || quantity <= 0 || priceValue <= 0) return
-    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: priceValue, type: entryType })
+    if (!ticker || !date || quantityValue <= 0 || priceValue <= 0) return
+    const updated = await addEntry(walletId, ticker, { date, quantity: quantityValue, paidPrice: priceValue, type: entryType })
     if (updated) onSuccess(updated)
   }
 
@@ -113,11 +114,11 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
               <label className="modal-label">{t.modal.quantity}</label>
               <input
                 className="modal-input"
-                type="number"
-                min={1}
-                step={1}
+                type="text"
+                inputMode="decimal"
+                placeholder="1"
                 value={quantity}
-                onChange={e => setQuantity(Number(e.target.value))}
+                onChange={e => setQuantity(e.target.value.replace(/[^\d.,]/g, ''))}
                 required
               />
             </div>
