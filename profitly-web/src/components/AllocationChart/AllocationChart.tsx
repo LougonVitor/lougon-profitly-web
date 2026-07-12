@@ -69,16 +69,16 @@ export function AllocationChart({ positions, totalCurrentValue }: AllocationChar
     <div className="allocation-chart">
       <div className="allocation-mode-row">
         <button
-          className={`allocation-mode-btn ${mode === 'ticker' ? 'allocation-mode-btn--active' : ''}`}
-          onClick={() => { setMode('ticker'); setDrillClass(null) }}
-        >
-          {t.chart.byTicker}
-        </button>
-        <button
           className={`allocation-mode-btn ${mode === 'class' ? 'allocation-mode-btn--active' : ''}`}
           onClick={() => { setMode('class'); setDrillClass(null) }}
         >
           {t.chart.byClass}
+        </button>
+        <button
+          className={`allocation-mode-btn ${mode === 'ticker' ? 'allocation-mode-btn--active' : ''}`}
+          onClick={() => { setMode('ticker'); setDrillClass(null) }}
+        >
+          {t.chart.byTicker}
         </button>
         {drillClass && (
           <button className="allocation-back-btn" onClick={() => setDrillClass(null)}>
