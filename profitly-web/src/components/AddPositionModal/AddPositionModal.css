@@ -40,7 +40,9 @@
 
 .modal-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  /* minmax(0,1fr): date/number inputs have an intrinsic min-width that would
+     otherwise overflow the modal */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -48,6 +50,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .modal-label {
@@ -59,6 +62,9 @@
 }
 
 .modal-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 10px 12px;
   font-size: 14px;
   border: 1px solid var(--border);
@@ -175,6 +181,6 @@
 }
 
 /* Two-field rows (date + quantity) span the full container width */
-.modal-row--two {
-  grid-template-columns: 1fr 1fr;
+.modal-row.modal-row--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
