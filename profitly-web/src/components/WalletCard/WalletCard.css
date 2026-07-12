@@ -198,3 +198,79 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* ── Hero layout: big current value + return badge, stat tiles below ── */
+.wallet-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wallet-hero-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.wallet-hero-value {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+/* Slim bar: filled portion = cost basis, remainder = appreciation */
+.wallet-hero-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bg-badge-up);
+  max-width: 420px;
+  overflow: hidden;
+}
+
+.wallet-hero-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+  transition: width 0.6s ease;
+}
+
+.wallet-hero-bar-fill--down {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+}
+
+.wallet-hero-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.wallet-hero-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 16px;
+  min-width: 140px;
+}
+
+.wallet-tile-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .wallet-card-body { flex-direction: column; }
+  .wallet-hero-value { font-size: 28px; }
+  .wallet-hero-tile { flex: 1; min-width: 120px; }
+}

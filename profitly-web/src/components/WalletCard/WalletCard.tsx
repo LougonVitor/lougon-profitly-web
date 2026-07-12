@@ -75,27 +75,42 @@ export function WalletCard({ wallet, index, onAddPosition, onWalletUpdate }: Wal
       </div>
 
       <div className="wallet-card-body">
-        <div className="wallet-stats-grid">
-          <div className="wallet-stat">
-            <span className="wallet-stat-label">{t.wallet.invested}</span>
-            <span className="wallet-stat-value">{fmtBRL(wallet.totalInvested)}</span>
-          </div>
-          <div className="wallet-stat">
-            <span className="wallet-stat-label">{t.wallet.currentValue}</span>
-            <span className="wallet-stat-value">{fmtBRL(wallet.currentValue)}</span>
-          </div>
-          <div className="wallet-stat">
-            <span className="wallet-stat-label">{t.wallet.profitLoss}</span>
-            <span className={`wallet-stat-value ${up ? 'positive' : 'negative'}`}>
-              {up ? '+' : ''}{fmtBRL(wallet.profitOrLoss)}
-            </span>
-          </div>
-          <div className="wallet-stat wallet-stat--return">
-            <span className="wallet-stat-label">{t.wallet.return}</span>
+        <div className="wallet-hero">
+          <span className="wallet-stat-label">{t.wallet.currentValue}</span>
+          <div className="wallet-hero-row">
+            <span className="wallet-hero-value">{fmtBRL(wallet.currentValue)}</span>
             <span className={`wallet-return-badge ${up ? 'wallet-return-badge--up' : 'wallet-return-badge--down'}`}>
               <span className="wallet-return-arrow">{up ? '▲' : '▼'}</span>
               {up ? '+' : ''}{wallet.profitOrLossPercent.toFixed(2)}%
             </span>
+          </div>
+
+          <div className="wallet-hero-bar" aria-hidden>
+            <div
+              className={`wallet-hero-bar-fill ${up ? '' : 'wallet-hero-bar-fill--down'}`}
+              style={{ width: `${Math.min(100, wallet.currentValue > 0 ? (wallet.totalInvested / Math.max(wallet.currentValue, wallet.totalInvested)) * 100 : 0)}%` }}
+            />
+          </div>
+
+          <div className="wallet-hero-stats">
+            <div className="wallet-hero-tile">
+              <span className="wallet-stat-label">{t.wallet.invested}</span>
+              <span className="wallet-tile-value">{fmtBRL(wallet.totalInvested)}</span>
+            </div>
+            <div className="wallet-hero-tile">
+              <span className="wallet-stat-label">{t.wallet.profitLoss}</span>
+              <span className={`wallet-tile-value ${up ? 'positive' : 'negative'}`}>
+                {up ? '+' : ''}{fmtBRL(wallet.profitOrLoss)}
+              </span>
+            </div>
+            {wallet.realizedProfitOrLoss !== 0 && (
+              <div className="wallet-hero-tile">
+                <span className="wallet-stat-label">{t.walletView.realized}</span>
+                <span className={`wallet-tile-value ${wallet.realizedProfitOrLoss >= 0 ? 'positive' : 'negative'}`}>
+                  {wallet.realizedProfitOrLoss >= 0 ? '+' : ''}{fmtBRL(wallet.realizedProfitOrLoss)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
