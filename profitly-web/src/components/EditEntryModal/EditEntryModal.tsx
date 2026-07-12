@@ -17,10 +17,11 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
 
   const [date, setDate] = useState(entry.date)
   const [quantity, setQuantity] = useState(entry.quantity)
-  const [price, setPrice] = useState(entry.paidPrice)
+  const [price, setPrice] = useState(String(entry.paidPrice))
   const [entryType, setEntryType] = useState<'BUY' | 'SELL'>(entry.type ?? 'BUY')
 
-  const total = quantity * price
+  const priceValue = parseFloat(price.replace(',', '.')) || 0
+  const total = quantity * priceValue
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -32,7 +33,8 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const updated = await updateEntry(walletId, ticker, entry.id, { date, quantity, paidPrice: price, type: entryType })
+    if (quantity <= 0 || priceValue <= 0) return
+    const updated = await updateEntry(walletId, ticker, entry.id, { date, quantity, paidPrice: priceValue, type: entryType })
     if (updated) onSuccess(updated)
   }
 
@@ -91,11 +93,11 @@ export function EditEntryModal({ walletId, ticker, entry, onClose, onSuccess }: 
               <label className="modal-label">Preço pago (R$)</label>
               <input
                 className="modal-input"
-                type="number"
-                min={0.01}
-                step={0.01}
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
                 value={price}
-                onChange={e => setPrice(Number(e.target.value))}
+                onChange={e => setPrice(e.target.value.replace(/[^\d.,]/g, ''))}
                 required
               />
             </div>

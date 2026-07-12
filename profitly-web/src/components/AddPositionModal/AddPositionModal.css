@@ -173,3 +173,8 @@
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
+
+/* Two-field rows (date + quantity) span the full container width */
+.modal-row--two {
+  grid-template-columns: 1fr 1fr;
+}

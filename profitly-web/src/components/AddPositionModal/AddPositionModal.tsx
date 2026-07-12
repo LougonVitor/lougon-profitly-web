@@ -41,10 +41,11 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
   const [ticker, setTicker] = useState('')
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10))
   const [quantity, setQuantity] = useState(1)
-  const [price, setPrice] = useState(0)
+  const [price, setPrice] = useState('')
   const [entryType, setEntryType] = useState<'BUY' | 'SELL'>('BUY')
+  const priceValue = parseFloat(price.replace(',', '.')) || 0
 
-  const total = quantity * price
+  const total = quantity * priceValue
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -56,8 +57,8 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!ticker || !date || quantity <= 0 || price <= 0) return
-    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: price, type: entryType })
+    if (!ticker || !date || quantity <= 0 || priceValue <= 0) return
+    const updated = await addEntry(walletId, ticker, { date, quantity, paidPrice: priceValue, type: entryType })
     if (updated) onSuccess(updated)
   }
 
@@ -96,7 +97,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             <TickerSelect tickers={allTickers} value={ticker} onChange={setTicker} />
           </div>
 
-          <div className="modal-row">
+          <div className="modal-row modal-row--two">
             <div className="modal-field">
               <label className="modal-label">{t.modal.date}</label>
               <input
@@ -126,11 +127,11 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
             <label className="modal-label">{t.modal.paidPrice}</label>
             <input
               className="modal-input"
-              type="number"
-              min={0.01}
-              step={0.01}
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
               value={price}
-              onChange={e => setPrice(Number(e.target.value))}
+              onChange={e => setPrice(e.target.value.replace(/[^\d.,]/g, ''))}
               required
             />
           </div>
