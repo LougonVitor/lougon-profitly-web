@@ -8,6 +8,16 @@ interface TickerSelectProps {
   onChange: (symbol: string) => void
 }
 
+// Treasury symbols are slugs (tesouro-ipca-15052029) — show the official name
+// as the title and the asset class as the subtitle instead.
+function displayTitle(t: Ticker) {
+  return t.symbol.startsWith('tesouro-') ? (t.longName ?? t.name ?? t.symbol) : t.symbol
+}
+
+function displaySubtitle(t: Ticker) {
+  return t.symbol.startsWith('tesouro-') ? 'Tesouro Direto' : (t.longName ?? t.name)
+}
+
 export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -60,12 +70,12 @@ export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
               )}
             </div>
             <div className="ticker-info">
-              <span className="ticker-symbol">{selected.symbol}</span>
-              <span className="ticker-name">{selected.longName ?? selected.name}</span>
+              <span className="ticker-symbol">{displayTitle(selected)}</span>
+              <span className="ticker-name">{displaySubtitle(selected)}</span>
             </div>
           </div>
         ) : (
-          <span className="ticker-placeholder">Select a ticker...</span>
+          <span className="ticker-placeholder">Selecione um ativo...</span>
         )}
         <span className="ticker-arrow">{open ? '▲' : '▼'}</span>
       </button>
@@ -77,7 +87,7 @@ export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
               ref={inputRef}
               className="ticker-search"
               type="text"
-              placeholder="Search ticker or name..."
+              placeholder="Buscar por ticker ou nome..."
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
@@ -98,14 +108,14 @@ export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
                   )}
                 </div>
                 <div className="ticker-info">
-                  <span className="ticker-symbol">{t.symbol}</span>
-                  <span className="ticker-name">{t.longName ?? t.name}</span>
+                  <span className="ticker-symbol">{displayTitle(t)}</span>
+                  <span className="ticker-name">{displaySubtitle(t)}</span>
                 </div>
                 {t.symbol === value && <span className="ticker-check">✓</span>}
               </li>
             ))}
             {filtered.length === 0 && (
-              <li className="ticker-empty">No results for "{query}"</li>
+              <li className="ticker-empty">Nenhum resultado para "{query}"</li>
             )}
           </ul>
         </div>
