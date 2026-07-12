@@ -166,6 +166,8 @@ export const translations = {
       maturityLabel: 'Vencimento',
       dailyLiquidityYes: 'Sim',
       dailyLiquidityNo: 'Não',
+      existingPosition: 'Adicionar a um lançamento existente',
+      newEntry: '+ Novo lançamento',
     },
 
     confirm: {
@@ -365,6 +367,8 @@ export const translations = {
       maturityLabel: 'Maturity',
       dailyLiquidityYes: 'Yes',
       dailyLiquidityNo: 'No',
+      existingPosition: 'Add to an existing entry',
+      newEntry: '+ New entry',
     },
 
     confirm: {
@@ -564,6 +568,8 @@ export const translations = {
       maturityLabel: 'Vencimiento',
       dailyLiquidityYes: 'Sí',
       dailyLiquidityNo: 'No',
+      existingPosition: 'Agregar a un lanzamiento existente',
+      newEntry: '+ Nuevo lanzamiento',
     },
 
     confirm: {

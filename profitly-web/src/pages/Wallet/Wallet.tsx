@@ -305,6 +305,7 @@ export function Wallet() {
         <AddPositionModal
           walletId={activeWallet.id}
           walletName={activeWallet.name}
+          positions={activeWallet.positions}
           onClose={() => setAddPositionWalletId(null)}
           onSuccess={updated => { handleWalletUpdate(updated); setAddPositionWalletId(null) }}
         />

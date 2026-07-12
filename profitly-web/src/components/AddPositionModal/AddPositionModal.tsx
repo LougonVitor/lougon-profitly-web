@@ -5,18 +5,19 @@ import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
 import { TickerSelect } from '../TickerSelect/TickerSelect'
 import { useI18n } from '../../i18n/I18nContext'
-import type { WalletSummary } from '../../types/WalletSummary'
+import type { WalletPositionSummary, WalletSummary } from '../../types/WalletSummary'
 import { AddFixedIncomeForm } from './AddFixedIncomeForm'
 import './AddPositionModal.css'
 
 interface AddPositionModalProps {
   walletId: string
   walletName: string
+  positions: WalletPositionSummary[]
   onClose: () => void
   onSuccess: (updated: WalletSummary) => void
 }
 
-export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: AddPositionModalProps) {
+export function AddPositionModal({ walletId, walletName, positions, onClose, onSuccess }: AddPositionModalProps) {
   const { tickers } = useTickers()
   const { addEntry, loading, error } = usePositionEntries()
   const { t } = useI18n()
@@ -89,7 +90,7 @@ export function AddPositionModal({ walletId, walletName, onClose, onSuccess }: A
         </div>
 
         {assetKind === 'fixed-income' ? (
-          <AddFixedIncomeForm walletId={walletId} onClose={onClose} onSuccess={onSuccess} />
+          <AddFixedIncomeForm walletId={walletId} positions={positions} onClose={onClose} onSuccess={onSuccess} />
         ) : (
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="modal-field">

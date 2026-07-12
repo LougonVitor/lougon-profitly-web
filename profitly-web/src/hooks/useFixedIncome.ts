@@ -11,6 +11,7 @@ interface AddFixedIncomePayload {
   principal: number
   transactionDate: string
   maturityDate: string | null
+  existingTicker?: string
 }
 
 export function useFixedIncome() {
