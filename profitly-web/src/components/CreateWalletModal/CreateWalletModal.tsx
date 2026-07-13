@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
-import type { WalletSummary } from '../../types/WalletSummary'
+import type { WalletSummary, B3ImportResult } from '../../types/WalletSummary'
+import { B3ImportResultModal } from '../B3ImportResultModal/B3ImportResultModal'
 import '../AddPositionModal/AddPositionModal.css'
 
 interface CreateWalletModalProps {
   onClose: () => void
   onSuccess: (created: WalletSummary) => void
-}
-
-interface B3ImportResult {
-  imported: number
-  skipped: number
-  skippedByType: Record<string, number>
-  errors: string[]
 }
 
 type Mode = 'choose' | 'blank' | 'b3'
@@ -43,7 +37,7 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
     if (mode === 'b3' && file) {
       let created: WalletSummary | null = null
       try {
-        created = (await api.post<WalletSummary>('/api/wallets', { name })).data
+        created = (await api.post<WalletSummary>('/api/wallets', { name, source: 'B3' })).data
         const formData = new FormData()
         formData.append('file', file)
         const importRes = await api.post<B3ImportResult>(
@@ -84,57 +78,7 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
   }
 
   if (importResult) {
-    const skippedEntries = Object.entries(importResult.skippedByType)
-    return (
-      <div className="modal-backdrop" onClick={handleDone}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <div>
-              <div className="modal-title">Importação concluída</div>
-              <div className="modal-subtitle">Resumo do extrato da B3</div>
-            </div>
-            <button className="modal-close" onClick={handleDone}>✕</button>
-          </div>
-
-          <div className="modal-form">
-            <div className="modal-total">
-              <span className="modal-total-label">Posições importadas</span>
-              <span className="modal-total-value">{importResult.imported}</span>
-            </div>
-
-            {skippedEntries.length > 0 && (
-              <div className="modal-field">
-                <label className="modal-label">Movimentações não importadas ({importResult.skipped})</label>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Proventos e renda fixa não são importados automaticamente — adicione manualmente se precisar.
-                </div>
-                <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: 13, color: 'var(--text-muted)' }}>
-                  {skippedEntries.map(([type, count]) => (
-                    <li key={type}>{type}: {count}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {importResult.errors.length > 0 && (
-              <div className="modal-field">
-                <label className="modal-label">Itens com erro ({importResult.errors.length})</label>
-                <ul style={{ margin: 0, paddingLeft: '1.2em', fontSize: 13, color: 'var(--text-down)' }}>
-                  {importResult.errors.map((err, i) => <li key={i}>{err}</li>)}
-                </ul>
-              </div>
-            )}
-
-            <div className="modal-actions">
-              <div />
-              <button type="button" className="modal-btn-submit" onClick={handleDone}>
-                Concluir
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <B3ImportResultModal result={importResult} onDone={handleDone} />
   }
 
   if (mode === 'choose') {
@@ -246,6 +190,11 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
                   O arquivo da B3 pode conter inconsistências (ativos já liquidados,
                   desdobramentos, troca de ticker). <strong>Depois de importar, revise suas
                   posições</strong> e corrija ou exclua o que estiver errado.
+                </p>
+                <p>
+                  Fez novas compras depois? É só <strong>reintegrar a carteira</strong> mais
+                  tarde enviando um novo extrato — só as movimentações que ainda não estão na
+                  carteira são adicionadas, <strong>sem duplicar</strong> o que já foi importado.
                 </p>
                 <div className="modal-b3-steps-title">Como baixar o extrato:</div>
                 <ol className="modal-b3-steps">

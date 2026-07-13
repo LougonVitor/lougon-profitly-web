@@ -35,6 +35,8 @@ export interface WalletPositionSummary {
   maturityDate: string | null
 }
 
+export type WalletSource = 'MANUAL' | 'B3'
+
 export interface WalletSummary {
   id: string
   name: string
@@ -44,5 +46,14 @@ export interface WalletSummary {
   profitOrLoss: number
   profitOrLossPercent: number
   realizedProfitOrLoss: number
+  source: WalletSource
   createdAt: string
+}
+
+export interface B3ImportResult {
+  imported: number
+  duplicates: number
+  skipped: number
+  skippedByType: Record<string, number>
+  errors: string[]
 }

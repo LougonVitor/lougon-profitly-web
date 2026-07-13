@@ -91,6 +91,57 @@
   height: 14px;
 }
 
+.wallet-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "B3" chip next to the wallet name — marks a wallet whose positions came from a B3 statement */
+.wallet-b3-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(55, 138, 221, 0.14);
+  border: 1px solid rgba(55, 138, 221, 0.35);
+  white-space: nowrap;
+}
+
+.wallet-b3-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.wallet-reintegrate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.wallet-reintegrate-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-accent);
+}
+
 .wallet-add-btn {
   font-size: 12px;
   font-weight: 600;

@@ -10,18 +10,21 @@ interface WalletCardProps {
   index: number
   onAddPosition: () => void
   onWalletUpdate: (updated: WalletSummary) => void
+  /** Only provided for B3-sourced wallets; opens the reintegration modal. */
+  onReintegrate?: () => void
 }
 
 function fmtBRL(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export function WalletCard({ wallet, index, onAddPosition, onWalletUpdate }: WalletCardProps) {
+export function WalletCard({ wallet, index, onAddPosition, onWalletUpdate, onReintegrate }: WalletCardProps) {
   const { t } = useI18n()
   const [editing, setEditing] = useState(false)
   const [nameInput, setNameInput] = useState(wallet.name)
   const [saving, setSaving] = useState(false)
   const up = wallet.profitOrLoss >= 0
+  const isB3 = wallet.source === 'B3'
 
   async function handleRename() {
     const trimmed = nameInput.trim()
@@ -58,6 +61,11 @@ export function WalletCard({ wallet, index, onAddPosition, onWalletUpdate }: Wal
           ) : (
             <>
               <span className="wallet-card-name">{wallet.name}</span>
+              {isB3 && (
+                <span className="wallet-b3-badge" title="Carteira integrada com a B3">
+                  <span className="wallet-b3-badge-dot" />B3
+                </span>
+              )}
               <button
                 className="wallet-rename-btn"
                 onClick={() => { setNameInput(wallet.name); setEditing(true) }}
@@ -71,7 +79,18 @@ export function WalletCard({ wallet, index, onAddPosition, onWalletUpdate }: Wal
             </>
           )}
         </div>
-        <button className="wallet-add-btn" onClick={onAddPosition}>{t.wallet.addPosition}</button>
+        <div className="wallet-card-actions">
+          {isB3 && onReintegrate && (
+            <button className="wallet-reintegrate-btn" onClick={onReintegrate} title="Enviar um novo extrato da B3 sem duplicar o que já foi importado">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                <path d="M23 4v6h-6" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              Reintegrar B3
+            </button>
+          )}
+          <button className="wallet-add-btn" onClick={onAddPosition}>{t.wallet.addPosition}</button>
+        </div>
       </div>
 
       <div className="wallet-card-body">

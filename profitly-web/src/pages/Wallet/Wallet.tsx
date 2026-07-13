@@ -8,6 +8,7 @@ import { WalletCard } from '../../components/WalletCard/WalletCard'
 import { PositionTable } from '../../components/PositionTable/PositionTable'
 import { AddPositionModal } from '../../components/AddPositionModal/AddPositionModal'
 import { CreateWalletModal } from '../../components/CreateWalletModal/CreateWalletModal'
+import { ReintegrateB3Modal } from '../../components/ReintegrateB3Modal/ReintegrateB3Modal'
 import { HelpTip } from '../Finance/components/HelpTip'
 import { useWallets } from '../../hooks/useWallets'
 import { useI18n } from '../../i18n/I18nContext'
@@ -108,6 +109,7 @@ export function Wallet() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [walletView, setWalletView] = useState<'positions' | 'patrimonio' | 'proventos'>('positions')
   const [addPositionWalletId, setAddPositionWalletId] = useState<string | null>(null)
+  const [reintegrateWalletId, setReintegrateWalletId] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -201,6 +203,7 @@ export function Wallet() {
                     </svg>
                   </span>
                   <span className="wdd-item-name">{w.name}</span>
+                  {w.source === 'B3' && <span className="wdd-item-b3">B3</span>}
                   {w.id === activeWalletId && (
                     <span className="wdd-item-check">✓</span>
                   )}
@@ -260,6 +263,7 @@ export function Wallet() {
                 index={0}
                 onAddPosition={() => setAddPositionWalletId(activeWallet.id)}
                 onWalletUpdate={handleWalletUpdate}
+                onReintegrate={() => setReintegrateWalletId(activeWallet.id)}
               />
               <PositionTable
                 walletId={activeWallet.id}
@@ -300,6 +304,19 @@ export function Wallet() {
           onSuccess={handleWalletCreated}
         />
       )}
+
+      {reintegrateWalletId && (() => {
+        const w = wallets.find(x => x.id === reintegrateWalletId)
+        if (!w) return null
+        return (
+          <ReintegrateB3Modal
+            walletId={w.id}
+            walletName={w.name}
+            onClose={() => setReintegrateWalletId(null)}
+            onSuccess={updated => { handleWalletUpdate(updated); setReintegrateWalletId(null) }}
+          />
+        )
+      })()}
 
       {addPositionWalletId && activeWallet && (
         <AddPositionModal
