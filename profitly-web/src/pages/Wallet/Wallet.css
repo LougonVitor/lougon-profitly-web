@@ -370,7 +370,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1100; /* above .header (fixed, z-index: 1000) so it isn't cut off underneath it */
   animation: backdropIn 0.15s ease;
 }
 
@@ -398,6 +398,10 @@
 }
 
 .modal--confirm { max-width: 380px; }
+
+/* Wider for the B3 import/reintegration flows: their help text is long, and more width
+   means fewer wrapped lines, so the modal is less likely to need internal scrolling. */
+.modal--wide { max-width: 640px; }
 
 .modal-title {
   font-size: 16px;

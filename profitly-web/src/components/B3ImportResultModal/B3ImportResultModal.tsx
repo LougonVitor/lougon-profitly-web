@@ -17,7 +17,7 @@ export function B3ImportResultModal({ result, subtitle, onDone }: B3ImportResult
   const skippedEntries = Object.entries(result.skippedByType)
   return (
     <div className="modal-backdrop" onClick={onDone}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div className="modal-title">Importação concluída</div>

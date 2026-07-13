@@ -68,7 +68,7 @@ export function ReintegrateB3Modal({ walletId, walletName, onClose, onSuccess }:
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div className="modal-title">Reintegrar da B3</div>

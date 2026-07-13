@@ -132,7 +132,7 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className={`modal ${mode === 'b3' ? 'modal--wide' : ''}`} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div className="modal-title">{mode === 'b3' ? 'Importar da B3' : 'New wallet'}</div>
