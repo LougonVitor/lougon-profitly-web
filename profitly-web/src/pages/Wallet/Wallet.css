@@ -386,6 +386,8 @@
   padding: 1.75rem;
   width: 100%;
   max-width: 480px;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   animation: modalIn 0.2s ease;
 }
