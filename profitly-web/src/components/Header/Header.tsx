@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useI18n } from '../../i18n/I18nContext'
 import { useTheme } from '../../i18n/ThemeContext'
 import { useTickers } from '../../hooks/useTickers'
+import { LoginModal } from '../LoginModal/LoginModal'
 import type { Lang } from '../../i18n/translations'
 import type { Ticker } from '../../types/Ticker'
 import './Header.css'
@@ -89,10 +90,11 @@ export function Header() {
   const { t, lang, setLang } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const { tickers } = useTickers()
-  const username = localStorage.getItem('profitly_username')
+  const [username, setUsername] = useState(() => localStorage.getItem('profitly_username'))
 
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
 
   const q = search.trim().toLowerCase()
@@ -128,7 +130,8 @@ export function Header() {
   function handleLogout() {
     localStorage.removeItem('profitly_token')
     localStorage.removeItem('profitly_username')
-    navigate('/login')
+    setUsername(null)
+    navigate('/')
   }
 
   function handleSearchChange(v: string) {
@@ -222,9 +225,19 @@ export function Header() {
             <button className="header-logout" onClick={handleLogout}>{t.header.logout}</button>
           </div>
         ) : (
-          <button className="header-login-btn" onClick={() => navigate('/login')}>Entrar</button>
+          <button className="header-login-btn" onClick={() => setShowLogin(true)}>Entrar</button>
         )}
       </div>
+
+      {showLogin && (
+        <LoginModal
+          onSuccess={() => {
+            setUsername(localStorage.getItem('profitly_username'))
+            setShowLogin(false)
+          }}
+          onDismiss={() => setShowLogin(false)}
+        />
+      )}
     </header>
   )
 }

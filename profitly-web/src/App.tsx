@@ -4,8 +4,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Dashboard } from './pages/Dashboard/Dashboard'
 import { Wallet } from './pages/Wallet/Wallet'
 import { Finance } from './pages/Finance/Finance'
-import { Login } from './pages/Login/Login'
-import { Register } from './pages/Register/Register'
 import { TickerAnalysis } from './pages/TickerAnalysis/TickerAnalysis'
 import { Compare } from './pages/Compare/Compare'
 import { Layout } from './components/Layout/Layout'
@@ -44,8 +42,6 @@ function App() {
         <I18nProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               {/* Public routes */}
               <Route path="/" element={<Layout><Dashboard /></Layout>} />
               <Route path="/ticker/:symbol" element={<Layout><TickerAnalysis /></Layout>} />
