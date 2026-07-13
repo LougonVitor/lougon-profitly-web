@@ -226,6 +226,11 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
                 />
               </div>
 
+              <div className="modal-b3-soon">
+                🚀 <strong>Em breve:</strong> integração automática com a B3 — sem precisar
+                importar ou exportar nenhum arquivo. Suas posições serão sincronizadas sozinhas.
+              </div>
+
               <div className="modal-b3-help">
                 <div className="modal-b3-help-title">
                   <span className="modal-b3-beta">BETA</span>
