@@ -39,22 +39,38 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
     if (!name.trim()) return
     setLoading(true)
     setError(null)
-    try {
-      const res = await api.post<WalletSummary>('/api/wallets', { name })
 
-      if (mode === 'b3' && file) {
+    if (mode === 'b3' && file) {
+      let created: WalletSummary | null = null
+      try {
+        created = (await api.post<WalletSummary>('/api/wallets', { name })).data
         const formData = new FormData()
         formData.append('file', file)
         const importRes = await api.post<B3ImportResult>(
-          `/api/wallets/${res.data.id}/import/b3`,
+          `/api/wallets/${created.id}/import/b3`,
           formData,
           { headers: { 'Content-Type': 'multipart/form-data' } }
         )
-        setCreatedWallet(res.data)
+        setCreatedWallet(created)
         setImportResult(importRes.data)
-        return
+      } catch {
+        // Roll back so a failed import never leaves an empty orphan wallet behind.
+        if (created) {
+          try {
+            await api.delete(`/api/wallets/${created.id}`)
+          } catch {
+            // best-effort cleanup — surface the original import error either way
+          }
+        }
+        setError('Falha ao importar o arquivo da B3. Nenhuma carteira foi criada.')
+      } finally {
+        setLoading(false)
       }
+      return
+    }
 
+    try {
+      const res = await api.post<WalletSummary>('/api/wallets', { name })
       onSuccess(res.data)
     } catch {
       setError('Failed to create wallet')
