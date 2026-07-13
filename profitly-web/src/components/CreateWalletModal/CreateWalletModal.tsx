@@ -214,16 +214,44 @@ export function CreateWalletModal({ onClose, onSuccess }: CreateWalletModalProps
           </div>
 
           {mode === 'b3' && (
-            <div className="modal-field">
-              <label className="modal-label">Extrato de Movimentação (.xlsx)</label>
-              <input
-                className="modal-input"
-                type="file"
-                accept=".xlsx"
-                required
-                onChange={e => setFile(e.target.files?.[0] ?? null)}
-              />
-            </div>
+            <>
+              <div className="modal-field">
+                <label className="modal-label">Extrato de Movimentação (.xlsx)</label>
+                <input
+                  className="modal-input"
+                  type="file"
+                  accept=".xlsx"
+                  required
+                  onChange={e => setFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+
+              <div className="modal-b3-help">
+                <div className="modal-b3-help-title">
+                  <span className="modal-b3-beta">BETA</span>
+                  Integração com a B3 em desenvolvimento
+                </div>
+                <p>
+                  A integração completa com a B3 ainda está em desenvolvimento. Por enquanto,
+                  só importamos <strong>ações, FIIs e BDRs</strong>. <strong>Tesouro Direto e
+                  renda fixa (CDB, LCI, LCA…) devem ser adicionados manualmente</strong> — o
+                  extrato da B3 não traz indexador, taxa e vencimento necessários.
+                </p>
+                <p>
+                  O arquivo da B3 pode conter inconsistências (ativos já liquidados,
+                  desdobramentos, troca de ticker). <strong>Depois de importar, revise suas
+                  posições</strong> e corrija ou exclua o que estiver errado.
+                </p>
+                <div className="modal-b3-steps-title">Como baixar o extrato:</div>
+                <ol className="modal-b3-steps">
+                  <li>Acesse <strong>investidor.b3.com.br</strong> e faça login (conta gov.br).</li>
+                  <li>No menu, vá em <strong>Extratos → Movimentação</strong>.</li>
+                  <li>Selecione o período desejado (ex.: desde o início dos seus investimentos).</li>
+                  <li>Clique em <strong>Baixar / Exportar para Excel (.xlsx)</strong>.</li>
+                  <li>Envie o arquivo baixado aqui.</li>
+                </ol>
+              </div>
+            </>
           )}
 
           {error && <div className="modal-error">{error}</div>}

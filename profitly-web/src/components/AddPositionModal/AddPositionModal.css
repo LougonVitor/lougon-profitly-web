@@ -242,3 +242,57 @@
 .toggle-switch input:checked + .toggle-switch-track::before {
   transform: translateX(18px);
 }
+
+/* B3 import help / beta notice */
+.modal-b3-help {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.modal-b3-help p {
+  margin: 0 0 10px;
+}
+
+.modal-b3-help strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modal-b3-help-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.modal-b3-beta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: rgba(55, 138, 221, 0.15);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.modal-b3-steps-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.modal-b3-steps {
+  margin: 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
