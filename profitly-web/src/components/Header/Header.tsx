@@ -95,7 +95,12 @@ export function Header() {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const moreRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
   const q = search.trim().toLowerCase()
   const results = q.length >= 1
@@ -121,6 +126,13 @@ export function Header() {
     function onOutside(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setOpen(false)
+        setMobileSearchOpen(false)
+      }
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false)
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', onOutside)
@@ -142,6 +154,7 @@ export function Header() {
   function handleClose() {
     setSearch('')
     setOpen(false)
+    setMobileSearchOpen(false)
   }
 
   return (
@@ -155,21 +168,40 @@ export function Header() {
           Profit<span className="logo-accent">ly</span>
         </span>
         <nav className="header-nav">
-          <NavLink to="/comparar" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
-            Comparador de ativos
-          </NavLink>
           <NavLink to="/wallet" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
             {t.nav.wallet}
           </NavLink>
           <NavLink to="/finance" className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
             Finanças Pessoais
           </NavLink>
+          <div className="nav-more" ref={moreRef}>
+            <button
+              className={`nav-link nav-more-btn ${moreOpen ? 'nav-link--active' : ''}`}
+              onClick={() => setMoreOpen(o => !o)}
+            >
+              Mais
+              <svg className="nav-more-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {moreOpen && (
+              <div className="nav-more-dropdown">
+                <NavLink
+                  to="/comparar"
+                  className={({ isActive }) => isActive ? 'nav-more-link nav-more-link--active' : 'nav-more-link'}
+                  onClick={() => setMoreOpen(false)}
+                >
+                  Comparador de ativos
+                </NavLink>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 
       <div className="header-right">
         {/* Search */}
-        <div className="header-search-wrap" ref={wrapRef}>
+        <div className={`header-search-wrap ${mobileSearchOpen ? 'header-search-wrap--mobile-open' : ''}`} ref={wrapRef}>
           <div className="header-search-box">
             <svg className="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8" />
@@ -203,6 +235,17 @@ export function Header() {
           )}
         </div>
 
+        <button
+          className="header-search-toggle"
+          onClick={() => setMobileSearchOpen(o => !o)}
+          title={t.header.search}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </button>
+
         <div className="header-lang">
           {LANGS.map(l => (
             <button
@@ -227,6 +270,58 @@ export function Header() {
         ) : (
           <button className="header-login-btn" onClick={() => setShowLogin(true)}>Entrar</button>
         )}
+
+        <div className="header-menu" ref={mobileMenuRef}>
+          <button
+            className="header-menu-toggle"
+            onClick={() => setMobileMenuOpen(o => !o)}
+            aria-label="Menu"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+
+          {mobileMenuOpen && (
+            <div className="mobile-nav-panel">
+              <NavLink
+                to="/wallet"
+                className={({ isActive }) => isActive ? 'mobile-nav-link mobile-nav-link--active' : 'mobile-nav-link'}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t.nav.wallet}
+              </NavLink>
+              <NavLink
+                to="/finance"
+                className={({ isActive }) => isActive ? 'mobile-nav-link mobile-nav-link--active' : 'mobile-nav-link'}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Finanças Pessoais
+              </NavLink>
+              <NavLink
+                to="/comparar"
+                className={({ isActive }) => isActive ? 'mobile-nav-link mobile-nav-link--active' : 'mobile-nav-link'}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Comparador de ativos
+              </NavLink>
+              <div className="mobile-nav-divider" />
+              <div className="mobile-nav-langs">
+                {LANGS.map(l => (
+                  <button
+                    key={l.value}
+                    className={`lang-btn ${lang === l.value ? 'lang-btn--active' : ''}`}
+                    onClick={() => setLang(l.value)}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {showLogin && (

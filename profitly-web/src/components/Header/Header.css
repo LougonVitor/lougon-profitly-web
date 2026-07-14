@@ -50,10 +50,148 @@
   background: var(--bg-accent);
 }
 
+/* ── More dropdown ───────────────────────────── */
+
+.nav-more {
+  position: relative;
+}
+
+.nav-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  appearance: none;
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nav-more-chevron {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.15s;
+}
+
+.nav-more-btn.nav-link--active .nav-more-chevron {
+  transform: rotate(180deg);
+}
+
+.nav-more-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  overflow: hidden;
+  animation: dropIn 0.12s ease;
+}
+
+.nav-more-link {
+  display: block;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.nav-more-link:hover { background: var(--bg-subtle); color: var(--text-primary); }
+
+.nav-more-link--active {
+  color: var(--text-accent);
+  background: var(--bg-accent);
+}
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ── Mobile search toggle / menu ─────────────── */
+
+.header-search-toggle,
+.header-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-subtle);
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.header-search-toggle svg,
+.header-menu-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.header-search-toggle:hover,
+.header-menu-toggle:hover { background: var(--border); }
+
+.header-menu { position: relative; display: none; }
+
+.mobile-nav-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 1001;
+  padding: 8px;
+  animation: dropIn 0.12s ease;
+}
+
+.mobile-nav-link {
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mobile-nav-link:hover { background: var(--bg-subtle); color: var(--text-primary); }
+
+.mobile-nav-link--active {
+  color: var(--text-accent);
+  background: var(--bg-accent);
+}
+
+.mobile-nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 2px;
+}
+
+.mobile-nav-langs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  padding: 3px;
+  align-self: flex-start;
 }
 
 /* ── Search ──────────────────────────────────── */
@@ -331,4 +469,48 @@
 .header-login-btn:hover {
   color: #378add;
   border-color: #378add;
+}
+
+/* ── Responsive ──────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .header { padding: 0 1.25rem; }
+  .header-left { gap: 14px; }
+  .header-search-box { width: 170px; }
+}
+
+@media (max-width: 860px) {
+  .header-nav { display: none; }
+  .header-lang { display: none; }
+  .header-search-wrap { display: none; }
+
+  .header-search-toggle,
+  .header-menu-toggle { display: inline-flex; }
+  .header-menu { display: block; }
+
+  .header-search-wrap--mobile-open {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 10px 1rem;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+  }
+
+  .header-search-wrap--mobile-open .header-search-box { width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .header { padding: 0 0.85rem; }
+  .header-right { gap: 6px; }
+  .logo { font-size: 16px; }
+  .header-logout { padding: 4px 8px; font-size: 11px; }
+  .header-login-btn { padding: 6px 10px; font-size: 11px; }
+}
+
+@media (max-width: 420px) {
+  .header-user .header-logout { display: none; }
 }
