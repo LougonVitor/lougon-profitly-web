@@ -133,15 +133,15 @@ interface IbovBenchmark {
   points: { date: number; close: number }[]
 }
 
-/** Benchmark series (IBOV) for comparison mode — served from the ibovespa cache. */
-function useIbovBenchmark(range: string, enabled: boolean) {
+/** Benchmark series (IBOV/IFIX) for comparison mode — served from the ibovespa cache. */
+function useIbovBenchmark(range: string, enabled: boolean, index: string) {
   const [points, setPoints] = useState<Map<string, number> | null>(null)
 
   useEffect(() => {
     if (!enabled) return
     let active = true
     setPoints(null)
-    api.get<IbovBenchmark>(`/api/ibovespa?range=${range}`)
+    api.get<IbovBenchmark>(`/api/ibovespa?range=${range}&index=${index}`)
       .then(res => {
         if (!active) return
         const map = new Map<string, number>()
@@ -153,24 +153,27 @@ function useIbovBenchmark(range: string, enabled: boolean) {
       })
       .catch(() => { if (active) setPoints(new Map()) })
     return () => { active = false }
-  }, [range, enabled])
+  }, [range, enabled, index])
 
   return points
 }
 
-function PriceChartSection({ symbol, showBenchmark = true, currencyToggle = false }: {
+function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', currencyToggle = false }: {
   symbol: string
-  /** Hides the "vs IBOV" comparison button when false (e.g. crypto). */
+  /** Hides the comparison button when false (e.g. crypto). */
   showBenchmark?: boolean
+  /** Benchmark index to compare against: IBOV for stocks, IFIX for FIIs. */
+  benchmark?: 'ibov' | 'ifix'
   /** Shows a BRL/USD switch; USD reads the "{symbol}:USD" series from price_points. */
   currencyToggle?: boolean
 }) {
+  const benchLabel = benchmark.toUpperCase()
   const [range, setRange] = useState('1y')
   const [vsIbov, setVsIbov] = useState(false)
   const [currency, setCurrency] = useState<'BRL' | 'USD'>('BRL')
   const inUsd = currencyToggle && currency === 'USD'
   const { history, loading } = usePriceHistory(inUsd ? `${symbol}:USD` : symbol, range)
-  const ibovPoints = useIbovBenchmark(range, showBenchmark && vsIbov)
+  const ibovPoints = useIbovBenchmark(range, showBenchmark && vsIbov, benchmark)
   const cur = inUsd ? 'US$' : 'R$'
 
   const data = history?.prices
@@ -236,7 +239,7 @@ function PriceChartSection({ symbol, showBenchmark = true, currencyToggle = fals
                 className={`ta-range-btn ${vsIbov ? 'ta-range-btn--active' : ''}`}
                 onClick={() => setVsIbov(v => !v)}
               >
-                vs IBOV
+                vs {benchLabel}
               </button>
             </div>
           )}
@@ -260,7 +263,7 @@ function PriceChartSection({ symbol, showBenchmark = true, currencyToggle = fals
           <div className="ta-chart-empty">Sem dados para este período</div>
         ) : vsIbov ? (
           compareData.length === 0 ? (
-            <div className="ta-chart-loading">Carregando IBOV...</div>
+            <div className="ta-chart-loading">Carregando {benchLabel}...</div>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={compareData} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
@@ -282,7 +285,7 @@ function PriceChartSection({ symbol, showBenchmark = true, currencyToggle = fals
                   contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
                   itemStyle={{ color: 'var(--text-primary)' }}
                   labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
-                  formatter={(value: unknown, name: unknown) => [`${Number(value).toFixed(2)}%`, name === 'stock' ? symbol : 'IBOV']}
+                  formatter={(value: unknown, name: unknown) => [`${Number(value).toFixed(2)}%`, name === 'stock' ? symbol : benchLabel]}
                 />
                 <Line type="monotone" dataKey="stock" stroke="var(--accent)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 <Line type="monotone" dataKey="ibov" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 2" dot={false} activeDot={{ r: 3 }} />
@@ -1054,8 +1057,8 @@ function FiiAnalysisPage({ analysis }: { analysis: TickerAnalysis }) {
         )}
       </div>
 
-      {/* Price Chart */}
-      <PriceChartSection symbol={analysis.symbol} />
+      {/* Price Chart — FIIs benchmark against IFIX instead of IBOV */}
+      <PriceChartSection symbol={analysis.symbol} benchmark="ifix" />
 
       {/* 52-week range */}
       {fa && <Fii52WeekRange fa={fa} />}
