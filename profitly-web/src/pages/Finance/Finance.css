@@ -38,41 +38,103 @@
   animation: spin 0.7s linear infinite;
 }
 
+/* ── Page header ── */
+.fin-page-header { margin-bottom: 1.5rem; }
+.fin-page-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.fin-page-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 640px;
+}
+
 /* ── Tabs ── */
 .fin-tabs {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.fin-tabs-group {
+  display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 2rem;
-  padding-bottom: 0;
 }
 
 .fin-tab {
-  padding: 10px 20px;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-muted);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  margin-bottom: -1px;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
 }
+.fin-tab:hover { color: var(--text-main); background: var(--bg); }
+.fin-tab:active { transform: scale(0.97); }
 
 .fin-tab--active {
-  color: #378add;
-  border-bottom-color: #378add;
+  color: #fff;
+  background: #378add;
+  box-shadow: var(--shadow-md);
 }
+.fin-tab--active:hover { color: #fff; background: #378add; }
+
+.fin-tab-icon { font-size: 14px; }
 
 .fin-tabs-actions {
-  margin-left: auto;
   display: flex;
   gap: 8px;
   align-items: center;
 }
+
+.fin-close-period-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fin-btn--close-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.fin-btn--close-period:hover {
+  border-color: #378add;
+  color: #378add;
+  background: rgba(55,138,221,0.08);
+}
+.fin-btn--close-period:active { transform: scale(0.97); }
+.fin-btn--close-period-icon { font-size: 13px; }
 
 /* ── Buttons ── */
 .fin-btn {
@@ -133,6 +195,18 @@
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
 
+.fin-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(55,138,221,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  margin-bottom: 0.85rem;
+}
+
 .fin-modal-title {
   font-size: 16px;
   font-weight: 700;
@@ -144,6 +218,28 @@
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.fin-modal-steps {
+  list-style: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fin-modal-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.fin-modal-steps li span {
+  flex-shrink: 0;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -188,6 +284,71 @@
 .fin-link-btn:hover {
   color: #378add;
   background: rgba(55,138,221,0.06);
+}
+
+/* Prominent "+ action" toggle button (add income / add limit / new expense / new recurring…) */
+.fin-btn--add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 15px;
+  border-radius: 999px;
+  border: 1px solid #378add;
+  background: rgba(55,138,221,0.1);
+  color: #378add;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+.fin-btn--add:hover {
+  background: #378add;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.fin-btn--add:active { transform: translateY(0) scale(0.97); }
+.fin-btn--add-icon { font-size: 13px; line-height: 1; }
+
+.fin-btn--add--active {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.fin-btn--add--active:hover {
+  background: rgba(226,75,74,0.08);
+  border-color: #e24b4a;
+  color: #e24b4a;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Explanatory banner shown at the top of a tab/section */
+.fin-info-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid #378add;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.fin-info-banner-icon { font-size: 20px; line-height: 1.3; flex-shrink: 0; }
+.fin-info-banner-body > strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+.fin-info-banner-body p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
 }
 
 /* ── Income section ── */
@@ -331,7 +492,9 @@
   align-items: center;
   gap: 12px;
   animation: finIn 0.35s ease both;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+.fin-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
 
 .fin-card--pos { border-left-color: #22c55e; }
 .fin-card--pos .fin-card-value { color: #16a34a; }
@@ -926,10 +1089,11 @@
   transition: color 0.15s, border-color 0.15s;
 }
 .fin-help:hover, .fin-help:focus { color: #378add; border-color: #378add; outline: none; }
+/* Rendered through a portal into <body> and positioned with fixed coords computed
+   from the icon (see HelpTip.tsx) — so it always escapes clipping/scrolling
+   ancestors like tables and chart cards instead of being cut off. */
 .fin-help-tip {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px); right: -6px;
+  position: fixed;
   width: 230px;
   padding: 0.6rem 0.75rem;
   background: var(--bg-card);
@@ -937,13 +1101,15 @@
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.28);
   font-size: 11.5px; font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
   line-height: 1.5;
   color: var(--text-main);
   text-align: left;
   white-space: normal;
-  z-index: 30;
+  pointer-events: none;
+  z-index: 3000;
 }
-.fin-help:hover .fin-help-tip, .fin-help:focus .fin-help-tip { display: block; }
 /* Inline variant: sits next to a header/title instead of a card corner */
 .fin-help--inline {
   position: relative;
@@ -952,7 +1118,6 @@
   margin-left: 5px;
   vertical-align: middle;
 }
-.fin-help--inline .fin-help-tip { text-transform: none; letter-spacing: normal; }
 /* Keep card text clear of the "?" in the corner */
 .fin-card .fin-card-label, .fin-income-card-label { padding-right: 18px; }
 
@@ -960,13 +1125,42 @@
 .fin-animate-in { animation: finIn 0.35s ease both; }
 .fin-animate-row { animation: finIn 0.2s ease both; }
 
+/* ── Tablet / stacked tabs ── */
+@media (max-width: 720px) {
+  .fin-tabs { flex-direction: column; align-items: stretch; }
+  .fin-tabs-group { width: 100%; }
+  .fin-tab { flex: 1 1 0; justify-content: center; }
+  .fin-tabs-actions { width: 100%; }
+  .fin-close-period-group { width: 100%; justify-content: space-between; }
+  .fin-btn--close-period { flex: 1; justify-content: center; }
+}
+
 /* ── Mobile ── */
 @media (max-width: 600px) {
   .fin-container { padding: 1.25rem 0; }
 
-  .fin-tabs { margin-bottom: 1.25rem; }
-  .fin-tab { padding: 10px 12px; }
-  .fin-tabs-actions { margin-left: auto; }
+  .fin-page-title { font-size: 19px; }
+  .fin-page-subtitle { font-size: 12.5px; }
+
+  .fin-tabs { margin-bottom: 1.25rem; padding: 6px; gap: 8px; }
+  .fin-tabs-group { gap: 4px; }
+  .fin-tab { padding: 8px 6px; font-size: 12px; gap: 5px; }
+  .fin-tab-icon { font-size: 13px; }
+  .fin-tabs-actions { margin-left: 0; }
+
+  /* Explanatory banners: icon above text reads better in a narrow column */
+  .fin-info-banner { padding: 0.9rem 1rem; gap: 10px; }
+  .fin-info-banner-icon { font-size: 18px; }
+  .fin-info-banner-body p { font-size: 12px; }
+
+  /* "+" action buttons become full-width tap targets and wrap their label if needed */
+  .fin-btn--add {
+    flex: 1 1 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+  .fin-header-actions { width: 100%; }
 
   /* Tighter card paddings on small screens */
   .fin-income-section,
@@ -989,4 +1183,21 @@
   }
   .fin-mini-form .fin-btn,
   .fin-add-row-simple .fin-btn { width: 100%; }
+
+  /* Recurring add-form extras (due day + variable checkbox) also take full width */
+  .fin-add-row-simple .fin-input--tiny { flex: 1 1 100%; width: 100%; }
+  .fin-add-row-simple .fin-check { flex: 1 1 100%; }
+
+  /* Reset modal: give the step list a little more breathing room */
+  .fin-modal { padding: 1.4rem; }
+  .fin-modal-steps li { font-size: 12px; }
+
+  /* History filters stack instead of squeezing two selects side by side */
+  .fin-filter-row { flex-direction: column; gap: 10px; }
+  .fin-filter-row .fin-field { min-width: 0; width: 100%; }
+
+  /* Month-over-month + history cards go single column */
+  .fin-mom-cards { grid-template-columns: 1fr; }
+  .fin-history-cards { grid-template-columns: 1fr; }
+  .fin-limits-grid { grid-template-columns: 1fr; }
 }

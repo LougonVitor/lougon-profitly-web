@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction, FormEvent } from 'react'
 import type { ExpenseType, RecurringExpense, RecurringIncome } from '../types'
 import { TYPE_LABELS, TYPE_COLORS, ALL_TYPES } from '../constants'
 import { fmtBRL } from '../helpers'
+import { HelpTip } from '../components/HelpTip'
 
 interface RecurringTabProps {
   recurringList: RecurringExpense[]
@@ -41,15 +42,26 @@ export function RecurringTab({
 }: RecurringTabProps) {
   return (
     <div className="fin-recurring fin-animate-in">
+      <div className="fin-info-banner">
+        <span className="fin-info-banner-icon">🔁</span>
+        <div className="fin-info-banner-body">
+          <strong>Como funciona a aba Recorrentes</strong>
+          <p>
+            Cadastre aqui uma única vez os gastos e rendas que se repetem todo mês — como aluguel, assinaturas, plano de saúde ou salário.
+            Eles entram automaticamente na aba <strong>Período Atual</strong> a cada novo mês, sem precisar lançar de novo.
+          </p>
+        </div>
+      </div>
+
       <div className="fin-table-header">
-        <h3 className="fin-section-title">Gastos Recorrentes</h3>
-        <button className="fin-link-btn" onClick={onToggleRecurringForm}>
-          {showAddRecurring ? '✕ fechar' : '+ novo recorrente'}
+        <h3 className="fin-section-title">Gastos Recorrentes
+          <HelpTip inline text="Despesas fixas que devem aparecer em todo período, como aluguel ou assinaturas. Marque 'valor variável' quando o valor mudar mês a mês (ex: conta de luz) — você ajusta o valor real diretamente no Período Atual." />
+        </h3>
+        <button className={`fin-btn--add ${showAddRecurring ? 'fin-btn--add--active' : ''}`} onClick={onToggleRecurringForm}>
+          <span className="fin-btn--add-icon">{showAddRecurring ? '✕' : '+'}</span>
+          {showAddRecurring ? 'Fechar' : 'Novo gasto recorrente'}
         </button>
       </div>
-      <p className="fin-recurring-desc">
-        Gastos configurados aqui são adicionados automaticamente a cada período.
-      </p>
 
       {showAddRecurring && (
         <form className="fin-add-form fin-animate-in" onSubmit={onAddRecurring}>
@@ -130,14 +142,14 @@ export function RecurringTab({
 
       {/* ── Recurring incomes ── */}
       <div className="fin-table-header" style={{marginTop:'2rem'}}>
-        <h3 className="fin-section-title">Rendas Recorrentes</h3>
-        <button className="fin-link-btn" onClick={onToggleRecIncomeForm}>
-          {showAddRecIncome ? '✕ fechar' : '+ nova renda recorrente'}
+        <h3 className="fin-section-title">Rendas Recorrentes
+          <HelpTip inline text="Entradas fixas que recebem todo mês além do salário, como aluguel recebido, mesada ou um freelance fixo. Elas somam automaticamente ao 'Total de Entradas' de cada período." />
+        </h3>
+        <button className={`fin-btn--add ${showAddRecIncome ? 'fin-btn--add--active' : ''}`} onClick={onToggleRecIncomeForm}>
+          <span className="fin-btn--add-icon">{showAddRecIncome ? '✕' : '+'}</span>
+          {showAddRecIncome ? 'Fechar' : 'Nova renda recorrente'}
         </button>
       </div>
-      <p className="fin-recurring-desc">
-        Rendas configuradas aqui são adicionadas automaticamente às entradas de cada período.
-      </p>
 
       {showAddRecIncome && (
         <form className="fin-add-form fin-animate-in" onSubmit={onAddRecIncome}>

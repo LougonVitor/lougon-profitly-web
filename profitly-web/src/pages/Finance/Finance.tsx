@@ -8,6 +8,7 @@ import { INVEST_PCTS } from './constants'
 import { CurrentPeriodTab } from './tabs/CurrentPeriodTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { RecurringTab } from './tabs/RecurringTab'
+import { HelpTip } from './components/HelpTip'
 import './Finance.css'
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -388,21 +389,34 @@ export function Finance() {
   return (
     <div className="fin-page">
       <div className="page-container fin-container">
+        {/* ── Page header ── */}
+        <div className="fin-page-header fin-animate-in">
+          <h1 className="fin-page-title">Finanças Pessoais</h1>
+          <p className="fin-page-subtitle">
+            Acompanhe suas entradas e gastos do mês, configure o que se repete todo período e consulte o histórico de meses fechados.
+          </p>
+        </div>
+
         {/* ── Tabs ── */}
         <div className="fin-tabs">
-          <button className={`fin-tab ${tab==='current'?'fin-tab--active':''}`} onClick={()=>setTab('current')}>
-            Período Atual
-          </button>
-          <button className={`fin-tab ${tab==='recurring'?'fin-tab--active':''}`} onClick={()=>setTab('recurring')}>
-            Recorrentes
-          </button>
-          <button className={`fin-tab ${tab==='history'?'fin-tab--active':''}`} onClick={()=>setTab('history')}>
-            Histórico
-          </button>
-          <div className="fin-tabs-actions">
-            <button className="fin-btn fin-btn--ghost fin-btn--sm fin-btn--muted" onClick={handleReset}>
-              ↺ Fechar período
+          <div className="fin-tabs-group">
+            <button className={`fin-tab ${tab==='current'?'fin-tab--active':''}`} onClick={()=>setTab('current')}>
+              <span className="fin-tab-icon">📅</span> Período Atual
             </button>
+            <button className={`fin-tab ${tab==='recurring'?'fin-tab--active':''}`} onClick={()=>setTab('recurring')}>
+              <span className="fin-tab-icon">🔁</span> Recorrentes
+            </button>
+            <button className={`fin-tab ${tab==='history'?'fin-tab--active':''}`} onClick={()=>setTab('history')}>
+              <span className="fin-tab-icon">📊</span> Histórico
+            </button>
+          </div>
+          <div className="fin-tabs-actions">
+            <div className="fin-close-period-group">
+              <button className="fin-btn--close-period" onClick={handleReset}>
+                <span className="fin-btn--close-period-icon">🔒</span> Fechar período
+              </button>
+              <HelpTip inline text="Encerra o período atual: os lançamentos de hoje são enviados para o Histórico e a tela de Período Atual reinicia zerada. Os gastos e rendas recorrentes são recriados automaticamente no novo período. Use isso quando o mês terminar." />
+            </div>
           </div>
         </div>
 
@@ -482,10 +496,16 @@ export function Finance() {
       {resetModal.show && (
         <div className="fin-modal-overlay" onClick={() => setResetModal(m => ({ ...m, show: false }))}>
           <div className="fin-modal" onClick={e => e.stopPropagation()}>
-            <h3 className="fin-modal-title">Fechar período</h3>
+            <div className="fin-modal-icon">🔒</div>
+            <h3 className="fin-modal-title">Fechar período atual</h3>
             <p className="fin-modal-body">
-              Os lançamentos do período atual serão enviados para o histórico e a planilha será reiniciada.
+              Isso encerra o mês corrente e prepara tudo para o próximo. Veja o que vai acontecer:
             </p>
+            <ul className="fin-modal-steps">
+              <li><span>📤</span> Os lançamentos e o saldo deste período vão para o <strong>Histórico</strong>.</li>
+              <li><span>🧹</span> A tela de <strong>Período Atual</strong> reinicia zerada para os novos gastos.</li>
+              <li><span>🔁</span> Gastos e rendas <strong>recorrentes</strong> são recriados automaticamente no novo período.</li>
+            </ul>
             {resetModal.hasConflict && (
               <label className="fin-modal-conflict">
                 <input

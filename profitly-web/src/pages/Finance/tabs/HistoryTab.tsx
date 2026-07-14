@@ -4,6 +4,7 @@ import {
 import type { HistoryData } from '../types'
 import { TYPE_LABELS, TYPE_COLORS, ALL_TYPES } from '../constants'
 import { fmtBRL, fmtMonth, buildMoM } from '../helpers'
+import { HelpTip } from '../components/HelpTip'
 
 interface HistoryTabProps {
   history: HistoryData | null
@@ -18,9 +19,20 @@ interface HistoryTabProps {
 export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHistToChange, onExport, onDeleteMonth }: HistoryTabProps) {
   return (
     <div className="fin-history fin-animate-in">
+      <div className="fin-info-banner">
+        <span className="fin-info-banner-icon">📊</span>
+        <div className="fin-info-banner-body">
+          <strong>Como funciona a aba Histórico</strong>
+          <p>
+            Aqui ficam os meses já encerrados. Sempre que você usa o botão <strong>"Fechar período"</strong>, os lançamentos do mês
+            atual são guardados aqui, permitindo comparar a evolução dos seus gastos mês a mês.
+          </p>
+        </div>
+      </div>
+
       <div className="fin-history-filters">
         <div className="fin-table-header" style={{marginBottom:'1rem'}}>
-          <h3 className="fin-section-title">Histórico de gastos</h3>
+          <h3 className="fin-section-title">Meses fechados</h3>
           <button className="fin-link-btn" onClick={()=>onExport('/api/finance/export/history', 'historico.csv')}>
             ⤓ exportar CSV
           </button>
@@ -57,6 +69,7 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
               <div className="fin-mom fin-animate-in">
                 <h4 className="fin-subsection-title">
                   Comparação mensal — {fmtMonth(mom.curr.yearMonth)} vs {fmtMonth(mom.prev.yearMonth)}
+                  <HelpTip inline text="Compara o mês fechado mais recente com o anterior: quanto o total gasto variou e o quão perto você chegou do que tinha planejado (precisão do orçamento)." />
                 </h4>
                 <div className="fin-mom-cards">
                   <div className={`fin-mom-card fin-mom-card--${mom.totalDelta > 0 ? 'up' : 'down'}`}>
@@ -99,7 +112,9 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
           })()}
 
           <div className="fin-chart-section">
-            <h4 className="fin-subsection-title">Total gasto por mês</h4>
+            <h4 className="fin-subsection-title">Total gasto por mês
+              <HelpTip inline text="Soma de tudo que você gastou em cada mês já fechado, para visualizar a tendência ao longo do tempo." />
+            </h4>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={history.months.map(m=>({name: fmtMonth(m.yearMonth), total: m.total}))}>
                 <XAxis dataKey="name" tick={{fontSize:12}} />
@@ -111,7 +126,9 @@ export function HistoryTab({ history, histFrom, histTo, onHistFromChange, onHist
           </div>
 
           <div className="fin-chart-section">
-            <h4 className="fin-subsection-title">Gastos por categoria ao longo do tempo</h4>
+            <h4 className="fin-subsection-title">Gastos por categoria ao longo do tempo
+              <HelpTip inline text="Mostra como cada categoria (mercado, lazer, moradia, etc.) contribuiu para o total gasto em cada mês, uma cor por categoria." />
+            </h4>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={history.months.map(m => {
                 const row: Record<string, number|string> = { name: fmtMonth(m.yearMonth) }

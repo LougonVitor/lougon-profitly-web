@@ -80,8 +80,9 @@ export function CurrentPeriodTab({
       <div className="fin-income-section fin-animate-in">
         <div className="fin-income-header">
           <h3 className="fin-section-title">Entradas do mês</h3>
-          <button className="fin-link-btn" onClick={()=>setShowAddIncome(v=>!v)}>
-            {showAddIncome ? '✕ fechar' : '+ renda adicional'}
+          <button className={`fin-btn--add ${showAddIncome ? 'fin-btn--add--active' : ''}`} onClick={()=>setShowAddIncome(v=>!v)}>
+            <span className="fin-btn--add-icon">{showAddIncome ? '✕' : '+'}</span>
+            {showAddIncome ? 'Fechar' : 'Renda adicional'}
           </button>
         </div>
 
@@ -160,8 +161,9 @@ export function CurrentPeriodTab({
           <h3 className="fin-section-title">Limites de gastos
             <HelpTip inline text="Defina um teto mensal por categoria. A barra acompanha o quanto já gastou e avisa em âmbar aos 80% e em vermelho ao passar de 100% do limite." />
           </h3>
-          <button className="fin-link-btn" onClick={()=>setShowAddLimit(v=>!v)}>
-            {showAddLimit ? '✕ fechar' : '+ definir limite'}
+          <button className={`fin-btn--add ${showAddLimit ? 'fin-btn--add--active' : ''}`} onClick={()=>setShowAddLimit(v=>!v)}>
+            <span className="fin-btn--add-icon">{showAddLimit ? '✕' : '+'}</span>
+            {showAddLimit ? 'Fechar' : 'Definir limite'}
           </button>
         </div>
 
@@ -221,7 +223,9 @@ export function CurrentPeriodTab({
       {/* ── Expense Table ── */}
       <div className="fin-table-section fin-animate-in">
         <div className="fin-table-header">
-          <h3 className="fin-section-title">Lançamentos</h3>
+          <h3 className="fin-section-title">Lançamentos
+            <HelpTip inline text="Todos os gastos deste período: os recorrentes (já cadastrados na aba Recorrentes) e os avulsos que você lançar aqui. Clique em qualquer valor para editar." />
+          </h3>
           <div className="fin-header-actions">
             <button className="fin-link-btn" onClick={()=>onExport('/api/finance/export/current', 'periodo-atual.csv')}>
               ⤓ exportar
@@ -230,8 +234,9 @@ export function CurrentPeriodTab({
               ⤒ importar
               <input type="file" accept=".csv,text/csv" onChange={onImport} hidden />
             </label>
-            <button className="fin-link-btn" onClick={()=>setShowAdd(v=>!v)}>
-              {showAdd ? '✕ fechar' : '+ novo gasto'}
+            <button className={`fin-btn--add ${showAdd ? 'fin-btn--add--active' : ''}`} onClick={()=>setShowAdd(v=>!v)}>
+              <span className="fin-btn--add-icon">{showAdd ? '✕' : '+'}</span>
+              {showAdd ? 'Fechar' : 'Novo gasto'}
             </button>
           </div>
         </div>
