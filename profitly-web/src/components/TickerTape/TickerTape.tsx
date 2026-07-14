@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useTickers } from '../../hooks/useTickers'
 import type { Ticker } from '../../types/Ticker'
+import { TickerLogo } from '../TickerLogo/TickerLogo'
 import './TickerTape.css'
 
 const FEATURED_SYMBOLS = [
@@ -32,11 +33,10 @@ function TapeItem({ ticker }: TapeItemProps) {
       className="tape-item"
       onClick={() => navigate(`/ticker/${ticker.symbol}`)}
     >
-      <img
+      <TickerLogo
         className="tape-logo"
-        src={ticker.logoUrl ?? ''}
+        src={ticker.logoUrl}
         alt={ticker.symbol}
-        onError={e => (e.currentTarget.style.display = 'none')}
       />
       <span className="tape-symbol">{ticker.symbol}</span>
       <span className="tape-price">{fmtBRL(ticker.lastPrice)}</span>

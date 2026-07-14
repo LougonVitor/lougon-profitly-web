@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import type { Ticker } from '../../types/Ticker'
+import { TickerLogo } from '../TickerLogo/TickerLogo'
 import './StockRow.css'
 
 interface StockRowProps {
@@ -38,13 +39,12 @@ export function StockRow({ ticker }: StockRowProps) {
     <tr className="stock-row stock-row--clickable" onClick={() => navigate(`/ticker/${ticker.symbol}`)}>
       <td>
         <div className="stock-info">
-          <img
+          <TickerLogo
             className="stock-logo"
-            src={ticker.logoUrl ?? ''}
+            src={ticker.logoUrl}
             alt={`${ticker.symbol} logo`}
             width={28}
             height={28}
-            onError={e => (e.currentTarget.style.display = 'none')}
           />
           <div>
             <div className="stock-symbol">{ticker.symbol}</div>

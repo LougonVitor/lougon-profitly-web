@@ -4,6 +4,7 @@ import type { PositionEntry, WalletPositionSummary, WalletSummary } from '../../
 import { usePositionEntries } from '../../hooks/usePositionEntries'
 import { EditEntryModal } from '../EditEntryModal/EditEntryModal'
 import { RedeemModal } from '../RedeemModal/RedeemModal'
+import { TickerLogo } from '../TickerLogo/TickerLogo'
 import { useI18n } from '../../i18n/I18nContext'
 import './PositionRow.css'
 
@@ -74,18 +75,13 @@ export function PositionRow({ walletId, position, index, onWalletUpdate }: Posit
         <td>
           <div className="position-identity">
             <div className="position-logo-wrap">
-              {position.logoUrl ? (
-                <img
-                  src={position.logoUrl}
-                  alt={position.ticker}
-                  width={28}
-                  height={28}
-                  className="position-logo"
-                  onError={e => (e.currentTarget.style.display = 'none')}
-                />
-              ) : (
-                <div className="position-logo-fallback">{displayName[0]}</div>
-              )}
+              <TickerLogo
+                src={position.logoUrl}
+                alt={position.ticker}
+                width={28}
+                height={28}
+                className="position-logo"
+              />
             </div>
             <div>
               {isFixedIncome ? (

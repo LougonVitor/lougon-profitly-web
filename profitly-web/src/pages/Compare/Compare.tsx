@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTickers } from '../../hooks/useTickers'
 import { useStockAnalysis } from '../../hooks/useStockAnalysis'
 import { TickerSelect } from '../../components/TickerSelect/TickerSelect'
+import { TickerLogo } from '../../components/TickerLogo/TickerLogo'
 import { KEY_INDICATORS, fmtIndicator } from '../TickerAnalysis/StockAdvanced'
 import type { StockAnalysisFull } from '../../types/StockAnalysis'
 import './Compare.css'
@@ -41,7 +42,7 @@ function CompareColumn({ symbol, data }: { symbol: string; data: StockAnalysisFu
   const up = (q?.changePercent ?? 0) >= 0
   return (
     <div className="cmp-stock-card" onClick={() => navigate(`/ticker/${symbol}`)}>
-      {q?.logoUrl && <img className="cmp-stock-logo" src={q.logoUrl} alt={symbol} />}
+      <TickerLogo className="cmp-stock-logo" src={q?.logoUrl} alt={symbol} />
       <div className="cmp-stock-symbol">{symbol}</div>
       <div className="cmp-stock-name">{q?.longName ?? q?.shortName ?? ''}</div>
       <div className="cmp-stock-price">{fmtBRL(q?.price)}</div>

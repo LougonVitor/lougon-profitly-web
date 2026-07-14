@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
 import { TickerTape } from '../../components/TickerTape/TickerTape'
+import { TickerLogo } from '../../components/TickerLogo/TickerLogo'
 import { NewsSection } from './NewsSection'
 import './Dashboard.css'
 
@@ -105,16 +106,7 @@ function RankingsSection() {
               ) : col.items.map((item, i) => (
                 <div key={item.symbol} className="rankings-row" onClick={() => navigate(`/ticker/${item.symbol}`)}>
                   <span className="rankings-rank">#{i + 1}</span>
-                  {item.logoUrl ? (
-                    <img
-                      className="rankings-logo"
-                      src={item.logoUrl}
-                      alt={item.symbol}
-                      onError={e => (e.currentTarget.style.display = 'none')}
-                    />
-                  ) : (
-                    <div className="rankings-logo-placeholder">{item.symbol[0]}</div>
-                  )}
+                  <TickerLogo className="rankings-logo" src={item.logoUrl} alt={item.symbol} />
                   <div className="rankings-info">
                     <span className="rankings-symbol">{item.symbol}</span>
                     <span className="rankings-name">{item.name}</span>
@@ -280,12 +272,7 @@ function MoverRow({ rank, ticker }: MoverRowProps) {
   return (
     <div className="mover-row" onClick={() => navigate(`/ticker/${ticker.symbol}`)}>
       <span className="mover-rank">#{rank}</span>
-      <img
-        className="mover-logo"
-        src={ticker.logoUrl ?? ''}
-        alt={ticker.symbol}
-        onError={e => (e.currentTarget.style.display = 'none')}
-      />
+      <TickerLogo className="mover-logo" src={ticker.logoUrl} alt={ticker.symbol} />
       <div className="mover-info">
         <span className="mover-symbol">{ticker.symbol}</span>
         <span className="mover-price">{fmtBRL(ticker.lastPrice)}</span>

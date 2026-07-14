@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Ticker } from '../../types/Ticker'
+import { TickerLogo } from '../TickerLogo/TickerLogo'
 import './TickerSelect.css'
 
 interface TickerSelectProps {
@@ -62,12 +63,7 @@ export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
         {selected ? (
           <div className="ticker-selected-item">
             <div className="ticker-logo-wrap">
-              {selected.logoUrl ? (
-                <img src={selected.logoUrl} alt={selected.symbol} className="ticker-logo"
-                  onError={e => (e.currentTarget.style.display = 'none')} />
-              ) : (
-                <span className="ticker-logo-fallback">{selected.symbol[0]}</span>
-              )}
+              <TickerLogo src={selected.logoUrl} alt={selected.symbol} className="ticker-logo" />
             </div>
             <div className="ticker-info">
               <span className="ticker-symbol">{displayTitle(selected)}</span>
@@ -100,12 +96,7 @@ export function TickerSelect({ tickers, value, onChange }: TickerSelectProps) {
                 onClick={() => handleSelect(t.symbol)}
               >
                 <div className="ticker-logo-wrap">
-                  {t.logoUrl ? (
-                    <img src={t.logoUrl} alt={t.symbol} className="ticker-logo"
-                      onError={e => (e.currentTarget.style.display = 'none')} />
-                  ) : (
-                    <span className="ticker-logo-fallback">{t.symbol[0]}</span>
-                  )}
+                  <TickerLogo src={t.logoUrl} alt={t.symbol} className="ticker-logo" />
                 </div>
                 <div className="ticker-info">
                   <span className="ticker-symbol">{displayTitle(t)}</span>

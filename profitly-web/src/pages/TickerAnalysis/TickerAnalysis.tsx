@@ -18,6 +18,7 @@ import { useTreasuryBondHistory } from '../../hooks/useTreasuryBond'
 import { useTreasuryAnalysis } from '../../hooks/useTreasuryAnalysis'
 import { useFundAnalysis } from '../../hooks/useFundAnalysis'
 import { useCryptoAnalysis } from '../../hooks/useCryptoAnalysis'
+import { TickerLogo } from '../../components/TickerLogo/TickerLogo'
 import { useFearGreed } from '../../hooks/useFearGreed'
 import { useI18n } from '../../i18n/I18nContext'
 import type { TickerAnalysis } from '../../types/TickerAnalysis'
@@ -2791,12 +2792,7 @@ export function TickerAnalysis() {
             {isTreasury ? (
               <span className="ta-logo--treasury" role="img" aria-label="Tesouro Direto">🏛️</span>
             ) : (
-              <img
-                className="ta-logo"
-                src={analysis.logoUrl ?? ''}
-                alt={analysis.symbol}
-                onError={e => { e.currentTarget.style.display = 'none' }}
-              />
+              <TickerLogo className="ta-logo" src={analysis.logoUrl} alt={analysis.symbol} />
             )}
           </div>
           <div>
