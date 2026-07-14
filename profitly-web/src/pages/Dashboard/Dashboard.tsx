@@ -275,9 +275,10 @@ interface MoverRowProps {
 }
 
 function MoverRow({ rank, ticker }: MoverRowProps) {
+  const navigate = useNavigate()
   const up = (ticker.changePercent ?? 0) >= 0
   return (
-    <div className="mover-row">
+    <div className="mover-row" onClick={() => navigate(`/ticker/${ticker.symbol}`)}>
       <span className="mover-rank">#{rank}</span>
       <img
         className="mover-logo"

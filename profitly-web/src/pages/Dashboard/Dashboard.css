@@ -242,6 +242,7 @@
   padding: 0.625rem 1.25rem;
   border-bottom: 1px solid var(--border-subtle);
   transition: background 0.12s;
+  cursor: pointer;
 }
 
 .mover-row:last-child { border-bottom: none; }
