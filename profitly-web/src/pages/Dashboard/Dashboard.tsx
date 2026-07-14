@@ -142,8 +142,8 @@ interface IbovData {
   points: IbovPoint[]
 }
 
-const IBOV_RANGES = ['1d', '7d', '1mo', '6mo', '1y', '5y'] as const
-const IBOV_LABELS: Record<string, string> = { '1d': '1 D', '7d': '7 D', '1mo': '30 D', '6mo': '6 M', '1y': '1 A', '5y': '5 A' }
+const IBOV_RANGES = ['1d', '5d', '1mo', '6mo', '1y', '5y'] as const
+const IBOV_LABELS: Record<string, string> = { '1d': '1 D', '5d': '5 D', '1mo': '30 D', '6mo': '6 M', '1y': '1 A', '5y': '5 A' }
 
 function fmtIbovDate(ts: number, range: string) {
   const d = new Date(ts * 1000)
