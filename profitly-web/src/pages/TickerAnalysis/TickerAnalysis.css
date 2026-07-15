@@ -198,6 +198,12 @@
   -webkit-user-select: none;
 }
 
+.chart-canvas-wrap svg,
+.chart-canvas-wrap svg *,
+.chart-canvas-wrap .recharts-wrapper {
+  outline: none;
+}
+
 .chart-selection-badge {
   display: flex;
   align-items: center;
