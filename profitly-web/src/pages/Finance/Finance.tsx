@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '../../lib/api'
 import type {
   ExpenseType, Expense, CurrentPeriod, RecurringExpense, RecurringIncome,
-  Settings, HistoryData,
+  Settings, HistoryData, BudgetRow,
 } from './types'
 import { INVEST_PCTS } from './constants'
+import type { BudgetView } from './components/BudgetSection'
 import { CurrentPeriodTab } from './tabs/CurrentPeriodTab'
 import { HistoryTab } from './tabs/HistoryTab'
 import { RecurringTab } from './tabs/RecurringTab'
@@ -17,13 +18,17 @@ export function Finance() {
   const [period, setPeriod] = useState<CurrentPeriod | null>(null)
   const [recurringList, setRecurringList] = useState<RecurringExpense[]>([])
   const [history, setHistory] = useState<HistoryData | null>(null)
-  const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null, investmentAuto: true })
+  const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null, investmentAuto: true, savingsTarget: null })
   const [loading, setLoading] = useState(true)
 
   // Salary editing
   const [editingSalary, setEditingSalary] = useState(false)
   const [salaryInput, setSalaryInput] = useState('')
   const salaryRef = useRef<HTMLInputElement>(null)
+
+  // Savings target editing
+  const [editingSavings, setEditingSavings] = useState(false)
+  const [savingsTargetInput, setSavingsTargetInput] = useState('')
 
   // Add income
   const [showAddIncome, setShowAddIncome] = useState(false)
@@ -61,10 +66,11 @@ export function Finance() {
   const [investPct, setInvestPct] = useState<number>(25)
   const [investManual, setInvestManual] = useState('')
 
-  // Budget limits
+  // Budget per category (o antigo "limite de gastos")
   const [showAddLimit, setShowAddLimit] = useState(false)
   const [limitType, setLimitType] = useState<ExpenseType>('SUPERMARKET')
   const [limitValue, setLimitValue] = useState('')
+  const [budgetView, setBudgetView] = useState<BudgetView>('list')
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
@@ -106,6 +112,7 @@ export function Finance() {
       setPeriod(pRes.data)
       setSettings(sRes.data)
       setSalaryInput(sRes.data.netSalary?.toString() ?? '')
+      setSavingsTargetInput(sRes.data.savingsTarget?.toString() ?? '')
     } catch {
       // 401/403 handled by PrivateRoute — no redirect needed here
     } finally { setLoading(false) }
@@ -120,6 +127,7 @@ export function Finance() {
     const res = await api.get<Settings>('/api/finance/settings')
     setSettings(res.data)
     setSalaryInput(res.data.netSalary?.toString() ?? '')
+    setSavingsTargetInput(res.data.savingsTarget?.toString() ?? '')
   }
 
   async function loadHistory() {
@@ -144,26 +152,27 @@ export function Finance() {
     setRecurringIncomeList(inc.data)
   }
 
-  async function handleSaveSalary() {
-    setEditingSalary(false)
-    const val = salaryInput ? parseFloat(salaryInput) : null
-    await api.put('/api/finance/settings', {
-      resetDay: settings.resetDay,
-      netSalary: val,
-      investmentTarget: settings.investmentTarget,
-      investmentAuto: settings.investmentAuto,
-    })
+  /**
+   * O PUT de settings substitui o registro inteiro, então qualquer campo omitido
+   * seria apagado. Sempre parta do estado atual e sobrescreva só o que mudou.
+   */
+  async function saveSettings(patch: Partial<Settings>) {
+    await api.put('/api/finance/settings', { ...settings, ...patch })
     await Promise.all([refreshSettings(), refreshPeriod()])
   }
 
+  async function handleSaveSalary() {
+    setEditingSalary(false)
+    await saveSettings({ netSalary: salaryInput ? parseFloat(salaryInput) : null })
+  }
+
   async function handleSetInvestmentAuto(auto: boolean) {
-    await api.put('/api/finance/settings', {
-      resetDay: settings.resetDay,
-      netSalary: settings.netSalary,
-      investmentTarget: settings.investmentTarget,
-      investmentAuto: auto,
-    })
-    await Promise.all([refreshSettings(), refreshPeriod()])
+    await saveSettings({ investmentAuto: auto })
+  }
+
+  async function handleSaveSavingsTarget() {
+    setEditingSavings(false)
+    await saveSettings({ savingsTarget: savingsTargetInput ? parseFloat(savingsTargetInput) : null })
   }
 
   async function handleAddIncome(e: React.FormEvent) {
@@ -362,6 +371,18 @@ export function Finance() {
     await refreshPeriod()
   }
 
+  function toggleLimitForm() {
+    if (showAddLimit) { setShowAddLimit(false); setLimitValue('') }
+    else setShowAddLimit(true)
+  }
+
+  /** O lápis da linha carrega a categoria no próprio form de definir orçamento. */
+  function handleEditBudget(row: BudgetRow) {
+    setLimitType(row.type)
+    setLimitValue(row.budget > 0 ? row.budget.toString() : '')
+    setShowAddLimit(true)
+  }
+
   async function handleDeleteLimit(type: ExpenseType) {
     await api.delete(`/api/finance/budget-limits/${type}`)
     await refreshPeriod()
@@ -431,10 +452,15 @@ export function Finance() {
             incomeDesc={incomeDesc} setIncomeDesc={setIncomeDesc}
             incomeAmount={incomeAmount} setIncomeAmount={setIncomeAmount}
             onAddIncome={handleAddIncome} onDeleteIncome={handleDeleteIncome}
-            showAddLimit={showAddLimit} setShowAddLimit={setShowAddLimit}
+            budgetView={budgetView} setBudgetView={setBudgetView}
+            showAddLimit={showAddLimit} onToggleLimitForm={toggleLimitForm}
             limitType={limitType} setLimitType={setLimitType}
             limitValue={limitValue} setLimitValue={setLimitValue}
             onSaveLimit={handleSaveLimit} onDeleteLimit={handleDeleteLimit}
+            onEditBudget={handleEditBudget}
+            savingsTargetInput={savingsTargetInput} setSavingsTargetInput={setSavingsTargetInput}
+            editingSavings={editingSavings} setEditingSavings={setEditingSavings}
+            onSaveSavingsTarget={handleSaveSavingsTarget}
             showAdd={showAdd} setShowAdd={setShowAdd}
             addTitle={addTitle} setAddTitle={setAddTitle}
             addReal={addReal} setAddReal={setAddReal}

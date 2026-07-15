@@ -1,9 +1,13 @@
 import type { Dispatch, SetStateAction, FormEvent, ChangeEvent, RefObject } from 'react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField } from '../types'
-import { TYPE_LABELS, TYPE_COLORS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
-import { fmtBRL, buildCategoryBreakdown, spentForType } from '../helpers'
-import { SummaryCard } from '../components/SummaryCard'
+import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField, BudgetRow } from '../types'
+import { TYPE_LABELS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
+import {
+  fmtBRL, buildCategoryBreakdown, buildBudgetRows, buildAlerts, pctOf, projectSavings, daysLeftInPeriod,
+} from '../helpers'
+import { KpiCard } from '../components/KpiCard'
+import { AlertsPanel } from '../components/AlertsPanel'
+import { BudgetSection, type BudgetView } from '../components/BudgetSection'
 import { ExpenseRow } from '../components/ExpenseRow'
 import { HelpTip } from '../components/HelpTip'
 
@@ -20,12 +24,18 @@ interface CurrentPeriodTabProps {
   incomeAmount: string; setIncomeAmount: Dispatch<SetStateAction<string>>
   onAddIncome: (e: FormEvent) => void
   onDeleteIncome: (id: number) => void
-  // Budget limits
-  showAddLimit: boolean; setShowAddLimit: Dispatch<SetStateAction<boolean>>
+  // Budget per category (o antigo "limite de gastos")
+  budgetView: BudgetView; setBudgetView: Dispatch<SetStateAction<BudgetView>>
+  showAddLimit: boolean; onToggleLimitForm: () => void
   limitType: ExpenseType; setLimitType: Dispatch<SetStateAction<ExpenseType>>
   limitValue: string; setLimitValue: Dispatch<SetStateAction<string>>
   onSaveLimit: (e: FormEvent) => void
   onDeleteLimit: (type: ExpenseType) => void
+  onEditBudget: (row: BudgetRow) => void
+  // Savings target
+  savingsTargetInput: string; setSavingsTargetInput: Dispatch<SetStateAction<string>>
+  editingSavings: boolean; setEditingSavings: Dispatch<SetStateAction<boolean>>
+  onSaveSavingsTarget: () => void
   // Add expense
   showAdd: boolean; setShowAdd: Dispatch<SetStateAction<boolean>>
   addTitle: string; setAddTitle: Dispatch<SetStateAction<string>>
@@ -57,8 +67,10 @@ export function CurrentPeriodTab({
   editingSalary, setEditingSalary, salaryInput, setSalaryInput, salaryRef, onSaveSalary,
   showAddIncome, setShowAddIncome, incomeDesc, setIncomeDesc, incomeAmount, setIncomeAmount,
   onAddIncome, onDeleteIncome,
-  showAddLimit, setShowAddLimit, limitType, setLimitType, limitValue, setLimitValue,
-  onSaveLimit, onDeleteLimit,
+  budgetView, setBudgetView,
+  showAddLimit, onToggleLimitForm, limitType, setLimitType, limitValue, setLimitValue,
+  onSaveLimit, onDeleteLimit, onEditBudget,
+  savingsTargetInput, setSavingsTargetInput, editingSavings, setEditingSavings, onSaveSavingsTarget,
   showAdd, setShowAdd, addTitle, setAddTitle, addReal, setAddReal, addType, setAddType, onAddExpense,
   onExport, onImport,
   editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onDelete,
@@ -73,6 +85,15 @@ export function CurrentPeriodTab({
   const invEst = inv?.estimatedValue ?? period.investmentTarget ?? 0
   const extraInvDeduction = inv?.estimatedValue == null ? invEst : 0
   const saldoFinalEstimado = period.totalIncome - period.totalEstimated - extraInvDeduction
+
+  const budgetRows = buildBudgetRows(period.expenses, period.budgetLimits)
+  const alerts = buildAlerts(budgetRows)
+
+  const savingsPct = period.savingsTarget && period.savingsTarget > 0
+    ? (period.savedThisMonth / period.savingsTarget) * 100
+    : null
+  const daysLeft = daysLeftInPeriod(period.resetDay)
+  const projected = projectSavings(period.expenses, period.totalIncome)
 
   return (
     <>
@@ -141,83 +162,129 @@ export function CurrentPeriodTab({
         )}
       </div>
 
-      {/* ── Summary Cards ── */}
-      <div className="fin-cards">
-        <SummaryCard label="Saldo Atual" value={period.balance} icon={period.balance >= 0 ? '✅' : '⚠️'}
-          tone={period.balance >= 0 ? 'pos' : 'neg'}
-          help="Total de entradas menos o que você já gastou. É quanto ainda sobra do que entrou até agora." />
-        <SummaryCard label="Gastos Esperados" value={period.totalEstimated} icon="📋"
-          help="Soma do que você planejou gastar no período — a coluna Gastos esperados de cada lançamento." />
-        <SummaryCard label="Total Gasto" value={period.totalReal} icon="💳"
-          help="Soma de tudo que você já gastou neste período — a coluna Valor gasto de todos os lançamentos." />
-        <SummaryCard label="Saldo Final Esperado" value={saldoFinalEstimado} icon="🎯"
+      {/* ── Indicadores de saúde do mês ── */}
+      <div className="fin-kpis">
+        <KpiCard
+          label="Renda do mês" value={period.totalIncome} caption="Total recebido" tone="accent"
+          help="Salário líquido mais todas as rendas adicionais e recorrentes deste período."
+        />
+        <KpiCard
+          label="Gastos do mês" value={period.totalSpent}
+          pct={pctOf(period.totalSpent, period.totalIncome)}
+          caption="Sem contar o investimento" tone="neg"
+          help="Tudo que já saiu no período, exceto o investimento — investir não é gastar, então as duas coisas aparecem separadas."
+        />
+        <KpiCard
+          label="Investido no mês" value={period.investedReal}
+          pct={pctOf(period.investedReal, period.totalIncome)}
+          caption={period.investmentAuto ? '📊 da carteira' : 'Valor manual'} tone="invest"
+          help="Quanto você aplicou no período. No modo Carteira o valor vem das compras da sua carteira de investimentos."
+        />
+        <KpiCard
+          label="Poupança do mês" value={period.savedThisMonth}
+          pct={pctOf(period.savedThisMonth, period.totalIncome)}
+          caption={period.savingsTarget ? `Meta: ${fmtBRL(period.savingsTarget)}` : 'Sobrou depois de gastar e investir'}
+          tone={period.savedThisMonth >= 0 ? 'pos' : 'neg'}
+          progressPct={savingsPct}
+          progressLabel={savingsPct != null ? `${Math.round(savingsPct)}% da meta` : undefined}
+          help="O que sobrou das entradas depois dos gastos e do investimento. Defina uma meta mensal para acompanhar o progresso."
+        />
+        <KpiCard
+          label="Saldo final esperado" value={saldoFinalEstimado}
+          caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'} no período`}
           tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'}
-          help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado)." />
+          help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado)."
+        />
       </div>
 
-      {/* ── Budget limits ── */}
-      <div className="fin-limits-section fin-animate-in">
-        <div className="fin-table-header">
-          <h3 className="fin-section-title">Limites de gastos
-            <HelpTip inline text="Defina um teto mensal por categoria. A barra acompanha o quanto já gastou e avisa em âmbar aos 80% e em vermelho ao passar de 100% do limite." />
-          </h3>
-          <button className={`fin-btn--add ${showAddLimit ? 'fin-btn--add--active' : ''}`} onClick={()=>setShowAddLimit(v=>!v)}>
-            <span className="fin-btn--add-icon">{showAddLimit ? '✕' : '+'}</span>
-            {showAddLimit ? 'Fechar' : 'Definir limite'}
-          </button>
+      {/* ── Orçamento por categoria + alertas ── */}
+      <div className="fin-budget-grid">
+        <BudgetSection
+          rows={budgetRows}
+          view={budgetView}
+          onViewChange={setBudgetView}
+          showForm={showAddLimit}
+          onToggleForm={onToggleLimitForm}
+          formType={limitType}
+          onFormTypeChange={setLimitType}
+          formValue={limitValue}
+          onFormValueChange={setLimitValue}
+          onSubmit={onSaveLimit}
+          onEditBudget={onEditBudget}
+          onDeleteBudget={onDeleteLimit}
+        />
+        <AlertsPanel alerts={alerts} />
+      </div>
+
+      {/* ── Meta de poupança + projeção ── */}
+      <div className="fin-savings-strip fin-animate-in">
+        <div className="fin-savings-tip">
+          <span className="fin-savings-tip-icon">💡</span>
+          <div>
+            <div className="fin-savings-tip-title">Dica do mês</div>
+            <p className="fin-savings-tip-text">{savingsTip(savingsPct, period.savedThisMonth, alerts.length)}</p>
+          </div>
         </div>
 
-        {showAddLimit && (
-          <form className="fin-mini-form fin-animate-in" onSubmit={onSaveLimit}>
-            <select className="fin-input fin-input--short" value={limitType}
-              onChange={e=>setLimitType(e.target.value as ExpenseType)}>
-              {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-            </select>
-            <input className="fin-input fin-input--short" type="number" step="0.01" min="0"
-              placeholder="Limite mensal (R$)" value={limitValue}
-              onChange={e=>setLimitValue(e.target.value)} required />
-            <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Salvar</button>
-          </form>
-        )}
-
-        {period.budgetLimits.length === 0 ? (
-          <p className="fin-recurring-desc">
-            Defina limites por categoria para acompanhar quanto já gastou e receber alertas ao ultrapassá-los.
-          </p>
-        ) : (
-          <div className="fin-limits-grid">
-            {period.budgetLimits.map(limit => {
-              const spent = spentForType(period.expenses, limit.type)
-              const ratio = limit.monthlyLimit > 0 ? spent / limit.monthlyLimit : 0
-              const pct = Math.min(ratio * 100, 100)
-              const state = ratio > 1 ? 'over' : ratio >= 0.8 ? 'warn' : 'ok'
-              return (
-                <div key={limit.type} className={`fin-limit-card fin-limit-card--${state}`}>
-                  <div className="fin-limit-head">
-                    <span className="fin-type-badge"
-                      style={{background:TYPE_COLORS[limit.type]+'22', color:TYPE_COLORS[limit.type]}}>
-                      {TYPE_LABELS[limit.type]}
-                    </span>
-                    <button className="fin-limit-del" onClick={()=>onDeleteLimit(limit.type)} title="Remover limite">✕</button>
-                  </div>
-                  <div className="fin-limit-values">
-                    <span className="fin-limit-spent">{fmtBRL(spent)}</span>
-                    <span className="fin-limit-sep"> / {fmtBRL(limit.monthlyLimit)}</span>
-                  </div>
-                  <div className="fin-limit-bar">
-                    <div className="fin-limit-bar-fill" style={{width:`${pct}%`}} />
-                  </div>
-                  {state === 'over' && (
-                    <span className="fin-limit-alert">⚠️ Excedeu em {fmtBRL(spent - limit.monthlyLimit)}</span>
-                  )}
-                  {state === 'warn' && (
-                    <span className="fin-limit-note">{Math.round(ratio*100)}% do limite</span>
-                  )}
-                </div>
-              )
-            })}
+        <div className="fin-savings-block">
+          <div className="fin-savings-label">
+            Meta de poupança
+            <HelpTip inline text="Quanto você pretende guardar por mês. Serve de referência para o card de Poupança do mês." />
           </div>
-        )}
+          {editingSavings ? (
+            <div className="fin-salary-edit">
+              <span className="fin-salary-prefix">R$</span>
+              <input
+                className="fin-salary-input"
+                autoFocus
+                type="number"
+                step="0.01"
+                min="0"
+                value={savingsTargetInput}
+                onChange={e=>setSavingsTargetInput(e.target.value)}
+                onBlur={onSaveSavingsTarget}
+                onKeyDown={e=>{ if(e.key==='Enter') onSaveSavingsTarget(); if(e.key==='Escape') setEditingSavings(false) }}
+              />
+            </div>
+          ) : (
+            <button className="fin-savings-value" onClick={()=>setEditingSavings(true)} title="Clique para editar">
+              {period.savingsTarget
+                ? <>{fmtBRL(period.savedThisMonth)} <span className="fin-savings-of">/ {fmtBRL(period.savingsTarget)}</span></>
+                : <span className="fin-savings-unset">definir meta</span>}
+              <span className="fin-edit-hint">✎</span>
+            </button>
+          )}
+          {savingsPct != null && (
+            <div className="fin-savings-track">
+              <div
+                className="fin-savings-fill"
+                style={{ width: `${Math.min(Math.max(savingsPct, 0), 100)}%` }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="fin-savings-block">
+          <div className="fin-savings-label">Dias restantes no mês</div>
+          <div className="fin-savings-big">{daysLeft}</div>
+        </div>
+
+        <div className="fin-savings-block">
+          <div className="fin-savings-label">
+            Projeção de poupança
+            <HelpTip inline text="Estimativa do que sobra no fim do período se cada lançamento fechar no valor planejado — já contando as categorias que passaram do orçamento." />
+          </div>
+          <div className={`fin-savings-big ${projected < 0 ? 'fin-savings-big--neg' : ''}`}>
+            {fmtBRL(projected)}
+          </div>
+          {period.savingsTarget != null && (
+            <span className="fin-savings-note">
+              {projected >= period.savingsTarget
+                ? 'Você deve alcançar sua meta! 🎉'
+                : `Faltam ${fmtBRL(period.savingsTarget - projected)} para a meta`}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Expense Table ── */}
@@ -489,4 +556,18 @@ export function CurrentPeriodTab({
       })()}
     </>
   )
+}
+
+/** Frase da "Dica do mês": comenta o que os números já mostram, sem inventar conselho. */
+function savingsTip(savingsPct: number | null, saved: number, alertCount: number): string {
+  if (saved < 0) {
+    return 'Suas saídas passaram das entradas neste período. Revise as categorias acima para ver onde ajustar.'
+  }
+  if (savingsPct == null) {
+    return 'Defina uma meta de poupança para o sistema acompanhar seu progresso todo mês.'
+  }
+  if (savingsPct >= 100) return 'Você já bateu sua meta de poupança neste mês. Excelente! 🎉'
+  if (savingsPct >= 60) return 'Você está muito perto de atingir sua meta de poupança. Continue assim!'
+  if (alertCount > 0) return 'Alguns orçamentos estão perto do limite — segurar neles ajuda a chegar na meta.'
+  return 'Ainda dá tempo de aumentar sua poupança neste mês. Pequenos cortes fazem diferença.'
 }
