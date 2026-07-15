@@ -1,10 +1,7 @@
 import type { Dispatch, SetStateAction, FormEvent, ChangeEvent, RefObject } from 'react'
-import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField, BudgetRow } from '../types'
 import { TYPE_LABELS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
-import {
-  fmtBRL, buildCategoryBreakdown, buildBudgetRows, buildAlerts, pctOf, projectSavings, daysLeftInPeriod,
-} from '../helpers'
+import { fmtBRL, fmtPct, buildBudgetRows, buildAlerts, pctOf, daysLeftInPeriod } from '../helpers'
 import { KpiCard } from '../components/KpiCard'
 import { AlertsPanel } from '../components/AlertsPanel'
 import { BudgetSection, type BudgetView } from '../components/BudgetSection'
@@ -31,7 +28,12 @@ interface CurrentPeriodTabProps {
   limitValue: string; setLimitValue: Dispatch<SetStateAction<string>>
   onSaveLimit: (e: FormEvent) => void
   onDeleteLimit: (type: ExpenseType) => void
-  onEditBudget: (row: BudgetRow) => void
+  editingBudgetType: ExpenseType | null
+  budgetEditVal: string
+  onStartBudgetEdit: (row: BudgetRow) => void
+  onBudgetEditChange: (v: string) => void
+  onCommitBudgetEdit: () => void
+  onCancelBudgetEdit: () => void
   // Savings target
   savingsTargetInput: string; setSavingsTargetInput: Dispatch<SetStateAction<string>>
   editingSavings: boolean; setEditingSavings: Dispatch<SetStateAction<boolean>>
@@ -69,7 +71,9 @@ export function CurrentPeriodTab({
   onAddIncome, onDeleteIncome,
   budgetView, setBudgetView,
   showAddLimit, onToggleLimitForm, limitType, setLimitType, limitValue, setLimitValue,
-  onSaveLimit, onDeleteLimit, onEditBudget,
+  onSaveLimit, onDeleteLimit,
+  editingBudgetType, budgetEditVal, onStartBudgetEdit, onBudgetEditChange,
+  onCommitBudgetEdit, onCancelBudgetEdit,
   savingsTargetInput, setSavingsTargetInput, editingSavings, setEditingSavings, onSaveSavingsTarget,
   showAdd, setShowAdd, addTitle, setAddTitle, addReal, setAddReal, addType, setAddType, onAddExpense,
   onExport, onImport,
@@ -93,7 +97,6 @@ export function CurrentPeriodTab({
     ? (period.savedThisMonth / period.savingsTarget) * 100
     : null
   const daysLeft = daysLeftInPeriod(period.resetDay)
-  const projected = projectSavings(period.expenses, period.totalIncome)
 
   return (
     <>
@@ -183,12 +186,47 @@ export function CurrentPeriodTab({
         <KpiCard
           label="Poupança do mês" value={period.savedThisMonth}
           pct={pctOf(period.savedThisMonth, period.totalIncome)}
-          caption={period.savingsTarget ? `Meta: ${fmtBRL(period.savingsTarget)}` : 'Sobrou depois de gastar e investir'}
+          caption="Sobrou depois de gastar e investir"
           tone={period.savedThisMonth >= 0 ? 'pos' : 'neg'}
-          progressPct={savingsPct}
-          progressLabel={savingsPct != null ? `${Math.round(savingsPct)}% da meta` : undefined}
           help="O que sobrou das entradas depois dos gastos e do investimento. Defina uma meta mensal para acompanhar o progresso."
-        />
+        >
+          <div className="fin-kpi-goal">
+            {editingSavings ? (
+              <div className="fin-kpi-goal-edit">
+                <span className="fin-kpi-goal-prefix">Meta R$</span>
+                <input
+                  className="fin-kpi-goal-input"
+                  autoFocus
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={savingsTargetInput}
+                  onChange={e=>setSavingsTargetInput(e.target.value)}
+                  onBlur={onSaveSavingsTarget}
+                  onKeyDown={e=>{ if(e.key==='Enter') onSaveSavingsTarget(); if(e.key==='Escape') setEditingSavings(false) }}
+                />
+              </div>
+            ) : (
+              <button className="fin-kpi-goal-btn" onClick={()=>setEditingSavings(true)} title="Clique para editar a meta">
+                {period.savingsTarget != null
+                  ? <>Meta: {fmtBRL(period.savingsTarget)}</>
+                  : <span className="fin-kpi-goal-unset">definir meta mensal</span>}
+                <span className="fin-edit-hint">✎</span>
+              </button>
+            )}
+            {savingsPct != null && (
+              <>
+                <div className="fin-kpi-progress-track">
+                  <div
+                    className="fin-kpi-progress-fill"
+                    style={{ width: `${Math.min(Math.max(savingsPct, 0), 100)}%` }}
+                  />
+                </div>
+                <span className="fin-kpi-progress-label">{fmtPct(savingsPct)} da meta</span>
+              </>
+            )}
+          </div>
+        </KpiCard>
         <KpiCard
           label="Saldo final esperado" value={saldoFinalEstimado}
           caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'} no período`}
@@ -210,81 +248,15 @@ export function CurrentPeriodTab({
           formValue={limitValue}
           onFormValueChange={setLimitValue}
           onSubmit={onSaveLimit}
-          onEditBudget={onEditBudget}
           onDeleteBudget={onDeleteLimit}
+          editingType={editingBudgetType}
+          editValue={budgetEditVal}
+          onStartEdit={onStartBudgetEdit}
+          onEditChange={onBudgetEditChange}
+          onCommitEdit={onCommitBudgetEdit}
+          onCancelEdit={onCancelBudgetEdit}
         />
         <AlertsPanel alerts={alerts} />
-      </div>
-
-      {/* ── Meta de poupança + projeção ── */}
-      <div className="fin-savings-strip fin-animate-in">
-        <div className="fin-savings-tip">
-          <span className="fin-savings-tip-icon">💡</span>
-          <div>
-            <div className="fin-savings-tip-title">Dica do mês</div>
-            <p className="fin-savings-tip-text">{savingsTip(savingsPct, period.savedThisMonth, alerts.length)}</p>
-          </div>
-        </div>
-
-        <div className="fin-savings-block">
-          <div className="fin-savings-label">
-            Meta de poupança
-            <HelpTip inline text="Quanto você pretende guardar por mês. Serve de referência para o card de Poupança do mês." />
-          </div>
-          {editingSavings ? (
-            <div className="fin-salary-edit">
-              <span className="fin-salary-prefix">R$</span>
-              <input
-                className="fin-salary-input"
-                autoFocus
-                type="number"
-                step="0.01"
-                min="0"
-                value={savingsTargetInput}
-                onChange={e=>setSavingsTargetInput(e.target.value)}
-                onBlur={onSaveSavingsTarget}
-                onKeyDown={e=>{ if(e.key==='Enter') onSaveSavingsTarget(); if(e.key==='Escape') setEditingSavings(false) }}
-              />
-            </div>
-          ) : (
-            <button className="fin-savings-value" onClick={()=>setEditingSavings(true)} title="Clique para editar">
-              {period.savingsTarget
-                ? <>{fmtBRL(period.savedThisMonth)} <span className="fin-savings-of">/ {fmtBRL(period.savingsTarget)}</span></>
-                : <span className="fin-savings-unset">definir meta</span>}
-              <span className="fin-edit-hint">✎</span>
-            </button>
-          )}
-          {savingsPct != null && (
-            <div className="fin-savings-track">
-              <div
-                className="fin-savings-fill"
-                style={{ width: `${Math.min(Math.max(savingsPct, 0), 100)}%` }}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="fin-savings-block">
-          <div className="fin-savings-label">Dias restantes no mês</div>
-          <div className="fin-savings-big">{daysLeft}</div>
-        </div>
-
-        <div className="fin-savings-block">
-          <div className="fin-savings-label">
-            Projeção de poupança
-            <HelpTip inline text="Estimativa do que sobra no fim do período se cada lançamento fechar no valor planejado — já contando as categorias que passaram do orçamento." />
-          </div>
-          <div className={`fin-savings-big ${projected < 0 ? 'fin-savings-big--neg' : ''}`}>
-            {fmtBRL(projected)}
-          </div>
-          {period.savingsTarget != null && (
-            <span className="fin-savings-note">
-              {projected >= period.savingsTarget
-                ? 'Você deve alcançar sua meta! 🎉'
-                : `Faltam ${fmtBRL(period.savingsTarget - projected)} para a meta`}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* ── Expense Table ── */}
@@ -499,75 +471,6 @@ export function CurrentPeriodTab({
         </div>
       </div>
 
-      {/* ── Gastos por categoria: donut (estimated share) + estimated-vs-real per category ── */}
-      {(() => {
-        const { rows, max } = buildCategoryBreakdown(period.expenses)
-        if (rows.length === 0) return null
-        const donutData = rows.filter(r => r.estimated > 0)
-        return (
-          <div className="fin-chart-section fin-animate-in">
-            <div className="fin-cat-header">
-              <h3 className="fin-section-title">Gastos por categoria</h3>
-              <span className="fin-cat-caption">barra: esperado (clara) vs gasto (sólida)</span>
-            </div>
-            <div className="fin-breakdown">
-              {donutData.length > 0 && (
-                <ResponsiveContainer width={220} height={220}>
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      dataKey="estimated"
-                      nameKey="name"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                    >
-                      {donutData.map(d => <Cell key={d.type} fill={d.color} />)}
-                    </Pie>
-                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-              <div className="fin-breakdown-legend">
-                {rows.map(r => {
-                  const estPct = max > 0 ? (r.estimated / max) * 100 : 0
-                  const realPct = max > 0 ? (r.real / max) * 100 : 0
-                  const over = r.estimated > 0 && r.real > r.estimated
-                  const realColor = over ? '#ef4444' : r.color
-                  return (
-                    <div key={r.type} className="fin-cat-row">
-                      <div className="fin-cat-line">
-                        <span className="fin-cat-dot" style={{background:r.color}} />
-                        <span className="fin-cat-name">{r.name}</span>
-                        <span className="fin-cat-real" style={{color:realColor}}>{fmtBRL(r.real)}</span>
-                        <span className="fin-cat-est">/ {fmtBRL(r.estimated)}</span>
-                      </div>
-                      <div className="fin-cat-track">
-                        <div className="fin-cat-est-bar" style={{width:`${estPct}%`}} />
-                        <div className="fin-cat-real-bar" style={{width:`${realPct}%`, background:realColor}} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
     </>
   )
-}
-
-/** Frase da "Dica do mês": comenta o que os números já mostram, sem inventar conselho. */
-function savingsTip(savingsPct: number | null, saved: number, alertCount: number): string {
-  if (saved < 0) {
-    return 'Suas saídas passaram das entradas neste período. Revise as categorias acima para ver onde ajustar.'
-  }
-  if (savingsPct == null) {
-    return 'Defina uma meta de poupança para o sistema acompanhar seu progresso todo mês.'
-  }
-  if (savingsPct >= 100) return 'Você já bateu sua meta de poupança neste mês. Excelente! 🎉'
-  if (savingsPct >= 60) return 'Você está muito perto de atingir sua meta de poupança. Continue assim!'
-  if (alertCount > 0) return 'Alguns orçamentos estão perto do limite — segurar neles ajuda a chegar na meta.'
-  return 'Ainda dá tempo de aumentar sua poupança neste mês. Pequenos cortes fazem diferença.'
 }

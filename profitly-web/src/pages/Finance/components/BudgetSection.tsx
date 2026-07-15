@@ -19,14 +19,20 @@ interface BudgetSectionProps {
   formValue: string
   onFormValueChange: (v: string) => void
   onSubmit: (e: FormEvent) => void
-  onEditBudget: (row: BudgetRow) => void
   onDeleteBudget: (type: ExpenseType) => void
+  // Edição do orçamento direto na célula
+  editingType: ExpenseType | null
+  editValue: string
+  onStartEdit: (row: BudgetRow) => void
+  onEditChange: (v: string) => void
+  onCommitEdit: () => void
+  onCancelEdit: () => void
 }
 
 export function BudgetSection({
   rows, view, onViewChange, showForm, onToggleForm,
-  formType, onFormTypeChange, formValue, onFormValueChange, onSubmit,
-  onEditBudget, onDeleteBudget,
+  formType, onFormTypeChange, formValue, onFormValueChange, onSubmit, onDeleteBudget,
+  editingType, editValue, onStartEdit, onEditChange, onCommitEdit, onCancelEdit,
 }: BudgetSectionProps) {
   const budgeted = rows.filter(r => r.budget > 0)
 
@@ -35,7 +41,7 @@ export function BudgetSection({
       <div className="fin-table-header">
         <h3 className="fin-section-title">
           Orçamento por categoria
-          <HelpTip inline text="O orçamento é o teto que você define para gastar na categoria no mês. A tela já mostra quanto sobrou e o status, para você não precisar fazer contas." />
+          <HelpTip inline text="O orçamento é o teto que você define para gastar na categoria no mês. Clique no valor da coluna Orçamento para alterá-lo." />
         </h3>
         <div className="fin-header-actions">
           <div className="fin-view-toggle" role="group" aria-label="Forma de visualização">
@@ -54,7 +60,7 @@ export function BudgetSection({
           </div>
           <button className={`fin-btn--add ${showForm ? 'fin-btn--add--active' : ''}`} onClick={onToggleForm}>
             <span className="fin-btn--add-icon">{showForm ? '✕' : '+'}</span>
-            {showForm ? 'Fechar' : 'Definir orçamento'}
+            {showForm ? 'Fechar' : 'Nova categoria'}
           </button>
         </div>
       </div>
@@ -87,51 +93,69 @@ export function BudgetSection({
           Defina um orçamento por categoria para acompanhar quanto ainda pode gastar e receber alertas antes de estourar.
         </p>
       ) : view === 'list' ? (
-        <BudgetTable rows={rows} onEditBudget={onEditBudget} onDeleteBudget={onDeleteBudget} />
+        <BudgetTable
+          rows={rows}
+          onDeleteBudget={onDeleteBudget}
+          editingType={editingType}
+          editValue={editValue}
+          onStartEdit={onStartEdit}
+          onEditChange={onEditChange}
+          onCommitEdit={onCommitEdit}
+          onCancelEdit={onCancelEdit}
+        />
       ) : (
         <BudgetChart rows={rows} />
       )}
 
       {view === 'list' && rows.length > 0 && budgeted.length === 0 && (
         <p className="fin-budget-note">
-          Nenhuma categoria tem orçamento ainda — os valores acima são só o que já foi gasto.
+          Nenhuma categoria tem orçamento ainda — clique em um valor da coluna Orçamento para definir o primeiro.
         </p>
       )}
     </div>
   )
 }
 
-function BudgetTable({ rows, onEditBudget, onDeleteBudget }: {
+interface BudgetTableProps {
   rows: BudgetRow[]
-  onEditBudget: (row: BudgetRow) => void
   onDeleteBudget: (type: ExpenseType) => void
-}) {
+  editingType: ExpenseType | null
+  editValue: string
+  onStartEdit: (row: BudgetRow) => void
+  onEditChange: (v: string) => void
+  onCommitEdit: () => void
+  onCancelEdit: () => void
+}
+
+function BudgetTable({
+  rows, onDeleteBudget, editingType, editValue, onStartEdit, onEditChange, onCommitEdit, onCancelEdit,
+}: BudgetTableProps) {
   return (
-    <div className="fin-table-wrap">
-      <table className="fin-table fin-budget-table">
-        <thead>
-          <tr>
-            <th>Categoria</th>
-            <th>Orçamento
-              <HelpTip inline text="Quanto você planejou gastar nesta categoria no mês." />
-            </th>
-            <th>Gasto atual
-              <HelpTip inline text="Soma do que já saiu nos lançamentos desta categoria." />
-            </th>
-            <th>Disponível
-              <HelpTip inline text="Orçamento menos o gasto atual. Negativo significa que você passou do planejado." />
-            </th>
-            <th className="fin-budget-progress-col">Progresso</th>
-            <th className="fin-th--center">Status
-              <HelpTip inline text="No orçamento = até 80% do planejado, ou exatamente 100%. Atenção = de 80% a 99%, quando ainda dá para estourar. Acima do orçamento = passou do planejado." />
-            </th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.type} className={`fin-row fin-budget-row fin-budget-row--${r.state} fin-animate-row`}>
-              <td className="fin-cell-title">
+    <table className="fin-table fin-budget-table">
+      <thead>
+        <tr>
+          <th className="fin-bcol-cat">Categoria</th>
+          <th className="fin-bcol-num">Orçamento
+            <HelpTip inline text="Quanto você planejou gastar nesta categoria no mês. Clique no valor para alterar." />
+          </th>
+          <th className="fin-bcol-num">Gasto atual
+            <HelpTip inline text="Soma do que já saiu nos lançamentos desta categoria." />
+          </th>
+          <th className="fin-bcol-num">Disponível
+            <HelpTip inline text="Orçamento menos o gasto atual. Negativo significa que você passou do planejado." />
+          </th>
+          <th className="fin-bcol-prog">Progresso</th>
+          <th className="fin-bcol-status">Status
+            <HelpTip inline text="No orçamento = até 80% do planejado, ou exatamente 100%. Atenção = de 80% a 99%, quando ainda dá para estourar. Acima do orçamento = passou do planejado." />
+          </th>
+          <th className="fin-bcol-act"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(r => (
+          <tr key={r.type} className={`fin-row fin-budget-row fin-budget-row--${r.state} fin-animate-row`}>
+            <td className="fin-bcol-cat" data-label="Categoria">
+              <div className="fin-budget-cat">
                 <span className="fin-budget-icon" style={{ background: r.color + '22', color: r.color }}>
                   {TYPE_ICONS[r.type]}
                 </span>
@@ -139,55 +163,82 @@ function BudgetTable({ rows, onEditBudget, onDeleteBudget }: {
                   <span className="fin-budget-name">{r.name}</span>
                   <span className="fin-budget-hint">{TYPE_HINTS[r.type]}</span>
                 </span>
-              </td>
-              <td>{r.budget > 0 ? fmtBRL(r.budget) : <span className="fin-budget-unset">—</span>}</td>
-              <td>{fmtBRL(r.spent)}</td>
-              <td className={r.available < 0 ? 'fin-budget-negative' : 'fin-budget-available'}>
-                {r.budget > 0 ? fmtBRL(r.available) : <span className="fin-budget-unset">—</span>}
-              </td>
-              <td className="fin-budget-progress-col">
-                {r.pct == null ? (
-                  <span className="fin-budget-unset">sem orçamento</span>
-                ) : (
-                  <div className="fin-budget-progress">
-                    <span className="fin-budget-pct">{fmtPct(r.pct)}</span>
-                    <div className="fin-budget-track">
-                      <div
-                        className="fin-budget-fill"
-                        style={{ width: `${Math.min(r.pct, 100)}%`, background: r.state === 'over' ? '#ef4444' : r.color }}
-                      />
-                    </div>
+              </div>
+            </td>
+
+            <td className="fin-bcol-num" data-label="Orçamento">
+              {editingType === r.type ? (
+                <input
+                  className="fin-inline-input fin-inline-input--number"
+                  autoFocus
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  value={editValue}
+                  onChange={e => onEditChange(e.target.value)}
+                  onBlur={onCommitEdit}
+                  onKeyDown={e => { if (e.key === 'Enter') onCommitEdit(); if (e.key === 'Escape') onCancelEdit() }}
+                />
+              ) : (
+                <span
+                  className="fin-editable-cell fin-budget-budget"
+                  onClick={() => onStartEdit(r)}
+                  title="Clique para editar o orçamento"
+                >
+                  {r.budget > 0 ? fmtBRL(r.budget) : <span className="fin-budget-unset">definir</span>}
+                </span>
+              )}
+            </td>
+
+            <td className="fin-bcol-num" data-label="Gasto atual">{fmtBRL(r.spent)}</td>
+
+            <td
+              className={`fin-bcol-num ${r.available < 0 ? 'fin-budget-negative' : 'fin-budget-available'}`}
+              data-label="Disponível"
+            >
+              {r.budget > 0 ? fmtBRL(r.available) : <span className="fin-budget-unset">—</span>}
+            </td>
+
+            <td className="fin-bcol-prog" data-label="Progresso">
+              {r.pct == null ? (
+                <span className="fin-budget-unset">—</span>
+              ) : (
+                <div className="fin-budget-progress">
+                  <span className="fin-budget-pct">{fmtPct(r.pct)}</span>
+                  <div className="fin-budget-track">
+                    <div
+                      className="fin-budget-fill"
+                      style={{ width: `${Math.min(r.pct, 100)}%`, background: r.state === 'over' ? '#ef4444' : r.color }}
+                    />
                   </div>
-                )}
-              </td>
-              <td className="fin-td--center">
-                {r.pct == null ? (
-                  <span className="fin-budget-unset">—</span>
-                ) : (
-                  <span className={`fin-budget-badge fin-budget-badge--${r.state}`}>
-                    {BUDGET_STATE_LABELS[r.state]}
-                  </span>
-                )}
-              </td>
-              <td className="fin-budget-actions">
+                </div>
+              )}
+            </td>
+
+            <td className="fin-bcol-status" data-label="Status">
+              {r.pct == null ? (
+                <span className="fin-budget-unset">—</span>
+              ) : (
+                <span className={`fin-budget-badge fin-budget-badge--${r.state}`}>
+                  {BUDGET_STATE_LABELS[r.state]}
+                </span>
+              )}
+            </td>
+
+            <td className="fin-bcol-act">
+              {r.budget > 0 && (
                 <button
-                  className="fin-icon-btn"
-                  onClick={() => onEditBudget(r)}
-                  title={r.budget > 0 ? 'Editar orçamento' : 'Definir orçamento'}
-                >✎</button>
-                {r.budget > 0 && (
-                  <button
-                    className="fin-icon-btn fin-icon-btn--danger"
-                    onClick={() => onDeleteBudget(r.type)}
-                    title="Remover orçamento"
-                  >✕</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  className="fin-icon-btn fin-icon-btn--danger"
+                  onClick={() => onDeleteBudget(r.type)}
+                  title="Remover orçamento"
+                >✕</button>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 

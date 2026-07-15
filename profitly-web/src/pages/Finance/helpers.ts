@@ -114,35 +114,6 @@ export function buildAlerts(rows: BudgetRow[]): BudgetAlert[] {
     .sort((a, b) => (ALERT_ORDER[a.level] - ALERT_ORDER[b.level]) || ((b.pct ?? 0) - (a.pct ?? 0)))
 }
 
-/**
- * Per-category estimated vs real, plus the estimated total and the largest
- * single value (for scaling bars). Feeds the combined "Gastos por categoria"
- * card: the donut uses `estimated`, the legend rows use both values + `max`.
- */
-export function buildCategoryBreakdown(expenses: Expense[]) {
-  const map = new Map<ExpenseType, { estimated: number; real: number }>()
-  for (const e of expenses) {
-    const cur = map.get(e.type) ?? { estimated: 0, real: 0 }
-    cur.estimated += e.estimatedValue ?? 0
-    cur.real += e.realValue
-    map.set(e.type, cur)
-  }
-  const rows = Array.from(map.entries())
-    .map(([type, v]) => ({
-      type,
-      name: TYPE_LABELS[type],
-      color: TYPE_COLORS[type],
-      estimated: v.estimated,
-      real: v.real,
-    }))
-    .filter(r => r.estimated > 0 || r.real > 0)
-    .sort((a, b) => (b.estimated - a.estimated) || (b.real - a.real))
-
-  const totalEstimated = rows.reduce((s, r) => s + r.estimated, 0)
-  const max = rows.reduce((m, r) => Math.max(m, r.estimated, r.real), 0)
-  return { rows, totalEstimated, max }
-}
-
 export function spentForType(expenses: Expense[], type: ExpenseType) {
   return expenses.filter(e => e.type === type).reduce((sum, e) => sum + e.realValue, 0)
 }
@@ -174,22 +145,6 @@ export function daysLeftInPeriod(resetDay: number, today = new Date()): number {
 
 function daysInMonth(year: number, monthIndex: number) {
   return new Date(year, monthIndex + 1, 0).getDate()
-}
-
-/**
- * Projeta a poupança do fim do período: entradas menos o que cada lançamento
- * ainda deve consumir, contando o maior valor entre o já gasto e o planejado.
- *
- * Não extrapolamos o ritmo diário de gasto de propósito. Os recorrentes caem no
- * começo do período, então "gastou R$ 690 em 5 dias" viraria R$ 138/dia e o mês
- * projetaria um rombo que não existe. O plano é a base honesta; o `max` garante
- * que uma categoria já estourada entre pelo valor real, não pelo estimado.
- */
-export function projectSavings(expenses: Expense[], totalIncome: number): number {
-  const projectedOutflow = expenses.reduce(
-    (sum, e) => sum + Math.max(e.realValue, e.estimatedValue ?? 0), 0,
-  )
-  return totalIncome - projectedOutflow
 }
 
 export function buildMoM(months: MonthSummary[]) {

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { fmtBRL, fmtPct } from '../helpers'
 import { HelpTip } from './HelpTip'
 
@@ -8,35 +9,29 @@ interface KpiCardProps {
   value: number | null
   /** Linha de apoio abaixo do valor (ex.: "Total recebido"). */
   caption?: string
-  /** Percentual da renda. Quando informado, aparece junto ao rótulo. */
+  /**
+   * Percentual da renda. Fica na legenda, junto do caption — no rótulo ele
+   * competia por espaço e quebrava "POUPANÇA DO MÊS" no meio.
+   */
   pct?: number | null
   tone?: KpiTone
   help?: string
-  /** Progresso 0-100 contra uma meta. Quando informado, desenha a barra. */
-  progressPct?: number | null
-  progressLabel?: string
+  /** Rodapé livre do card (ex.: o editor de meta da poupança). */
+  children?: ReactNode
 }
 
-export function KpiCard({
-  label, value, caption, pct, tone = 'neutral', help, progressPct, progressLabel,
-}: KpiCardProps) {
+export function KpiCard({ label, value, caption, pct, tone = 'neutral', help, children }: KpiCardProps) {
+  const captionParts = [pct != null ? `${fmtPct(pct)} da renda` : null, caption].filter(Boolean)
+
   return (
     <div className={`fin-kpi fin-kpi--${tone} fin-animate-in`}>
       {help && <HelpTip text={help} />}
-      <div className="fin-kpi-label">
-        {label}
-        {pct != null && <span className="fin-kpi-pct">{fmtPct(pct)} da renda</span>}
-      </div>
+      <div className="fin-kpi-label">{label}</div>
       <div className="fin-kpi-value">{fmtBRL(value)}</div>
-      {caption && <div className="fin-kpi-caption">{caption}</div>}
-      {progressPct != null && (
-        <div className="fin-kpi-progress">
-          <div className="fin-kpi-progress-track">
-            <div className="fin-kpi-progress-fill" style={{ width: `${Math.min(Math.max(progressPct, 0), 100)}%` }} />
-          </div>
-          {progressLabel && <span className="fin-kpi-progress-label">{progressLabel}</span>}
-        </div>
+      {captionParts.length > 0 && (
+        <div className="fin-kpi-caption">{captionParts.join(' · ')}</div>
       )}
+      {children}
     </div>
   )
 }

@@ -787,59 +787,7 @@
   .fin-charts-row > * { width: 100% !important; }
 }
 
-/* ── Category breakdown (donut + legend) ── */
-.fin-breakdown {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-.fin-breakdown-legend {
-  flex: 1;
-  min-width: 240px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Card header: title + convention caption */
-.fin-cat-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  margin-bottom: 1.25rem;
-}
-.fin-cat-caption { font-size: 11px; color: var(--text-muted); }
-
-/* One category: name + estimated/real values, then an overlaid est/real bar */
-.fin-cat-row { display: flex; flex-direction: column; gap: 5px; }
-.fin-cat-line {
-  display: grid;
-  grid-template-columns: 10px 1fr auto auto;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-}
 .fin-cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; align-self: center; }
-.fin-cat-name { color: var(--text-main); font-weight: 500; }
-.fin-cat-real { font-weight: 700; font-size: 13px; }
-.fin-cat-est { color: var(--text-muted); font-size: 12px; }
-
-/* Overlaid bar: faint estimated track + solid real on top (both scaled to the largest value) */
-.fin-cat-track { position: relative; height: 8px; }
-.fin-cat-est-bar {
-  position: absolute; left: 0; top: 0; height: 100%;
-  border-radius: 999px; background: var(--text-muted); opacity: 0.22;
-}
-.fin-cat-real-bar {
-  position: absolute; left: 0; top: 0; height: 100%;
-  border-radius: 999px; transition: width 0.5s ease;
-}
-@media (max-width: 560px) {
-  .fin-breakdown { justify-content: center; gap: 1.25rem; }
-}
 
 /* ── History ── */
 .fin-history-filters {
@@ -950,24 +898,12 @@
 .fin-kpi--invest .fin-kpi-value { color: #f59e0b; }
 
 .fin-kpi-label {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
   font-size: 10.5px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding-right: 18px; /* deixa o "?" do HelpTip respirar */
-}
-.fin-kpi-pct {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: none;
-  letter-spacing: 0;
-  white-space: nowrap;
 }
 .fin-kpi-value {
   font-size: 20px;
@@ -976,11 +912,27 @@
   margin-top: 6px;
   letter-spacing: -0.02em;
 }
-.fin-kpi-caption { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+.fin-kpi-caption { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
 
-.fin-kpi-progress { margin-top: 8px; }
+/* Meta editável dentro do card de poupança */
+.fin-kpi-goal { margin-top: 9px; }
+.fin-kpi-goal-btn {
+  background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;
+  font-size: 11.5px; font-weight: 700; color: #16a34a;
+  display: inline-flex; align-items: baseline; gap: 4px;
+}
+.fin-kpi-goal-btn:hover .fin-edit-hint { opacity: 1; }
+.fin-kpi-goal-unset { font-weight: 600; color: var(--text-muted); font-style: italic; }
+.fin-kpi-goal-edit { display: flex; align-items: center; gap: 5px; }
+.fin-kpi-goal-prefix { font-size: 11px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.fin-kpi-goal-input {
+  flex: 1; min-width: 0; width: 100%;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 6px; font-size: 12px; font-family: inherit; color: var(--text-main);
+}
+.fin-kpi-goal-input:focus { outline: none; border-color: #378add; }
 .fin-kpi-progress-track {
-  height: 5px; border-radius: 999px; background: var(--border); overflow: hidden;
+  height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: 6px;
 }
 .fin-kpi-progress-fill {
   height: 100%; border-radius: 999px; background: #22c55e; transition: width 0.3s ease;
@@ -995,7 +947,9 @@
   margin-bottom: 1.5rem;
   align-items: start;
 }
-@media (max-width: 1000px) { .fin-budget-grid { grid-template-columns: 1fr; } }
+/* Duas colunas só quando sobra largura real para a tabela: abaixo disso os
+   alertas roubariam 320px e a coluna de categoria ficaria ilegível. */
+@media (max-width: 1180px) { .fin-budget-grid { grid-template-columns: 1fr; } }
 
 .fin-budget-section {
   background: var(--bg-card);
@@ -1022,7 +976,23 @@
 .fin-view-btn:hover { color: var(--text-main); }
 .fin-view-btn--active { background: var(--bg-card); color: #378add; box-shadow: var(--shadow-sm); }
 
-.fin-budget-table th { white-space: nowrap; }
+/* Larguras fixas: a tabela precisa caber no card sem rolagem lateral, então as
+   colunas numéricas têm tamanho definido e a de categoria absorve o resto. */
+.fin-budget-table { table-layout: fixed; width: 100%; }
+/* Cabeçalho pode quebrar em duas linhas: prender em nowrap forçaria a coluna a
+   crescer e comeria a largura da categoria. */
+.fin-budget-table th { white-space: normal; vertical-align: bottom; }
+.fin-budget-table th,
+.fin-budget-table td { padding-left: 8px; padding-right: 8px; }
+.fin-budget-table th:first-child,
+.fin-budget-table td:first-child { padding-left: 0; }
+.fin-bcol-cat    { width: auto; min-width: 0; }
+.fin-bcol-num    { width: 108px; }
+.fin-bcol-prog   { width: 108px; }
+.fin-bcol-status { width: 132px; }
+.fin-bcol-act    { width: 26px; padding-left: 0 !important; padding-right: 0 !important; }
+.fin-budget-table td.fin-bcol-num { font-variant-numeric: tabular-nums; }
+
 .fin-budget-row--warn { background: #f59e0b08; }
 .fin-budget-row--over { background: #ef444408; }
 
@@ -1030,16 +1000,22 @@
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 9px; font-size: 14px; flex: 0 0 auto;
 }
-.fin-cell-title { display: table-cell; }
-.fin-budget-table .fin-cell-title { display: flex; align-items: center; gap: 10px; }
+.fin-budget-cat { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .fin-budget-names { display: flex; flex-direction: column; min-width: 0; }
-.fin-budget-name { font-weight: 600; color: var(--text-main); }
-.fin-budget-hint { font-size: 10.5px; color: var(--text-muted); }
-.fin-budget-unset { color: var(--text-muted); font-size: 12px; }
+.fin-budget-name {
+  font-weight: 600; color: var(--text-main);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fin-budget-hint {
+  font-size: 10.5px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fin-budget-unset { color: var(--text-muted); font-size: 12px; font-style: italic; }
+.fin-budget-budget { font-weight: 600; }
 .fin-budget-available { color: #16a34a; font-weight: 600; }
 .fin-budget-negative { color: #dc2626; font-weight: 700; }
+.fin-budget-table .fin-inline-input { width: 100%; min-width: 0; }
 
-.fin-budget-progress-col { min-width: 130px; }
 .fin-budget-progress { display: flex; flex-direction: column; gap: 4px; }
 .fin-budget-pct { font-size: 11.5px; font-weight: 700; color: var(--text-main); }
 .fin-budget-track {
@@ -1067,10 +1043,53 @@
 [data-theme="dark"] .fin-budget-chart-pct--over { color: #f06c6b; }
 [data-theme="dark"] .fin-kpi--pos .fin-kpi-value { color: #34d49a; }
 [data-theme="dark"] .fin-kpi--neg .fin-kpi-value { color: #f06c6b; }
-[data-theme="dark"] .fin-savings-value { color: #34d49a; }
-[data-theme="dark"] .fin-savings-big--neg { color: #f06c6b; }
+[data-theme="dark"] .fin-kpi-goal-btn { color: #34d49a; }
 
-.fin-budget-actions { white-space: nowrap; text-align: right; }
+/* Abaixo de ~880px sete colunas não cabem sem espremer os valores (medido: a
+   tabela precisa de ~800px de card), então cada linha vira um card e os rótulos
+   do cabeçalho passam para dentro das células. */
+@media (max-width: 880px) {
+  .fin-budget-table,
+  .fin-budget-table tbody,
+  .fin-budget-table tr,
+  .fin-budget-table td { display: block; width: auto; }
+  .fin-budget-table thead { display: none; }
+  .fin-budget-table tr.fin-budget-row {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 10px;
+    background: var(--bg);
+  }
+  .fin-budget-table tr.fin-budget-row--ok   { border-left-color: #22c55e; }
+  .fin-budget-table tr.fin-budget-row--warn { border-left-color: #f59e0b; }
+  .fin-budget-table tr.fin-budget-row--over { border-left-color: #ef4444; }
+  .fin-budget-table td {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: none; padding: 4px 0 !important; text-align: right;
+  }
+  .fin-budget-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    text-align: left; flex: 0 0 auto;
+  }
+  .fin-budget-table td.fin-bcol-cat {
+    justify-content: flex-start; padding-bottom: 8px !important; margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .fin-budget-table td.fin-bcol-cat::before { content: none; }
+  .fin-budget-table td.fin-bcol-prog .fin-budget-progress { flex: 1; max-width: 60%; }
+  .fin-budget-table td.fin-bcol-act {
+    justify-content: flex-end; padding-top: 6px !important;
+  }
+  .fin-budget-table td.fin-bcol-act:empty { display: none; }
+  .fin-budget-table .fin-inline-input { max-width: 130px; }
+  /* A margem negativa do hover do editable-cell vaza para fora do flex — zerar
+     à direita, onde ela empurraria o card. */
+  .fin-budget-table td .fin-editable-cell { margin-right: 0; }
+}
 .fin-icon-btn {
   background: none; border: none; cursor: pointer; color: var(--text-muted);
   font-size: 13px; line-height: 1; padding: 4px 6px; border-radius: 6px;
@@ -1146,47 +1165,6 @@
 .fin-alert-meter { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: 0 0 auto; }
 .fin-alert-pct { font-size: 11.5px; font-weight: 700; color: var(--text-main); }
 .fin-alert-bar { width: 26px; height: 3px; border-radius: 999px; display: block; }
-
-/* ── Faixa de poupança / projeção ── */
-.fin-savings-strip {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
-  align-items: start;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.15rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-@media (max-width: 950px) { .fin-savings-strip { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 520px) { .fin-savings-strip { grid-template-columns: 1fr; } }
-
-.fin-savings-tip { display: flex; gap: 10px; align-items: flex-start; }
-.fin-savings-tip-icon { font-size: 15px; }
-.fin-savings-tip-title { font-size: 12.5px; font-weight: 700; color: #f59e0b; margin-bottom: 3px; }
-.fin-savings-tip-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0; }
-
-.fin-savings-block { min-width: 0; }
-.fin-savings-label {
-  font-size: 10.5px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px;
-}
-.fin-savings-value {
-  background: none; border: none; padding: 0; cursor: pointer;
-  font-size: 15px; font-weight: 800; color: #16a34a; font-family: inherit;
-  display: inline-flex; align-items: baseline; gap: 5px;
-}
-.fin-savings-value:hover .fin-edit-hint { opacity: 1; }
-.fin-savings-of { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.fin-savings-unset { font-size: 13px; font-weight: 600; color: var(--text-muted); font-style: italic; }
-.fin-savings-track {
-  height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: 7px;
-}
-.fin-savings-fill { height: 100%; border-radius: 999px; background: #22c55e; transition: width 0.3s ease; }
-.fin-savings-big { font-size: 19px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
-.fin-savings-big--neg { color: #dc2626; }
-.fin-savings-note { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); }
 
 /* ── Recurring extras ── */
 .fin-input--tiny { width: 90px; flex: 0 0 auto; }

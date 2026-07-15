@@ -71,6 +71,9 @@ export function Finance() {
   const [limitType, setLimitType] = useState<ExpenseType>('SUPERMARKET')
   const [limitValue, setLimitValue] = useState('')
   const [budgetView, setBudgetView] = useState<BudgetView>('list')
+  // Edição do orçamento direto na célula da tabela
+  const [editingBudgetType, setEditingBudgetType] = useState<ExpenseType | null>(null)
+  const [budgetEditVal, setBudgetEditVal] = useState('')
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
@@ -376,11 +379,24 @@ export function Finance() {
     else setShowAddLimit(true)
   }
 
-  /** O lápis da linha carrega a categoria no próprio form de definir orçamento. */
-  function handleEditBudget(row: BudgetRow) {
-    setLimitType(row.type)
-    setLimitValue(row.budget > 0 ? row.budget.toString() : '')
-    setShowAddLimit(true)
+  function startBudgetEdit(row: BudgetRow) {
+    setEditingBudgetType(row.type)
+    setBudgetEditVal(row.budget > 0 ? row.budget.toString() : '')
+  }
+
+  /** Salva o orçamento digitado na célula. Apagar o valor remove o orçamento. */
+  async function commitBudgetEdit() {
+    if (editingBudgetType == null) return
+    const type = editingBudgetType
+    const previous = period?.budgetLimits.find(l => l.type === type)?.monthlyLimit ?? 0
+    const value = budgetEditVal.trim() ? parseFloat(budgetEditVal) : 0
+    setEditingBudgetType(null)
+
+    if (Number.isNaN(value) || value === previous) return
+    if (value > 0) await api.put('/api/finance/budget-limits', { type, monthlyLimit: value })
+    else if (previous > 0) await api.delete(`/api/finance/budget-limits/${type}`)
+    else return
+    await refreshPeriod()
   }
 
   async function handleDeleteLimit(type: ExpenseType) {
@@ -457,7 +473,10 @@ export function Finance() {
             limitType={limitType} setLimitType={setLimitType}
             limitValue={limitValue} setLimitValue={setLimitValue}
             onSaveLimit={handleSaveLimit} onDeleteLimit={handleDeleteLimit}
-            onEditBudget={handleEditBudget}
+            editingBudgetType={editingBudgetType} budgetEditVal={budgetEditVal}
+            onStartBudgetEdit={startBudgetEdit} onBudgetEditChange={setBudgetEditVal}
+            onCommitBudgetEdit={commitBudgetEdit}
+            onCancelBudgetEdit={()=>setEditingBudgetType(null)}
             savingsTargetInput={savingsTargetInput} setSavingsTargetInput={setSavingsTargetInput}
             editingSavings={editingSavings} setEditingSavings={setEditingSavings}
             onSaveSavingsTarget={handleSaveSavingsTarget}
