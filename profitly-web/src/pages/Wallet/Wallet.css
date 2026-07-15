@@ -692,6 +692,8 @@
 
 .chart-canvas-wrap {
   position: relative;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .chart-selection-badge {
