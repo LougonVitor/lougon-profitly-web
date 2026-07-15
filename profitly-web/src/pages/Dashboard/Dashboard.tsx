@@ -225,75 +225,77 @@ function IbovespaCard() {
             ))}
           </div>
 
-          {selection && (
-            <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
-              <span>
-                {fmtIbovDate(Number(selection.startX), range)} → {fmtIbovDate(Number(selection.endX), range)}
-              </span>
-              <strong>
-                {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
-              </strong>
-              <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
-            </div>
-          )}
+          <div className="chart-canvas-wrap">
+            {selection && (
+              <div className={`chart-selection-badge chart-selection-badge--floating ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+                <span>
+                  {fmtIbovDate(Number(selection.startX), range)} → {fmtIbovDate(Number(selection.endX), range)}
+                </span>
+                <strong>
+                  {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
+                </strong>
+                <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+              </div>
+            )}
 
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart
-              data={chartPoints}
-              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-              onMouseDown={onMouseDown}
-              onMouseUp={onMouseUp}
-            >
-              <ChartRangeSelectTracker onLabel={reportLabel} />
-              <defs>
-                <linearGradient id="ibovGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tickFormatter={ts => fmtIbovDate(ts as number, range)}
-                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-                interval={tickInterval as never}
-                allowDataOverflow
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
-                width={42}
-              />
-              <Tooltip
-                labelFormatter={ts => fmtIbovDate(ts as number, range)}
-                formatter={(v) => [Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 'Pontos']}
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-primary)',
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="close"
-                stroke={chartColor}
-                strokeWidth={2}
-                fill="url(#ibovGrad)"
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-              {refAreaLeft !== '' && refAreaRight !== '' && (
-                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart
+                data={chartPoints}
+                margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+              >
+                <ChartRangeSelectTracker onLabel={reportLabel} />
+                <defs>
+                  <linearGradient id="ibovGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={ts => fmtIbovDate(ts as number, range)}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={tickInterval as never}
+                  allowDataOverflow
+                />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}K`}
+                  width={42}
+                />
+                <Tooltip
+                  labelFormatter={ts => fmtIbovDate(ts as number, range)}
+                  formatter={(v) => [Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 'Pontos']}
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="close"
+                  stroke={chartColor}
+                  strokeWidth={2}
+                  fill="url(#ibovGrad)"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                {refAreaLeft !== '' && refAreaRight !== '' && (
+                  <ReferenceArea x1={refAreaLeft} x2={refAreaRight} stroke="none" fill="var(--accent, #378add)" fillOpacity={0.15} />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
 
           {updatedAt && (
             <div className="ibov-updated">

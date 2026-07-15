@@ -638,6 +638,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.chart-canvas-wrap {
+  position: relative;
+}
+
 .chart-selection-badge {
   display: flex;
   align-items: center;
@@ -649,6 +653,14 @@
   border: 1px solid var(--border);
   color: var(--text-secondary);
   width: fit-content;
+}
+
+.chart-selection-badge--floating {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  box-shadow: var(--shadow-sm);
 }
 
 .chart-selection-badge strong { font-size: 13px; }

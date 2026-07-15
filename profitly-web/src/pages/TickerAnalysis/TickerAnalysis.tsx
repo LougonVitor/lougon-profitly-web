@@ -261,17 +261,6 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
         </div>
       </div>
       <div className="ta-chart-body">
-        {!loading && !vsIbov && selection && (
-          <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
-            <span>
-              {tickLabel(selection.startX, range)} → {tickLabel(selection.endX, range)}
-            </span>
-            <strong>
-              {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
-            </strong>
-            <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
-          </div>
-        )}
         {loading ? (
           <div className="ta-chart-loading">Carregando gráfico...</div>
         ) : data.length === 0 ? (
@@ -308,49 +297,62 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
             </ResponsiveContainer>
           )
         ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart
-              data={data}
-              margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
-              onMouseDown={onMouseDown}
-              onMouseUp={onMouseUp}
-            >
-              <ChartRangeSelectTracker onLabel={reportLabel} />
-              <defs>
-                <linearGradient id="fillUp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--text-up)" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="var(--text-up)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="fillDown" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--text-down)" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="var(--text-down)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                ticks={computeTicks(data, range)}
-                tickFormatter={d => tickLabel(d, range)}
-                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false} tickLine={false} interval={0}
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                axisLine={false} tickLine={false} width={60}
-                tickFormatter={v => `${cur}${Number(v).toFixed(0)}`}
-              />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
-                labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
-                formatter={(value: unknown) => [`${cur} ${Number(value).toFixed(2)}`, 'Fechamento']}
-              />
-              <Area type="monotone" dataKey="close" stroke={strokeColor} strokeWidth={1.5}
-                fill={`url(#${fillId})`} dot={false} activeDot={{ r: 4, fill: strokeColor }} />
-              {refAreaLeft !== '' && refAreaRight !== '' && (
-                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="chart-canvas-wrap">
+            {selection && (
+              <div className={`chart-selection-badge chart-selection-badge--floating ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+                <span>
+                  {tickLabel(selection.startX, range)} → {tickLabel(selection.endX, range)}
+                </span>
+                <strong>
+                  {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
+                </strong>
+                <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart
+                data={data}
+                margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+              >
+                <ChartRangeSelectTracker onLabel={reportLabel} />
+                <defs>
+                  <linearGradient id="fillUp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--text-up)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--text-up)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="fillDown" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--text-down)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--text-down)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  ticks={computeTicks(data, range)}
+                  tickFormatter={d => tickLabel(d, range)}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false} tickLine={false} interval={0}
+                />
+                <YAxis
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                  axisLine={false} tickLine={false} width={60}
+                  tickFormatter={v => `${cur}${Number(v).toFixed(0)}`}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', boxShadow: 'var(--shadow-sm)' }}
+                  labelFormatter={d => { try { return new Date(d).toLocaleDateString('pt-BR') } catch { return d } }}
+                  formatter={(value: unknown) => [`${cur} ${Number(value).toFixed(2)}`, 'Fechamento']}
+                />
+                <Area type="monotone" dataKey="close" stroke={strokeColor} strokeWidth={1.5}
+                  fill={`url(#${fillId})`} dot={false} activeDot={{ r: 4, fill: strokeColor }} />
+                {refAreaLeft !== '' && refAreaRight !== '' && (
+                  <ReferenceArea x1={refAreaLeft} x2={refAreaRight} stroke="none" fill="var(--accent, #378add)" fillOpacity={0.15} />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </div>
     </div>

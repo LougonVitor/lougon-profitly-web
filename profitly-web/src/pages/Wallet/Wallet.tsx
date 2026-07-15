@@ -427,61 +427,63 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
             <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#94a3b8' }} /> {tw.contributed}</span>
             <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#378add' }} /> {tw.patrimonyLine}</span>
           </div>
-          {selection && (
-            <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
-              <span>{selection.startX} → {selection.endX}</span>
-              <strong>
-                {selection.changeAbs >= 0 ? '▲' : '▼'} {fmtBRL(Math.abs(selection.changeAbs))}
-                {selection.changePct != null && ` (${Math.abs(selection.changePct).toFixed(2)}%)`}
-              </strong>
-              <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
-            </div>
-          )}
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart
-              data={evolution}
-              margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
-              onMouseDown={onMouseDown}
-              onMouseUp={onMouseUp}
-            >
-              <ChartRangeSelectTracker onLabel={reportLabel} />
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v: number) => fmtAxisBRL(v)}
-                width={58}
-              />
-              <Tooltip
-                cursor={{ stroke: 'var(--border)' }}
-                contentStyle={CHART_TOOLTIP_STYLE}
-                itemStyle={{ color: 'var(--text-primary)' }}
-                formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? tw.contributed : tw.patrimonyLine]}
-              />
-              <Line
-                type="monotone"
-                dataKey="invested"
-                stroke="#94a3b8"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="marketValue"
-                stroke="#378add"
-                strokeWidth={2.5}
-                dot={{ r: 3, fill: '#378add' }}
-                activeDot={{ r: 5 }}
-              />
-              {refAreaLeft !== '' && refAreaRight !== '' && (
-                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="chart-canvas-wrap">
+            {selection && (
+              <div className={`chart-selection-badge chart-selection-badge--floating ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+                <span>{selection.startX} → {selection.endX}</span>
+                <strong>
+                  {selection.changeAbs >= 0 ? '▲' : '▼'} {fmtBRL(Math.abs(selection.changeAbs))}
+                  {selection.changePct != null && ` (${Math.abs(selection.changePct).toFixed(2)}%)`}
+                </strong>
+                <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart
+                data={evolution}
+                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+                onMouseDown={onMouseDown}
+                onMouseUp={onMouseUp}
+              >
+                <ChartRangeSelectTracker onLabel={reportLabel} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => fmtAxisBRL(v)}
+                  width={58}
+                />
+                <Tooltip
+                  cursor={{ stroke: 'var(--border)' }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                  formatter={(v, name) => [fmtBRL(Number(v)), name === 'invested' ? tw.contributed : tw.patrimonyLine]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="invested"
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="marketValue"
+                  stroke="#378add"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: '#378add' }}
+                  activeDot={{ r: 5 }}
+                />
+                {refAreaLeft !== '' && refAreaRight !== '' && (
+                  <ReferenceArea x1={refAreaLeft} x2={refAreaRight} stroke="none" fill="var(--accent, #378add)" fillOpacity={0.15} />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
       {evolutionError && (
