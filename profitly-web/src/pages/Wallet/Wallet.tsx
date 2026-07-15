@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell, ReferenceArea,
 } from 'recharts'
 import { WalletCard } from '../../components/WalletCard/WalletCard'
 import { PositionTable } from '../../components/PositionTable/PositionTable'
@@ -11,6 +11,7 @@ import { CreateWalletModal } from '../../components/CreateWalletModal/CreateWall
 import { ReintegrateB3Modal } from '../../components/ReintegrateB3Modal/ReintegrateB3Modal'
 import { HelpTip } from '../Finance/components/HelpTip'
 import { useWallets } from '../../hooks/useWallets'
+import { useChartRangeSelect, ChartRangeSelectTracker } from '../../hooks/useChartRangeSelect'
 import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { WalletSummary } from '../../types/WalletSummary'
@@ -367,6 +368,9 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
     ? (wallet.profitOrLoss + wallet.realizedProfitOrLoss + receivedTotal) / wallet.totalInvested * 100
     : null
 
+  const { refAreaLeft, refAreaRight, selection, onMouseDown, onMouseUp, reportLabel, clearSelection } =
+    useChartRangeSelect(evolution, 'month', 'marketValue')
+
   return (
     <div className="pat-wrap">
       {/* Summary cards */}
@@ -423,8 +427,24 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
             <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#94a3b8' }} /> {tw.contributed}</span>
             <span className="pat-chart-legend-item"><span className="pat-legend-dot" style={{ background: '#378add' }} /> {tw.patrimonyLine}</span>
           </div>
+          {selection && (
+            <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+              <span>{selection.startX} → {selection.endX}</span>
+              <strong>
+                {selection.changeAbs >= 0 ? '▲' : '▼'} {fmtBRL(Math.abs(selection.changeAbs))}
+                {selection.changePct != null && ` (${Math.abs(selection.changePct).toFixed(2)}%)`}
+              </strong>
+              <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+            </div>
+          )}
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={evolution} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+            <LineChart
+              data={evolution}
+              margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+              onMouseDown={onMouseDown}
+              onMouseUp={onMouseUp}
+            >
+              <ChartRangeSelectTracker onLabel={reportLabel} />
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis
@@ -457,6 +477,9 @@ function PatrimonioView({ wallet }: { wallet: WalletSummary }) {
                 dot={{ r: 3, fill: '#378add' }}
                 activeDot={{ r: 5 }}
               />
+              {refAreaLeft !== '' && refAreaRight !== '' && (
+                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>

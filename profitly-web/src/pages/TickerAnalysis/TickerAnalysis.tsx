@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, ReferenceLine, LineChart, Line, CartesianGrid,
+  BarChart, Bar, Cell, ReferenceLine, ReferenceArea, LineChart, Line, CartesianGrid,
 } from 'recharts'
 import { useTickerAnalysis, usePriceHistory } from '../../hooks/useTickerAnalysis'
+import { useChartRangeSelect, ChartRangeSelectTracker } from '../../hooks/useChartRangeSelect'
 import { useStockAnalysis } from '../../hooks/useStockAnalysis'
 import {
   FiftyTwoWeekRange, FinancialHighlights, SectorComparisonSection,
@@ -180,6 +181,9 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
     .filter(p => p.close != null)
     .map(p => ({ date: p.date, close: p.close, volume: p.volume })) ?? []
 
+  const { refAreaLeft, refAreaRight, selection, onMouseDown, onMouseUp, reportLabel, clearSelection } =
+    useChartRangeSelect(data as { date: string; close: number }[], 'date', 'close')
+
   const first = data[0]?.close ?? 0
   const last = data[data.length - 1]?.close ?? 0
   const isUp = last >= first
@@ -248,7 +252,7 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
               <button
                 key={r.value}
                 className={`ta-range-btn ${range === r.value ? 'ta-range-btn--active' : ''}`}
-                onClick={() => setRange(r.value)}
+                onClick={() => { setRange(r.value); clearSelection() }}
               >
                 {r.label}
               </button>
@@ -257,6 +261,17 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
         </div>
       </div>
       <div className="ta-chart-body">
+        {!loading && !vsIbov && selection && (
+          <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+            <span>
+              {tickLabel(selection.startX, range)} → {tickLabel(selection.endX, range)}
+            </span>
+            <strong>
+              {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
+            </strong>
+            <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+          </div>
+        )}
         {loading ? (
           <div className="ta-chart-loading">Carregando gráfico...</div>
         ) : data.length === 0 ? (
@@ -294,7 +309,13 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
           )
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={data} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+            <AreaChart
+              data={data}
+              margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
+              onMouseDown={onMouseDown}
+              onMouseUp={onMouseUp}
+            >
+              <ChartRangeSelectTracker onLabel={reportLabel} />
               <defs>
                 <linearGradient id="fillUp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--text-up)" stopOpacity={0.2} />
@@ -325,6 +346,9 @@ function PriceChartSection({ symbol, showBenchmark = true, benchmark = 'ibov', c
               />
               <Area type="monotone" dataKey="close" stroke={strokeColor} strokeWidth={1.5}
                 fill={`url(#${fillId})`} dot={false} activeDot={{ r: 4, fill: strokeColor }} />
+              {refAreaLeft !== '' && refAreaRight !== '' && (
+                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         )}

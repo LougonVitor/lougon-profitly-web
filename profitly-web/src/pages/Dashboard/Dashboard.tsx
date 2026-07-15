@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  AreaChart, Area, CartesianGrid,
+  AreaChart, Area, CartesianGrid, ReferenceArea,
 } from 'recharts'
 import { useTickers } from '../../hooks/useTickers'
+import { useChartRangeSelect, ChartRangeSelectTracker } from '../../hooks/useChartRangeSelect'
 import { useI18n } from '../../i18n/I18nContext'
 import { api } from '../../lib/api'
 import type { Ticker } from '../../types/Ticker'
@@ -136,6 +137,7 @@ interface IbovData {
 
 const IBOV_RANGES = ['1d', '5d', '1mo', '6mo', '1y', '5y'] as const
 const IBOV_LABELS: Record<string, string> = { '1d': '1 D', '5d': '5 D', '1mo': '30 D', '6mo': '6 M', '1y': '1 A', '5y': '5 A' }
+const IBOV_INDICES = [{ value: 'ibov', label: 'IBOV' }, { value: 'ifix', label: 'IFIX' }] as const
 
 function fmtIbovDate(ts: number, range: string) {
   const d = new Date(ts * 1000)
@@ -145,21 +147,33 @@ function fmtIbovDate(ts: number, range: string) {
 
 function IbovespaCard() {
   const [range, setRange] = useState('1d')
+  const [index, setIndex] = useState<'ibov' | 'ifix'>('ibov')
   const [data, setData] = useState<IbovData | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
 
   useEffect(() => {
     setLoading(true)
-    api.get<IbovData>(`/api/ibovespa?range=${range}`)
+    api.get<IbovData>(`/api/ibovespa?range=${range}&index=${index}`)
       .then(r => { setData(r.data); setUpdatedAt(new Date()) })
       .catch(() => setData(null))
       .finally(() => setLoading(false))
-  }, [range])
+  }, [range, index])
 
   const up = (data?.changePercent ?? 0) >= 0
   const chartColor = up ? '#22c55e' : '#ef4444'
   const chartPoints = (data?.points ?? []).map(p => ({ date: p.date, close: p.close }))
+  const { refAreaLeft, refAreaRight, selection, onMouseDown, onMouseUp, reportLabel, clearSelection } =
+    useChartRangeSelect(chartPoints, 'date', 'close')
+
+  // IFIX has no intraday sync — "1 D" would always be empty for it.
+  const availableRanges = index === 'ifix' ? IBOV_RANGES.filter(r => r !== '1d') : IBOV_RANGES
+
+  function selectIndex(i: 'ibov' | 'ifix') {
+    setIndex(i)
+    clearSelection()
+    if (i === 'ifix' && range === '1d') setRange('5d')
+  }
 
   // Reduce tick density for large datasets
   const tickInterval = chartPoints.length > 60 ? Math.floor(chartPoints.length / 6) : 'preserveStartEnd'
@@ -167,7 +181,18 @@ function IbovespaCard() {
   return (
     <div className="ibov-card">
       <div className="ibov-header">
-        <h3 className="ibov-title">Ibovespa</h3>
+        <h3 className="ibov-title">{IBOV_INDICES.find(i => i.value === index)?.label}</h3>
+        <div className="ibov-index-tabs">
+          {IBOV_INDICES.map(i => (
+            <button
+              key={i.value}
+              className={`ibov-index-tab ${index === i.value ? 'ibov-index-tab--active' : ''}`}
+              onClick={() => selectIndex(i.value)}
+            >
+              {i.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -189,19 +214,37 @@ function IbovespaCard() {
           </div>
 
           <div className="ibov-range-tabs">
-            {IBOV_RANGES.map(r => (
+            {availableRanges.map(r => (
               <button
                 key={r}
                 className={`ibov-range-tab ${range === r ? 'ibov-range-tab--active' : ''}`}
-                onClick={() => setRange(r)}
+                onClick={() => { setRange(r); clearSelection() }}
               >
                 {IBOV_LABELS[r]}
               </button>
             ))}
           </div>
 
+          {selection && (
+            <div className={`chart-selection-badge ${selection.changeAbs >= 0 ? 'chart-selection-badge--up' : 'chart-selection-badge--down'}`}>
+              <span>
+                {fmtIbovDate(Number(selection.startX), range)} → {fmtIbovDate(Number(selection.endX), range)}
+              </span>
+              <strong>
+                {selection.changeAbs >= 0 ? '▲' : '▼'} {selection.changePct != null ? `${Math.abs(selection.changePct).toFixed(2)}%` : '—'}
+              </strong>
+              <button className="chart-selection-clear" onClick={clearSelection} aria-label="Limpar seleção">✕</button>
+            </div>
+          )}
+
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={chartPoints} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+            <AreaChart
+              data={chartPoints}
+              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              onMouseDown={onMouseDown}
+              onMouseUp={onMouseUp}
+            >
+              <ChartRangeSelectTracker onLabel={reportLabel} />
               <defs>
                 <linearGradient id="ibovGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
@@ -216,6 +259,7 @@ function IbovespaCard() {
                 axisLine={false}
                 tickLine={false}
                 interval={tickInterval as never}
+                allowDataOverflow
               />
               <YAxis
                 domain={['auto', 'auto']}
@@ -245,6 +289,9 @@ function IbovespaCard() {
                 dot={false}
                 activeDot={{ r: 4 }}
               />
+              {refAreaLeft !== '' && refAreaRight !== '' && (
+                <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="var(--accent, #378add)" fillOpacity={0.15} />
+              )}
             </AreaChart>
           </ResponsiveContainer>
 
