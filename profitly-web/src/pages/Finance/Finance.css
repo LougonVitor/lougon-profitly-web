@@ -894,10 +894,14 @@
   margin-top: 6px;
   letter-spacing: -0.02em;
 }
-.fin-kpi-caption { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+.fin-kpi-caption {
+  font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 /* Meta de poupança — vive no painel de alertas */
 .fin-goal {
+  flex: 0 0 auto;
   background: var(--bg);
   border: 1px solid var(--border);
   border-left: 3px solid #22c55e;
@@ -1149,23 +1153,27 @@
 }
 
 /* ── Alertas do mês ── */
+/* A altura vem via JS (inline style), medida do card de Orçamento ao lado —
+   os dois precisam terminar exatamente juntos, e nenhum CSS estático prevê
+   quantas categorias o usuário vai ter. É por isso que este é flex column:
+   título e meta ficam no tamanho natural, e só a lista abaixo absorve/estica
+   a diferença e rola por dentro quando não cabe. */
 .fin-alerts {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.9rem 1.1rem;
   min-width: 0;
 }
-.fin-alerts-title { display: flex; align-items: center; gap: 7px; margin-bottom: 1rem; }
+.fin-alerts-title { display: flex; align-items: center; gap: 7px; margin-bottom: 1rem; flex: 0 0 auto; }
 .fin-alerts-bell { font-size: 14px; }
 .fin-alerts-empty { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
-/* Uma linha por categoria com orçamento: sem teto, a lista cresce mais que a
-   tabela ao lado a cada categoria nova e estoura o cartão. Acima de ~5 linhas
-   ela rola por dentro, suave, em vez de empurrar o layout. */
 .fin-alerts-list {
   list-style: none; margin: 0; padding: 0 6px 0 0;
   display: flex; flex-direction: column; gap: 10px;
-  max-height: 420px; overflow-y: auto; overscroll-behavior: contain;
+  flex: 1 1 auto; min-height: 60px; overflow-y: auto; overscroll-behavior: contain;
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;

@@ -17,14 +17,17 @@ interface BudgetSectionProps {
   onEditChange: (v: string) => void
   onCommitEdit: () => void
   onCancelEdit: () => void
+  /** Mede a altura renderizada para o painel de Alertas, ao lado, acompanhar. */
+  sectionRef?: (el: HTMLDivElement | null) => void
 }
 
 export function BudgetSection({
   rows, view, onViewChange, onDeleteBudget,
   editingType, editValue, onStartEdit, onEditChange, onCommitEdit, onCancelEdit,
+  sectionRef,
 }: BudgetSectionProps) {
   return (
-    <div className="fin-budget-section fin-animate-in">
+    <div ref={sectionRef} className="fin-budget-section fin-animate-in">
       <div className="fin-table-header">
         <h3 className="fin-section-title">
           Orçamento por categoria

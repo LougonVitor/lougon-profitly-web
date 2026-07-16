@@ -22,14 +22,18 @@ interface KpiCardProps {
 
 export function KpiCard({ label, value, caption, pct, tone = 'neutral', help, children }: KpiCardProps) {
   const captionParts = [pct != null ? `${fmtPct(pct)} da renda` : null, caption].filter(Boolean)
+  const captionText = captionParts.join(' · ')
 
   return (
     <div className={`fin-kpi fin-kpi--${tone} fin-animate-in`}>
       {help && <HelpTip text={help} />}
       <div className="fin-kpi-label">{label}</div>
       <div className="fin-kpi-value">{fmtBRL(value)}</div>
-      {captionParts.length > 0 && (
-        <div className="fin-kpi-caption">{captionParts.join(' · ')}</div>
+      {captionText && (
+        // nowrap + ellipsis: o texto varia com o percentual (0–999%) e com o
+        // idioma, então em vez de calibrar por tentativa quantos caracteres
+        // cabem, a legenda nunca quebra — o title cobre o caso raro de corte.
+        <div className="fin-kpi-caption" title={captionText}>{captionText}</div>
       )}
       {children}
     </div>

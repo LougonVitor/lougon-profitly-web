@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction, FormEvent, ChangeEvent } from 'react'
 import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField, BudgetRow } from '../types'
 import { TYPE_LABELS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
@@ -81,6 +82,23 @@ export function CurrentPeriodTab({
   const budgetRows = buildBudgetRows(period.expenses, period.budgetLimits)
   const alerts = buildAlerts(budgetRows)
 
+  // O painel de Alertas precisa terminar exatamente na mesma altura do card de
+  // Orçamento ao lado — quantas categorias o usuário tem não dá pra prever em
+  // CSS, então medimos o card real e replicamos a altura via ResizeObserver
+  // (também reage a virar Lista/Gráfico e a mudanças de largura da tela).
+  const budgetSectionElRef = useRef<HTMLDivElement | null>(null)
+  const [budgetHeight, setBudgetHeight] = useState<number>()
+
+  useEffect(() => {
+    const el = budgetSectionElRef.current
+    if (!el) return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setBudgetHeight(entry.contentRect.height)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   // A meta de poupança compara contra a projeção de fim de período, não contra
   // o saldo de hoje — é isso que responde "vou bater a meta se manter o ritmo?".
   const savingsPct = period.savingsTarget && period.savingsTarget > 0
@@ -144,23 +162,23 @@ export function CurrentPeriodTab({
         <KpiCard
           label="Gastos Realizados" value={period.totalSpent}
           pct={pctOf(period.totalSpent, period.totalIncome)}
-          caption="Sem contar o investimento" tone="neg"
+          caption="Sem o investimento" tone="neg"
           help="Tudo que já saiu no período, exceto o investimento — investir não é gastar, então as duas coisas aparecem separadas."
         />
         <KpiCard
           label="Gastos Esperados" value={period.totalEstimated}
           pct={pctOf(period.totalEstimated, period.totalIncome)}
-          caption="Planejado para o período" tone="neutral"
+          caption="Total planejado" tone="neutral"
           help="Soma do que você planejou gastar no período — a coluna Gastos esperados de cada lançamento."
         />
         <KpiCard
           label="Saldo Atual" value={period.balance}
-          caption="Entradas menos o já gasto" tone={period.balance >= 0 ? 'pos' : 'neg'}
+          caption="Renda menos gastos" tone={period.balance >= 0 ? 'pos' : 'neg'}
           help="Total de entradas menos tudo que você já gastou até agora, incluindo o investimento."
         />
         <KpiCard
           label="Saldo Final Esperado" value={saldoFinalEstimado}
-          caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'} no período`}
+          caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'}`}
           tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'}
           help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado). É contra essa projeção que a meta de poupança é medida."
         />
@@ -179,9 +197,11 @@ export function CurrentPeriodTab({
           onEditChange={onBudgetEditChange}
           onCommitEdit={onCommitBudgetEdit}
           onCancelEdit={onCancelBudgetEdit}
+          sectionRef={el => { budgetSectionElRef.current = el }}
         />
         <AlertsPanel
           alerts={alerts}
+          matchHeight={budgetHeight}
           saldoFinalEstimado={saldoFinalEstimado}
           savingsTarget={period.savingsTarget}
           savingsPct={savingsPct}

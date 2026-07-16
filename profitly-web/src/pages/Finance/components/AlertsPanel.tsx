@@ -21,15 +21,18 @@ interface AlertsPanelProps {
   savingsTargetInput: string
   onSavingsTargetChange: (v: string) => void
   onSaveSavingsTarget: () => void
+  /** Altura (px) medida do card de Orçamento por categoria, para acompanhá-la. */
+  matchHeight?: number
 }
 
 export function AlertsPanel({
   alerts, saldoFinalEstimado, savingsTarget, savingsPct,
   editingSavings, onStartEditSavings, onCancelEditSavings,
   savingsTargetInput, onSavingsTargetChange, onSaveSavingsTarget,
+  matchHeight,
 }: AlertsPanelProps) {
   return (
-    <div className="fin-alerts fin-animate-in">
+    <div className="fin-alerts fin-animate-in" style={matchHeight ? { height: matchHeight } : undefined}>
       <h3 className="fin-section-title fin-alerts-title">
         <span className="fin-alerts-bell">🔔</span> Alertas do mês
         <HelpTip inline text="Avisos gerados a partir do orçamento de cada categoria: em âmbar ao passar de 80% do planejado e em vermelho ao ultrapassá-lo." />
