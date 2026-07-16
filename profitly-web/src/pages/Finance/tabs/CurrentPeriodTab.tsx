@@ -1,7 +1,7 @@
-import type { Dispatch, SetStateAction, FormEvent, ChangeEvent, RefObject } from 'react'
+import type { Dispatch, SetStateAction, FormEvent, ChangeEvent } from 'react'
 import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField, BudgetRow } from '../types'
 import { TYPE_LABELS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
-import { fmtBRL, fmtPct, buildBudgetRows, buildAlerts, pctOf, daysLeftInPeriod } from '../helpers'
+import { fmtBRL, buildBudgetRows, buildAlerts, pctOf, daysLeftInPeriod } from '../helpers'
 import { KpiCard } from '../components/KpiCard'
 import { AlertsPanel } from '../components/AlertsPanel'
 import { BudgetSection, type BudgetView } from '../components/BudgetSection'
@@ -10,23 +10,14 @@ import { HelpTip } from '../components/HelpTip'
 
 interface CurrentPeriodTabProps {
   period: CurrentPeriod
-  // Salary
-  editingSalary: boolean; setEditingSalary: Dispatch<SetStateAction<boolean>>
-  salaryInput: string; setSalaryInput: Dispatch<SetStateAction<string>>
-  salaryRef: RefObject<HTMLInputElement | null>
-  onSaveSalary: () => void
   // Additional income
   showAddIncome: boolean; setShowAddIncome: Dispatch<SetStateAction<boolean>>
   incomeDesc: string; setIncomeDesc: Dispatch<SetStateAction<string>>
   incomeAmount: string; setIncomeAmount: Dispatch<SetStateAction<string>>
   onAddIncome: (e: FormEvent) => void
   onDeleteIncome: (id: number) => void
-  // Budget per category (o antigo "limite de gastos")
+  // Budget per category
   budgetView: BudgetView; setBudgetView: Dispatch<SetStateAction<BudgetView>>
-  showAddLimit: boolean; onToggleLimitForm: () => void
-  limitType: ExpenseType; setLimitType: Dispatch<SetStateAction<ExpenseType>>
-  limitValue: string; setLimitValue: Dispatch<SetStateAction<string>>
-  onSaveLimit: (e: FormEvent) => void
   onDeleteLimit: (type: ExpenseType) => void
   editingBudgetType: ExpenseType | null
   budgetEditVal: string
@@ -66,12 +57,9 @@ interface CurrentPeriodTabProps {
 
 export function CurrentPeriodTab({
   period,
-  editingSalary, setEditingSalary, salaryInput, setSalaryInput, salaryRef, onSaveSalary,
   showAddIncome, setShowAddIncome, incomeDesc, setIncomeDesc, incomeAmount, setIncomeAmount,
   onAddIncome, onDeleteIncome,
-  budgetView, setBudgetView,
-  showAddLimit, onToggleLimitForm, limitType, setLimitType, limitValue, setLimitValue,
-  onSaveLimit, onDeleteLimit,
+  budgetView, setBudgetView, onDeleteLimit,
   editingBudgetType, budgetEditVal, onStartBudgetEdit, onBudgetEditChange,
   onCommitBudgetEdit, onCancelBudgetEdit,
   savingsTargetInput, setSavingsTargetInput, editingSavings, setEditingSavings, onSaveSavingsTarget,
@@ -111,33 +99,7 @@ export function CurrentPeriodTab({
         </div>
 
         <div className="fin-income-row">
-          {/* Salary card */}
-          <div className="fin-income-card fin-income-card--salary">
-            <HelpTip text="O quanto você recebe por mês já com os descontos. É a base das suas entradas — clique no valor para editar." />
-            <div className="fin-income-card-label">Salário Líquido</div>
-            {editingSalary ? (
-              <div className="fin-salary-edit">
-                <span className="fin-salary-prefix">R$</span>
-                <input
-                  ref={salaryRef}
-                  className="fin-salary-input"
-                  type="number"
-                  step="0.01"
-                  value={salaryInput}
-                  onChange={e=>setSalaryInput(e.target.value)}
-                  onBlur={onSaveSalary}
-                  onKeyDown={e=>{ if(e.key==='Enter') onSaveSalary(); if(e.key==='Escape') setEditingSalary(false) }}
-                />
-              </div>
-            ) : (
-              <button className="fin-income-value fin-income-value--editable" onClick={()=>setEditingSalary(true)} title="Clique para editar">
-                {fmtBRL(period.netSalary)}
-                <span className="fin-edit-hint">✎</span>
-              </button>
-            )}
-          </div>
-
-          {/* Additional incomes */}
+          {/* Entradas do período: avulsas e as injetadas pelos recorrentes */}
           {period.additionalIncomes.map(inc => (
             <div key={inc.id} className="fin-income-card fin-income-card--extra">
               <div className="fin-income-card-label">{inc.description}</div>
@@ -146,9 +108,15 @@ export function CurrentPeriodTab({
             </div>
           ))}
 
+          {period.additionalIncomes.length === 0 && (
+            <p className="fin-income-empty">
+              Nenhuma entrada neste período. Use <strong>Renda adicional</strong> para lançar uma agora, ou cadastre na aba <strong>Recorrentes</strong> o que se repete todo mês.
+            </p>
+          )}
+
           {/* Total income */}
           <div className="fin-income-card fin-income-card--total">
-            <HelpTip text="Salário líquido mais todas as rendas adicionais e recorrentes lançadas neste período." />
+            <HelpTip text="Soma de todas as rendas adicionais e recorrentes lançadas neste período." />
             <div className="fin-income-card-label">Total de Entradas</div>
             <div className="fin-income-value fin-income-value--strong">{fmtBRL(period.totalIncome)}</div>
           </div>
@@ -188,45 +156,8 @@ export function CurrentPeriodTab({
           pct={pctOf(period.savedThisMonth, period.totalIncome)}
           caption="Sobrou depois de gastar e investir"
           tone={period.savedThisMonth >= 0 ? 'pos' : 'neg'}
-          help="O que sobrou das entradas depois dos gastos e do investimento. Defina uma meta mensal para acompanhar o progresso."
-        >
-          <div className="fin-kpi-goal">
-            {editingSavings ? (
-              <div className="fin-kpi-goal-edit">
-                <span className="fin-kpi-goal-prefix">Meta R$</span>
-                <input
-                  className="fin-kpi-goal-input"
-                  autoFocus
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={savingsTargetInput}
-                  onChange={e=>setSavingsTargetInput(e.target.value)}
-                  onBlur={onSaveSavingsTarget}
-                  onKeyDown={e=>{ if(e.key==='Enter') onSaveSavingsTarget(); if(e.key==='Escape') setEditingSavings(false) }}
-                />
-              </div>
-            ) : (
-              <button className="fin-kpi-goal-btn" onClick={()=>setEditingSavings(true)} title="Clique para editar a meta">
-                {period.savingsTarget != null
-                  ? <>Meta: {fmtBRL(period.savingsTarget)}</>
-                  : <span className="fin-kpi-goal-unset">definir meta mensal</span>}
-                <span className="fin-edit-hint">✎</span>
-              </button>
-            )}
-            {savingsPct != null && (
-              <>
-                <div className="fin-kpi-progress-track">
-                  <div
-                    className="fin-kpi-progress-fill"
-                    style={{ width: `${Math.min(Math.max(savingsPct, 0), 100)}%` }}
-                  />
-                </div>
-                <span className="fin-kpi-progress-label">{fmtPct(savingsPct)} da meta</span>
-              </>
-            )}
-          </div>
-        </KpiCard>
+          help="O que sobrou das entradas depois dos gastos e do investimento. A meta mensal fica no painel de alertas, ao lado."
+        />
         <KpiCard
           label="Saldo final esperado" value={saldoFinalEstimado}
           caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'} no período`}
@@ -241,13 +172,6 @@ export function CurrentPeriodTab({
           rows={budgetRows}
           view={budgetView}
           onViewChange={setBudgetView}
-          showForm={showAddLimit}
-          onToggleForm={onToggleLimitForm}
-          formType={limitType}
-          onFormTypeChange={setLimitType}
-          formValue={limitValue}
-          onFormValueChange={setLimitValue}
-          onSubmit={onSaveLimit}
           onDeleteBudget={onDeleteLimit}
           editingType={editingBudgetType}
           editValue={budgetEditVal}
@@ -256,7 +180,18 @@ export function CurrentPeriodTab({
           onCommitEdit={onCommitBudgetEdit}
           onCancelEdit={onCancelBudgetEdit}
         />
-        <AlertsPanel alerts={alerts} />
+        <AlertsPanel
+          alerts={alerts}
+          saved={period.savedThisMonth}
+          savingsTarget={period.savingsTarget}
+          savingsPct={savingsPct}
+          editingSavings={editingSavings}
+          onStartEditSavings={()=>setEditingSavings(true)}
+          onCancelEditSavings={()=>setEditingSavings(false)}
+          savingsTargetInput={savingsTargetInput}
+          onSavingsTargetChange={setSavingsTargetInput}
+          onSaveSavingsTarget={onSaveSavingsTarget}
+        />
       </div>
 
       {/* ── Expense Table ── */}
@@ -329,9 +264,9 @@ export function CurrentPeriodTab({
                         <select
                           className="fin-pct-select"
                           value={investPct}
-                          disabled={!period.netSalary}
+                          disabled={!period.totalIncome}
                           onChange={e=>onInvestPct(parseInt(e.target.value))}
-                          title={!period.netSalary ? 'Configure o salário para usar %' : 'Selecione a % do salário'}
+                          title={!period.totalIncome ? 'Lance uma entrada para usar %' : 'Selecione a % da renda do mês'}
                         >
                           {INVEST_PCTS.map(p => (
                             <option key={p} value={p}>{p}%{p===25?' (rec.)':''}</option>

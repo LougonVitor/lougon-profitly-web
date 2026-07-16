@@ -1,8 +1,5 @@
-import type { FormEvent } from 'react'
 import type { BudgetRow, ExpenseType } from '../types'
-import {
-  TYPE_LABELS, TYPE_ICONS, TYPE_HINTS, TYPE_COLORS, ALL_TYPES, BUDGET_STATE_LABELS,
-} from '../constants'
+import { TYPE_ICONS, TYPE_HINTS, TYPE_COLORS, BUDGET_STATE_LABELS } from '../constants'
 import { fmtBRL, fmtPct } from '../helpers'
 import { HelpTip } from './HelpTip'
 
@@ -12,13 +9,6 @@ interface BudgetSectionProps {
   rows: BudgetRow[]
   view: BudgetView
   onViewChange: (v: BudgetView) => void
-  showForm: boolean
-  onToggleForm: () => void
-  formType: ExpenseType
-  onFormTypeChange: (t: ExpenseType) => void
-  formValue: string
-  onFormValueChange: (v: string) => void
-  onSubmit: (e: FormEvent) => void
   onDeleteBudget: (type: ExpenseType) => void
   // Edição do orçamento direto na célula
   editingType: ExpenseType | null
@@ -30,18 +20,15 @@ interface BudgetSectionProps {
 }
 
 export function BudgetSection({
-  rows, view, onViewChange, showForm, onToggleForm,
-  formType, onFormTypeChange, formValue, onFormValueChange, onSubmit, onDeleteBudget,
+  rows, view, onViewChange, onDeleteBudget,
   editingType, editValue, onStartEdit, onEditChange, onCommitEdit, onCancelEdit,
 }: BudgetSectionProps) {
-  const budgeted = rows.filter(r => r.budget > 0)
-
   return (
     <div className="fin-budget-section fin-animate-in">
       <div className="fin-table-header">
         <h3 className="fin-section-title">
           Orçamento por categoria
-          <HelpTip inline text="O orçamento é o teto que você define para gastar na categoria no mês. Clique no valor da coluna Orçamento para alterá-lo." />
+          <HelpTip inline text="Cada categoria entra aqui sozinha assim que você cria um lançamento nela, e o orçamento vem da soma dos gastos esperados desses lançamentos. Clique no valor para ajustar à mão." />
         </h3>
         <div className="fin-header-actions">
           <div className="fin-view-toggle" role="group" aria-label="Forma de visualização">
@@ -58,39 +45,12 @@ export function BudgetSection({
               aria-pressed={view === 'chart'}
             >📊 Gráfico</button>
           </div>
-          <button className={`fin-btn--add ${showForm ? 'fin-btn--add--active' : ''}`} onClick={onToggleForm}>
-            <span className="fin-btn--add-icon">{showForm ? '✕' : '+'}</span>
-            {showForm ? 'Fechar' : 'Nova categoria'}
-          </button>
         </div>
       </div>
 
-      {showForm && (
-        <form className="fin-mini-form fin-animate-in" onSubmit={onSubmit}>
-          <select
-            className="fin-input fin-input--short"
-            value={formType}
-            onChange={e => onFormTypeChange(e.target.value as ExpenseType)}
-          >
-            {ALL_TYPES.map(t => (
-              <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-            ))}
-          </select>
-          <input
-            className="fin-input fin-input--short"
-            type="number" step="0.01" min="0"
-            placeholder="Orçamento mensal (R$)"
-            value={formValue}
-            onChange={e => onFormValueChange(e.target.value)}
-            required
-          />
-          <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Salvar</button>
-        </form>
-      )}
-
       {rows.length === 0 ? (
         <p className="fin-recurring-desc">
-          Defina um orçamento por categoria para acompanhar quanto ainda pode gastar e receber alertas antes de estourar.
+          Crie um lançamento e preencha o gasto esperado dele: a categoria aparece aqui automaticamente, com o orçamento já preenchido.
         </p>
       ) : view === 'list' ? (
         <BudgetTable
@@ -105,12 +65,6 @@ export function BudgetSection({
         />
       ) : (
         <BudgetChart rows={rows} />
-      )}
-
-      {view === 'list' && rows.length > 0 && budgeted.length === 0 && (
-        <p className="fin-budget-note">
-          Nenhuma categoria tem orçamento ainda — clique em um valor da coluna Orçamento para definir o primeiro.
-        </p>
       )}
     </div>
   )
@@ -134,19 +88,27 @@ function BudgetTable({
     <table className="fin-table fin-budget-table">
       <thead>
         <tr>
-          <th className="fin-bcol-cat">Categoria</th>
-          <th className="fin-bcol-num">Orçamento
-            <HelpTip inline text="Quanto você planejou gastar nesta categoria no mês. Clique no valor para alterar." />
+          <th className="fin-bcol-cat"><span className="fin-th-inner">Categoria</span></th>
+          <th className="fin-bcol-num">
+            <span className="fin-th-inner">Orçamento
+              <HelpTip inline text="Vem da soma dos gastos esperados dos lançamentos da categoria. Clique no valor para definir um orçamento próprio." />
+            </span>
           </th>
-          <th className="fin-bcol-num">Gasto atual
-            <HelpTip inline text="Soma do que já saiu nos lançamentos desta categoria." />
+          <th className="fin-bcol-num">
+            <span className="fin-th-inner">Gasto atual
+              <HelpTip inline text="Soma do que já saiu nos lançamentos desta categoria." />
+            </span>
           </th>
-          <th className="fin-bcol-num">Disponível
-            <HelpTip inline text="Orçamento menos o gasto atual. Negativo significa que você passou do planejado." />
+          <th className="fin-bcol-num">
+            <span className="fin-th-inner">Disponível
+              <HelpTip inline text="Orçamento menos o gasto atual. Negativo significa que você passou do planejado." />
+            </span>
           </th>
-          <th className="fin-bcol-prog">Progresso</th>
-          <th className="fin-bcol-status">Status
-            <HelpTip inline text="No orçamento = até 80% do planejado, ou exatamente 100%. Atenção = de 80% a 99%, quando ainda dá para estourar. Acima do orçamento = passou do planejado." />
+          <th className="fin-bcol-prog"><span className="fin-th-inner">Progresso</span></th>
+          <th className="fin-bcol-status">
+            <span className="fin-th-inner">Status
+              <HelpTip inline text="No orçamento = até 80% do planejado, ou exatamente 100%. Atenção = de 80% a 99%, quando ainda dá para estourar. Acima do orçamento = passou do planejado." />
+            </span>
           </th>
           <th className="fin-bcol-act"></th>
         </tr>
@@ -182,9 +144,11 @@ function BudgetTable({
                 />
               ) : (
                 <span
-                  className="fin-editable-cell fin-budget-budget"
+                  className={`fin-editable-cell fin-budget-budget ${r.auto ? 'fin-budget-budget--auto' : ''}`}
                   onClick={() => onStartEdit(r)}
-                  title="Clique para editar o orçamento"
+                  title={r.auto
+                    ? 'Somado dos gastos esperados desta categoria. Clique para definir um valor próprio.'
+                    : 'Orçamento definido por você. Clique para editar.'}
                 >
                   {r.budget > 0 ? fmtBRL(r.budget) : <span className="fin-budget-unset">definir</span>}
                 </span>
@@ -227,12 +191,13 @@ function BudgetTable({
             </td>
 
             <td className="fin-bcol-act">
-              {r.budget > 0 && (
+              {/* Só faz sentido descartar um valor digitado: o automático voltaria na hora. */}
+              {!r.auto && (
                 <button
                   className="fin-icon-btn fin-icon-btn--danger"
                   onClick={() => onDeleteBudget(r.type)}
-                  title="Remover orçamento"
-                >✕</button>
+                  title="Voltar ao orçamento automático (soma dos gastos esperados)"
+                >↺</button>
               )}
             </td>
           </tr>

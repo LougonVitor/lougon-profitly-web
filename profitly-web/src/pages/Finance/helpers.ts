@@ -30,23 +30,31 @@ export function fmtPct(v: number | null | undefined, digits = 0) {
 }
 
 /**
- * Junta o orçamento (antigo "limite de gastos") com o que já foi gasto em cada
- * categoria. É a base da seção "Orçamento por categoria": o usuário lê orçamento,
- * gasto, disponível e status sem precisar fazer conta.
+ * Junta o orçamento com o que já foi gasto em cada categoria. É a base da seção
+ * "Orçamento por categoria": o usuário lê orçamento, gasto, disponível e status
+ * sem precisar fazer conta.
  *
- * Entram as categorias com orçamento definido e também as que têm gasto sem
- * orçamento — esconder um gasto só porque não foi planejado seria pior.
+ * O orçamento sai sozinho da soma dos "gastos esperados" dos lançamentos da
+ * categoria — planejar um gasto já é dizer quanto se pretende gastar nele, então
+ * não faz sentido pedir o mesmo número duas vezes. Um limite salvo à mão sempre
+ * vence o valor automático (é o usuário corrigindo a estimativa).
+ *
+ * As linhas vêm dos lançamentos: categoria sem lançamento nenhum não aparece.
  */
 export function buildBudgetRows(expenses: Expense[], limits: BudgetLimit[]): BudgetRow[] {
-  const budgetByType = new Map<ExpenseType, number>(limits.map(l => [l.type, l.monthlyLimit]))
-  const types = new Set<ExpenseType>([...budgetByType.keys()])
+  const overrideByType = new Map<ExpenseType, number>(limits.map(l => [l.type, l.monthlyLimit]))
+  const types = new Set<ExpenseType>()
   for (const e of expenses) {
     if (e.realValue > 0 || (e.estimatedValue ?? 0) > 0) types.add(e.type)
   }
+  // Um limite salvo sem lançamento ainda é intenção do usuário — mantém a linha.
+  for (const t of overrideByType.keys()) types.add(t)
 
   return Array.from(types)
     .map(type => {
-      const budget = budgetByType.get(type) ?? 0
+      const override = overrideByType.get(type)
+      const planned = estimatedForType(expenses, type)
+      const budget = override ?? planned
       const spent = spentForType(expenses, type)
       const pct = budget > 0 ? (spent / budget) * 100 : null
       // Cravar 100% é cumprir o orçamento, não um alerta: "Atenção" é só a faixa
@@ -65,9 +73,17 @@ export function buildBudgetRows(expenses: Expense[], limits: BudgetLimit[]): Bud
         available: budget - spent,
         pct,
         state,
+        auto: override == null,
       }
     })
     .sort((a, b) => (b.budget - a.budget) || (b.spent - a.spent))
+}
+
+/** Soma dos "gastos esperados" dos lançamentos da categoria. */
+export function estimatedForType(expenses: Expense[], type: ExpenseType) {
+  return expenses
+    .filter(e => e.type === type)
+    .reduce((sum, e) => sum + (e.estimatedValue ?? 0), 0)
 }
 
 export type AlertLevel = 'danger'|'warn'|'info'|'success'

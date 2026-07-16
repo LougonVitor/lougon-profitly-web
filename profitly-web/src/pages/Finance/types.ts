@@ -90,4 +90,6 @@ export interface BudgetRow {
   /** Percentual do orçamento já consumido. Sem orçamento definido, fica null. */
   pct: number | null
   state: BudgetState
+  /** true = orçamento veio dos gastos esperados; false = o usuário digitou. */
+  auto: boolean
 }

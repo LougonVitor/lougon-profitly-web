@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
 import type {
   ExpenseType, Expense, CurrentPeriod, RecurringExpense, RecurringIncome,
@@ -20,11 +20,6 @@ export function Finance() {
   const [history, setHistory] = useState<HistoryData | null>(null)
   const [settings, setSettings] = useState<Settings>({ resetDay: 10, netSalary: null, investmentTarget: null, investmentAuto: true, savingsTarget: null })
   const [loading, setLoading] = useState(true)
-
-  // Salary editing
-  const [editingSalary, setEditingSalary] = useState(false)
-  const [salaryInput, setSalaryInput] = useState('')
-  const salaryRef = useRef<HTMLInputElement>(null)
 
   // Savings target editing
   const [editingSavings, setEditingSavings] = useState(false)
@@ -66,14 +61,13 @@ export function Finance() {
   const [investPct, setInvestPct] = useState<number>(25)
   const [investManual, setInvestManual] = useState('')
 
-  // Budget per category (o antigo "limite de gastos")
-  const [showAddLimit, setShowAddLimit] = useState(false)
-  const [limitType, setLimitType] = useState<ExpenseType>('SUPERMARKET')
-  const [limitValue, setLimitValue] = useState('')
+  // Budget per category — o valor vem dos gastos esperados; editar salva um override
   const [budgetView, setBudgetView] = useState<BudgetView>('list')
   // Edição do orçamento direto na célula da tabela
   const [editingBudgetType, setEditingBudgetType] = useState<ExpenseType | null>(null)
   const [budgetEditVal, setBudgetEditVal] = useState('')
+  const [budgetEditOriginal, setBudgetEditOriginal] = useState(0)
+  const [budgetEditWasAuto, setBudgetEditWasAuto] = useState(true)
 
   // History filter
   const [histFrom, setHistFrom] = useState('')
@@ -86,15 +80,11 @@ export function Finance() {
   useEffect(() => { loadAll() }, [])
 
   useEffect(() => {
-    if (period?.netSalary && investmentExpense()?.estimatedValue) {
-      const pct = Math.round((investmentExpense()!.estimatedValue! / period.netSalary) * 100)
+    if (period?.totalIncome && investmentExpense()?.estimatedValue) {
+      const pct = Math.round((investmentExpense()!.estimatedValue! / period.totalIncome) * 100)
       if (INVEST_PCTS.includes(pct)) setInvestPct(pct)
     }
   }, [period])
-
-  useEffect(() => {
-    if (editingSalary && salaryRef.current) salaryRef.current.focus()
-  }, [editingSalary])
 
   useEffect(() => {
     if (tab === 'history') loadHistory()
@@ -114,7 +104,6 @@ export function Finance() {
       ])
       setPeriod(pRes.data)
       setSettings(sRes.data)
-      setSalaryInput(sRes.data.netSalary?.toString() ?? '')
       setSavingsTargetInput(sRes.data.savingsTarget?.toString() ?? '')
     } catch {
       // 401/403 handled by PrivateRoute — no redirect needed here
@@ -129,7 +118,6 @@ export function Finance() {
   async function refreshSettings() {
     const res = await api.get<Settings>('/api/finance/settings')
     setSettings(res.data)
-    setSalaryInput(res.data.netSalary?.toString() ?? '')
     setSavingsTargetInput(res.data.savingsTarget?.toString() ?? '')
   }
 
@@ -162,11 +150,6 @@ export function Finance() {
   async function saveSettings(patch: Partial<Settings>) {
     await api.put('/api/finance/settings', { ...settings, ...patch })
     await Promise.all([refreshSettings(), refreshPeriod()])
-  }
-
-  async function handleSaveSalary() {
-    setEditingSalary(false)
-    await saveSettings({ netSalary: salaryInput ? parseFloat(salaryInput) : null })
   }
 
   async function handleSetInvestmentAuto(auto: boolean) {
@@ -219,8 +202,8 @@ export function Finance() {
   async function handleInvestPct(pct: number) {
     setInvestPct(pct)
     const inv = investmentExpense()
-    if (!inv || !period?.netSalary) return
-    const estimated = Math.round(period.netSalary * pct / 100 * 100) / 100
+    if (!inv || !period?.totalIncome) return
+    const estimated = Math.round(period.totalIncome * pct / 100 * 100) / 100
     await api.patch(`/api/finance/expenses/${inv.id}`, { estimatedValue: estimated })
     setInvestManual('')
     await refreshPeriod()
@@ -365,37 +348,28 @@ export function Finance() {
     await refreshPeriod()
   }
 
-  async function handleSaveLimit(e: React.FormEvent) {
-    e.preventDefault()
-    const value = parseFloat(limitValue)
-    if (!value || value <= 0) return
-    await api.put('/api/finance/budget-limits', { type: limitType, monthlyLimit: value })
-    setLimitValue(''); setShowAddLimit(false)
-    await refreshPeriod()
-  }
-
-  function toggleLimitForm() {
-    if (showAddLimit) { setShowAddLimit(false); setLimitValue('') }
-    else setShowAddLimit(true)
-  }
-
   function startBudgetEdit(row: BudgetRow) {
     setEditingBudgetType(row.type)
     setBudgetEditVal(row.budget > 0 ? row.budget.toString() : '')
+    setBudgetEditOriginal(row.budget)
+    setBudgetEditWasAuto(row.auto)
   }
 
-  /** Salva o orçamento digitado na célula. Apagar o valor remove o orçamento. */
+  /**
+   * Salva o orçamento digitado na célula. Comparar com o valor que estava na tela
+   * (e não com o limite salvo) evita que abrir e fechar a célula sem digitar nada
+   * transforme um orçamento automático em manual. Apagar o valor volta ao automático.
+   */
   async function commitBudgetEdit() {
     if (editingBudgetType == null) return
     const type = editingBudgetType
-    const previous = period?.budgetLimits.find(l => l.type === type)?.monthlyLimit ?? 0
     const value = budgetEditVal.trim() ? parseFloat(budgetEditVal) : 0
     setEditingBudgetType(null)
 
-    if (Number.isNaN(value) || value === previous) return
+    if (Number.isNaN(value) || value === budgetEditOriginal) return
     if (value > 0) await api.put('/api/finance/budget-limits', { type, monthlyLimit: value })
-    else if (previous > 0) await api.delete(`/api/finance/budget-limits/${type}`)
-    else return
+    else if (!budgetEditWasAuto) await api.delete(`/api/finance/budget-limits/${type}`)
+    else return // zerar um orçamento que já era automático não tem o que salvar
     await refreshPeriod()
   }
 
@@ -461,18 +435,12 @@ export function Finance() {
         {tab === 'current' && period && (
           <CurrentPeriodTab
             period={period}
-            editingSalary={editingSalary} setEditingSalary={setEditingSalary}
-            salaryInput={salaryInput} setSalaryInput={setSalaryInput}
-            salaryRef={salaryRef} onSaveSalary={handleSaveSalary}
             showAddIncome={showAddIncome} setShowAddIncome={setShowAddIncome}
             incomeDesc={incomeDesc} setIncomeDesc={setIncomeDesc}
             incomeAmount={incomeAmount} setIncomeAmount={setIncomeAmount}
             onAddIncome={handleAddIncome} onDeleteIncome={handleDeleteIncome}
             budgetView={budgetView} setBudgetView={setBudgetView}
-            showAddLimit={showAddLimit} onToggleLimitForm={toggleLimitForm}
-            limitType={limitType} setLimitType={setLimitType}
-            limitValue={limitValue} setLimitValue={setLimitValue}
-            onSaveLimit={handleSaveLimit} onDeleteLimit={handleDeleteLimit}
+            onDeleteLimit={handleDeleteLimit}
             editingBudgetType={editingBudgetType} budgetEditVal={budgetEditVal}
             onStartBudgetEdit={startBudgetEdit} onBudgetEditChange={setBudgetEditVal}
             onCommitBudgetEdit={commitBudgetEdit}
