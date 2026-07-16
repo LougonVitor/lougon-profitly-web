@@ -9,8 +9,10 @@ const LEVEL_ICONS: Record<BudgetAlert['level'], string> = {
 interface AlertsPanelProps {
   alerts: BudgetAlert[]
   // Meta de poupança — mora aqui porque no card de KPI ela esticava só aquele
-  // card e deixava os outros quatro com um vão embaixo.
-  saved: number
+  // card e deixava os outros quatro com um vão embaixo. Comparada contra o
+  // Saldo Final Esperado (a projeção de fim de período), não contra o saldo
+  // de hoje — é isso que responde "vou bater a meta no ritmo atual?".
+  saldoFinalEstimado: number
   savingsTarget: number | null
   savingsPct: number | null
   editingSavings: boolean
@@ -22,7 +24,7 @@ interface AlertsPanelProps {
 }
 
 export function AlertsPanel({
-  alerts, saved, savingsTarget, savingsPct,
+  alerts, saldoFinalEstimado, savingsTarget, savingsPct,
   editingSavings, onStartEditSavings, onCancelEditSavings,
   savingsTargetInput, onSavingsTargetChange, onSaveSavingsTarget,
 }: AlertsPanelProps) {
@@ -37,7 +39,7 @@ export function AlertsPanel({
         <div className="fin-goal-head">
           <span className="fin-goal-label">
             Meta de poupança
-            <HelpTip inline text="Quanto você pretende guardar por mês. O progresso compara a poupança do mês com essa meta." />
+            <HelpTip inline text="Quanto você pretende guardar por mês. O progresso compara o Saldo Final Esperado — a projeção de fim de período — com essa meta." />
           </span>
           {editingSavings ? (
             <div className="fin-goal-edit">
@@ -60,7 +62,7 @@ export function AlertsPanel({
           ) : (
             <button className="fin-goal-btn" onClick={onStartEditSavings} title="Clique para editar a meta">
               {savingsTarget != null
-                ? <>{fmtBRL(saved)} <span className="fin-goal-of">/ {fmtBRL(savingsTarget)}</span></>
+                ? <>{fmtBRL(saldoFinalEstimado)} <span className="fin-goal-of">/ {fmtBRL(savingsTarget)}</span></>
                 : <span className="fin-goal-unset">definir meta</span>}
               <span className="fin-edit-hint">✎</span>
             </button>

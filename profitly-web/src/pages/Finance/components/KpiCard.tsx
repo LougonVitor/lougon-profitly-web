@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { fmtBRL, fmtPct } from '../helpers'
 import { HelpTip } from './HelpTip'
 
-export type KpiTone = 'pos'|'neg'|'neutral'|'accent'|'invest'
+export type KpiTone = 'pos'|'neg'|'neutral'|'accent'
 
 interface KpiCardProps {
   label: string

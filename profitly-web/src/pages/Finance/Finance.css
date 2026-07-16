@@ -878,8 +878,6 @@
 .fin-kpi--neg    .fin-kpi-value { color: #dc2626; }
 .fin-kpi--accent { border-left-color: #378add; }
 .fin-kpi--accent .fin-kpi-value { color: #378add; }
-.fin-kpi--invest { border-left-color: #f59e0b; }
-.fin-kpi--invest .fin-kpi-value { color: #f59e0b; }
 
 .fin-kpi-label {
   font-size: 10.5px;
@@ -957,6 +955,9 @@
   padding: 0.9rem 1.1rem;
   min-width: 0;
 }
+/* Título menor que o padrão das outras seções: a tabela abaixo já é densa,
+   e um título grande destoava do resto do cartão. */
+.fin-budget-section .fin-section-title { font-size: 13px; }
 .fin-budget-note { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); font-style: italic; }
 
 .fin-view-toggle {
@@ -978,7 +979,16 @@
 /* Larguras fixas: a tabela precisa caber no card sem rolagem lateral, então as
    colunas numéricas têm tamanho definido e a de categoria absorve o resto. */
 .fin-budget-table { table-layout: fixed; width: 100%; }
-.fin-budget-table th { white-space: normal; vertical-align: bottom; }
+/* thead th: precisa bater a especificidade de ".fin-table thead th" (a base
+   da tabela de lançamentos), senão o font-size de lá vence este aqui. */
+.fin-budget-table thead th {
+  white-space: normal;
+  vertical-align: bottom;
+  /* Menor que o padrão de 11px da tabela de lançamentos: em 6 colunas fixas
+     estreitas o rótulo em caixa alta dominava a linha. */
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+}
 /* O "?" é irmão do texto no fluxo, então sozinho ele quebrava para a linha de
    baixo quando a coluna apertava. Como flex item ele fica sempre ao lado do
    rótulo, que passa a ser quem quebra. */
@@ -989,10 +999,11 @@
 .fin-budget-table th:first-child,
 .fin-budget-table td:first-child { padding-left: 0; }
 .fin-bcol-cat    { width: auto; min-width: 0; }
-/* 122px = "ORÇAMENTO" + o "?" ao lado; a palavra é única e não tem onde quebrar. */
-.fin-bcol-num    { width: 122px; }
-.fin-bcol-prog   { width: 104px; }
-.fin-bcol-status { width: 128px; }
+/* Medido com a fonte de 9.5px do cabeçalho de fato aplicada (não com o valor
+   herdado de 11px que a tabela de lançamentos usa). */
+.fin-bcol-num    { width: 110px; }
+.fin-bcol-prog   { width: 92px; }
+.fin-bcol-status { width: 134px; }
 .fin-bcol-act    { width: 26px; padding-left: 0 !important; padding-right: 0 !important; }
 .fin-budget-table td.fin-bcol-num { font-variant-numeric: tabular-nums; }
 
@@ -1148,7 +1159,23 @@
 .fin-alerts-title { display: flex; align-items: center; gap: 7px; margin-bottom: 1rem; }
 .fin-alerts-bell { font-size: 14px; }
 .fin-alerts-empty { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin: 0; }
-.fin-alerts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+/* Uma linha por categoria com orçamento: sem teto, a lista cresce mais que a
+   tabela ao lado a cada categoria nova e estoura o cartão. Acima de ~5 linhas
+   ela rola por dentro, suave, em vez de empurrar o layout. */
+.fin-alerts-list {
+  list-style: none; margin: 0; padding: 0 6px 0 0;
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 420px; overflow-y: auto; overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.fin-alerts-list::-webkit-scrollbar { width: 6px; }
+.fin-alerts-list::-webkit-scrollbar-track { background: transparent; }
+.fin-alerts-list::-webkit-scrollbar-thumb {
+  background: var(--border); border-radius: 999px;
+}
+.fin-alerts-list::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 .fin-alert {
   display: flex; align-items: flex-start; gap: 10px;
   background: var(--bg);

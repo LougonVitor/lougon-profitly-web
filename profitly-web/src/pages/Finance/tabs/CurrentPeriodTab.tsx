@@ -81,8 +81,10 @@ export function CurrentPeriodTab({
   const budgetRows = buildBudgetRows(period.expenses, period.budgetLimits)
   const alerts = buildAlerts(budgetRows)
 
+  // A meta de poupança compara contra a projeção de fim de período, não contra
+  // o saldo de hoje — é isso que responde "vou bater a meta se manter o ritmo?".
   const savingsPct = period.savingsTarget && period.savingsTarget > 0
-    ? (period.savedThisMonth / period.savingsTarget) * 100
+    ? (saldoFinalEstimado / period.savingsTarget) * 100
     : null
   const daysLeft = daysLeftInPeriod(period.resetDay)
 
@@ -137,32 +139,30 @@ export function CurrentPeriodTab({
       <div className="fin-kpis">
         <KpiCard
           label="Renda do mês" value={period.totalIncome} caption="Total recebido" tone="accent"
-          help="Salário líquido mais todas as rendas adicionais e recorrentes deste período."
+          help="Soma de todas as rendas adicionais e recorrentes deste período."
         />
         <KpiCard
-          label="Gastos do mês" value={period.totalSpent}
+          label="Gastos Realizados" value={period.totalSpent}
           pct={pctOf(period.totalSpent, period.totalIncome)}
           caption="Sem contar o investimento" tone="neg"
           help="Tudo que já saiu no período, exceto o investimento — investir não é gastar, então as duas coisas aparecem separadas."
         />
         <KpiCard
-          label="Investido no mês" value={period.investedReal}
-          pct={pctOf(period.investedReal, period.totalIncome)}
-          caption={period.investmentAuto ? '📊 da carteira' : 'Valor manual'} tone="invest"
-          help="Quanto você aplicou no período. No modo Carteira o valor vem das compras da sua carteira de investimentos."
+          label="Gastos Esperados" value={period.totalEstimated}
+          pct={pctOf(period.totalEstimated, period.totalIncome)}
+          caption="Planejado para o período" tone="neutral"
+          help="Soma do que você planejou gastar no período — a coluna Gastos esperados de cada lançamento."
         />
         <KpiCard
-          label="Poupança do mês" value={period.savedThisMonth}
-          pct={pctOf(period.savedThisMonth, period.totalIncome)}
-          caption="Sobrou depois de gastar e investir"
-          tone={period.savedThisMonth >= 0 ? 'pos' : 'neg'}
-          help="O que sobrou das entradas depois dos gastos e do investimento. A meta mensal fica no painel de alertas, ao lado."
+          label="Saldo Atual" value={period.balance}
+          caption="Entradas menos o já gasto" tone={period.balance >= 0 ? 'pos' : 'neg'}
+          help="Total de entradas menos tudo que você já gastou até agora, incluindo o investimento."
         />
         <KpiCard
-          label="Saldo final esperado" value={saldoFinalEstimado}
+          label="Saldo Final Esperado" value={saldoFinalEstimado}
           caption={`Faltam ${daysLeft} dia${daysLeft === 1 ? '' : 's'} no período`}
           tone={saldoFinalEstimado >= 0 ? 'pos' : 'neg'}
-          help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado)."
+          help="Projeção do saldo no fim do período: entradas menos os gastos esperados de todos os lançamentos (incluindo o investimento planejado). É contra essa projeção que a meta de poupança é medida."
         />
       </div>
 
@@ -182,7 +182,7 @@ export function CurrentPeriodTab({
         />
         <AlertsPanel
           alerts={alerts}
-          saved={period.savedThisMonth}
+          saldoFinalEstimado={saldoFinalEstimado}
           savingsTarget={period.savingsTarget}
           savingsPct={savingsPct}
           editingSavings={editingSavings}
