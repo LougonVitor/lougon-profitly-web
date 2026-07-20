@@ -386,7 +386,6 @@
 }
 
 .fin-income-card--extra  { border-left: 3px solid #378add; }
-.fin-income-card--total  { border-left: 3px solid #378add; background: var(--bg-card); }
 
 .fin-income-card-label {
   font-size: 11px;
@@ -409,8 +408,6 @@
   align-items: center;
   gap: 6px;
 }
-
-.fin-income-value--strong { color: #378add; }
 
 .fin-income-empty {
   flex: 1 1 260px;

@@ -92,8 +92,12 @@ export function CurrentPeriodTab({
   useEffect(() => {
     const el = budgetSectionElRef.current
     if (!el) return
+    // getBoundingClientRect (não entry.contentRect): o app usa box-sizing:
+    // border-box, então o "height" que aplicamos nos alertas precisa ser a
+    // caixa inteira (com padding e borda) — contentRect mede só o miolo e
+    // deixava os alertas menores exatamente pelo padding+borda do card.
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) setBudgetHeight(entry.contentRect.height)
+      if (entry) setBudgetHeight(entry.target.getBoundingClientRect().height)
     })
     observer.observe(el)
     return () => observer.disconnect()
@@ -133,13 +137,6 @@ export function CurrentPeriodTab({
               Nenhuma entrada neste período. Use <strong>Renda adicional</strong> para lançar uma agora, ou cadastre na aba <strong>Recorrentes</strong> o que se repete todo mês.
             </p>
           )}
-
-          {/* Total income */}
-          <div className="fin-income-card fin-income-card--total">
-            <HelpTip text="Soma de todas as rendas adicionais e recorrentes lançadas neste período." />
-            <div className="fin-income-card-label">Total de Entradas</div>
-            <div className="fin-income-value fin-income-value--strong">{fmtBRL(period.totalIncome)}</div>
-          </div>
         </div>
 
         {showAddIncome && (
