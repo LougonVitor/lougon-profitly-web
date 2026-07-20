@@ -74,10 +74,15 @@ export function CurrentPeriodTab({
   const nonInvestmentRecurring = period.expenses.filter(e => e.recurring && e.type !== 'INVESTMENT')
   const nonRecurring = period.expenses.filter(e => !e.recurring)
 
-  // If investment has no estimatedValue yet, fall back to investmentTarget from settings
-  const invEst = inv?.estimatedValue ?? period.investmentTarget ?? 0
-  const extraInvDeduction = inv?.estimatedValue == null ? invEst : 0
-  const saldoFinalEstimado = period.totalIncome - period.totalEstimated - extraInvDeduction
+  // Projeção por linha: quando o gasto já realizado passa do esperado, a
+  // projeção final tem que usar o realizado (=MAX(esperado, real)) — senão o
+  // saldo projetado fica otimista demais depois que a linha estoura.
+  const totalProjected = period.expenses.reduce((sum, e) => {
+    // Investimento sem estimatedValue ainda: usa a meta das configurações como esperado.
+    const est = e.estimatedValue ?? (e.type === 'INVESTMENT' ? period.investmentTarget ?? 0 : 0)
+    return sum + Math.max(est, e.realValue)
+  }, 0)
+  const saldoFinalEstimado = period.totalIncome - totalProjected
 
   const budgetRows = buildBudgetRows(period.expenses, period.budgetLimits)
   const alerts = buildAlerts(budgetRows)
