@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type { Expense, EditCell, EditField } from '../types'
 import { TYPE_LABELS, TYPE_COLORS, STATUS_LABELS, ALL_TYPES } from '../constants'
 import { fmtBRL } from '../helpers'
+import { Tooltip } from './Tooltip'
 
 interface ExpenseRowProps {
   exp: Expense
@@ -11,14 +13,25 @@ interface ExpenseRowProps {
   onCommit: () => void
   onCancelEdit: () => void
   onMarkPaid: (exp:Expense) => void
+  onAddToReal: (exp:Expense, amount:number) => void
   onDelete: (id:number) => void
 }
 
-export function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onDelete }: ExpenseRowProps) {
+export function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onAddToReal, onDelete }: ExpenseRowProps) {
   const isEditingTitle = editCell?.id === exp.id && editCell.field === 'title'
   const isEditingEst   = editCell?.id === exp.id && editCell.field === 'estimated'
   const isEditingReal  = editCell?.id === exp.id && editCell.field === 'real'
   const isEditingType  = editCell?.id === exp.id && editCell.field === 'type'
+
+  // Somar valor: soma o que acabou de ser gasto ao realValue existente, em vez
+  // de o usuário ter que somar os dois de cabeça e digitar o total.
+  const [addingAmount, setAddingAmount] = useState<string | null>(null)
+
+  function commitAdd() {
+    const amount = parseFloat((addingAmount ?? '').replace(',', '.'))
+    if (!Number.isNaN(amount) && amount !== 0) onAddToReal(exp, amount)
+    setAddingAmount(null)
+  }
 
   return (
     <tr className={`fin-row ${exp.recurring?'fin-row--recurring':''} fin-animate-row`}>
@@ -46,13 +59,32 @@ export function ExpenseRow({ exp, editCell, editCellVal, onStartEdit, onEditChan
           {isEditingReal ? (
             <InlineNumberCell value={exp.realValue} editing={true} editVal={editCellVal}
               onStart={()=>{}} onChange={onEditChange} onCommit={onCommit} onCancel={onCancelEdit} />
+          ) : addingAmount !== null ? (
+            <input
+              className="fin-inline-input fin-inline-input--number fin-inline-input--add"
+              autoFocus
+              type="number"
+              step="0.01"
+              placeholder="Quanto gastou agora?"
+              value={addingAmount}
+              onChange={e=>setAddingAmount(e.target.value)}
+              onBlur={commitAdd}
+              onKeyDown={e=>{ if(e.key==='Enter') commitAdd(); if(e.key==='Escape') setAddingAmount(null) }}
+            />
           ) : (
             <span className="fin-editable-cell fin-editable-cell--real" onClick={()=>onStartEdit(exp.id,'real',exp.realValue.toString())} title="Clique para editar">
               {fmtBRL(exp.realValue)}
             </span>
           )}
-          {exp.estimatedValue != null && exp.realValue < exp.estimatedValue && (
-            <button className="fin-pay-btn" onClick={()=>onMarkPaid(exp)} title="Marcar como pago (preencher com o valor esperado)">✓</button>
+          {!isEditingReal && addingAmount === null && exp.estimatedValue != null && exp.realValue < exp.estimatedValue && (
+            <Tooltip text="Marca esse gasto como pago, preenchendo o valor gasto com o valor esperado desta linha.">
+              <button className="fin-pay-btn" onClick={()=>onMarkPaid(exp)}>✓</button>
+            </Tooltip>
+          )}
+          {!isEditingReal && addingAmount === null && (
+            <Tooltip text="Soma um novo valor ao que já foi gasto nesta linha — sem precisar somar de cabeça e digitar o total.">
+              <button className="fin-sum-btn" onClick={()=>setAddingAmount('')}>+</button>
+            </Tooltip>
           )}
         </div>
       </td>

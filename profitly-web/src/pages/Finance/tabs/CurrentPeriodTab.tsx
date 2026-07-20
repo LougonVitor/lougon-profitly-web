@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction, FormEvent, ChangeEvent } from 'react'
 import type { CurrentPeriod, Expense, ExpenseType, EditCell, EditField, BudgetRow } from '../types'
-import { TYPE_LABELS, ALL_TYPES, STATUS_LABELS, INVEST_PCTS } from '../constants'
+import { STATUS_LABELS, INVEST_PCTS } from '../constants'
 import { fmtBRL, buildBudgetRows, buildAlerts, pctOf, daysLeftInPeriod } from '../helpers'
 import { KpiCard } from '../components/KpiCard'
 import { AlertsPanel } from '../components/AlertsPanel'
 import { BudgetSection, type BudgetView } from '../components/BudgetSection'
 import { ExpenseRow } from '../components/ExpenseRow'
 import { HelpTip } from '../components/HelpTip'
+import { AddExpenseModal } from '../components/AddExpenseModal'
 
 interface CurrentPeriodTabProps {
   period: CurrentPeriod
@@ -47,6 +48,7 @@ interface CurrentPeriodTabProps {
   onCommit: () => void
   onCancelEdit: () => void
   onMarkPaid: (exp: Expense) => void
+  onAddToReal: (exp: Expense, amount: number) => void
   onDelete: (id: number) => void
   // Investment row
   investPct: number
@@ -66,7 +68,7 @@ export function CurrentPeriodTab({
   savingsTargetInput, setSavingsTargetInput, editingSavings, setEditingSavings, onSaveSavingsTarget,
   showAdd, setShowAdd, addTitle, setAddTitle, addReal, setAddReal, addType, setAddType, onAddExpense,
   onExport, onImport,
-  editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onDelete,
+  editCell, editCellVal, onStartEdit, onEditChange, onCommit, onCancelEdit, onMarkPaid, onAddToReal, onDelete,
   investPct, onInvestPct, investManual, setInvestManual, onInvestManual, onSetInvestmentAuto,
 }: CurrentPeriodTabProps) {
   const inv = period.expenses.find(e => e.type === 'INVESTMENT') ?? null
@@ -230,27 +232,21 @@ export function CurrentPeriodTab({
               ⤒ importar
               <input type="file" accept=".csv,text/csv" onChange={onImport} hidden />
             </label>
-            <button className={`fin-btn--add ${showAdd ? 'fin-btn--add--active' : ''}`} onClick={()=>setShowAdd(v=>!v)}>
-              <span className="fin-btn--add-icon">{showAdd ? '✕' : '+'}</span>
-              {showAdd ? 'Fechar' : 'Novo gasto'}
+            <button className="fin-btn--add" onClick={()=>setShowAdd(true)}>
+              <span className="fin-btn--add-icon">+</span>
+              Novo gasto
             </button>
           </div>
         </div>
 
         {showAdd && (
-          <form className="fin-add-form fin-animate-in" onSubmit={onAddExpense}>
-            <div className="fin-add-row-simple">
-              <input className="fin-input" placeholder="Título" value={addTitle}
-                onChange={e=>setAddTitle(e.target.value)} required />
-              <input className="fin-input fin-input--short" type="number" step="0.01" placeholder="Valor (R$)"
-                value={addReal} onChange={e=>setAddReal(e.target.value)} required />
-              <select className="fin-input fin-input--short" value={addType}
-                onChange={e=>setAddType(e.target.value as ExpenseType)}>
-                {ALL_TYPES.filter(t=>t!=='INVESTMENT').map(t=><option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-              </select>
-              <button className="fin-btn fin-btn--ghost fin-btn--sm" type="submit">Adicionar</button>
-            </div>
-          </form>
+          <AddExpenseModal
+            addTitle={addTitle} setAddTitle={setAddTitle}
+            addReal={addReal} setAddReal={setAddReal}
+            addType={addType} setAddType={setAddType}
+            onSubmit={onAddExpense}
+            onClose={()=>setShowAdd(false)}
+          />
         )}
 
         <div className="fin-table-wrap">
@@ -393,6 +389,7 @@ export function CurrentPeriodTab({
                   onCommit={onCommit}
                   onCancelEdit={onCancelEdit}
                   onMarkPaid={onMarkPaid}
+                  onAddToReal={onAddToReal}
                   onDelete={onDelete}
                 />
               ))}
@@ -416,6 +413,7 @@ export function CurrentPeriodTab({
                   onCommit={onCommit}
                   onCancelEdit={onCancelEdit}
                   onMarkPaid={onMarkPaid}
+                  onAddToReal={onAddToReal}
                   onDelete={onDelete}
                 />
               ))}

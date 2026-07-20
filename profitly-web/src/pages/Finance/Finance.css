@@ -270,6 +270,50 @@
   gap: 8px;
 }
 
+/* ── "Novo gasto" modal (form) ── */
+.fin-modal--form { position: relative; max-width: 420px; padding: 1.3rem 1.4rem; }
+
+.fin-modal-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.fin-modal-close:hover { background: var(--bg); color: var(--text-main); }
+
+.fin-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.fin-modal-row-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.fin-modal-select { cursor: pointer; }
+
+.fin-modal-type-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -0.3rem;
+}
+.fin-modal-type-preview-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
 /* Subtle text-link button */
 .fin-link-btn {
   background: none;
@@ -701,6 +745,27 @@
   line-height: 1.4;
 }
 .fin-pay-btn:hover { opacity: 1; background: #dcfce7; }
+
+.fin-sum-btn {
+  background: none;
+  border: 1px solid #378add44;
+  color: #378add;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1.4;
+}
+.fin-sum-btn:hover { opacity: 1; background: rgba(55,138,221,0.12); }
+
+.fin-inline-input--add { width: 120px; }
+
+/* Wraps a button so Tooltip can anchor its hover balloon without disturbing
+   the flex layout of the cell it sits in. */
+.fin-tooltip-anchor { display: inline-flex; align-items: center; }
 
 .fin-del-btn {
   background: none;

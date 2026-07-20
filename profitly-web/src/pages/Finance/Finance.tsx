@@ -199,6 +199,11 @@ export function Finance() {
     await refreshPeriod()
   }
 
+  async function handleAddToReal(exp: Expense, amount: number) {
+    await api.patch(`/api/finance/expenses/${exp.id}`, { realValue: exp.realValue + amount })
+    await refreshPeriod()
+  }
+
   async function handleInvestPct(pct: number) {
     setInvestPct(pct)
     const inv = investmentExpense()
@@ -457,7 +462,7 @@ export function Finance() {
             editCell={editCell} editCellVal={editCellVal}
             onStartEdit={startEdit} onEditChange={setEditCellVal}
             onCommit={commitEdit} onCancelEdit={()=>setEditCell(null)}
-            onMarkPaid={handleMarkPaid} onDelete={handleDelete}
+            onMarkPaid={handleMarkPaid} onAddToReal={handleAddToReal} onDelete={handleDelete}
             investPct={investPct} onInvestPct={handleInvestPct}
             investManual={investManual} setInvestManual={setInvestManual}
             onInvestManual={handleInvestManual}
