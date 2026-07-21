@@ -1214,6 +1214,107 @@
   .fin-budget-chart-row { grid-template-columns: 96px minmax(0, 1fr) 44px; gap: 8px; }
 }
 
+/* Visão em donut: % do salário por categoria + livre */
+.fin-donut { margin-top: 1rem; }
+
+.fin-donut-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.fin-donut-toggle {
+  display: inline-flex;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px;
+}
+.fin-donut-toggle-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  padding: 5px 12px; border-radius: 999px; white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.fin-donut-toggle-btn:hover { color: var(--text-main); }
+.fin-donut-toggle-btn--active { background: var(--bg-card); color: #378add; box-shadow: var(--shadow-sm); }
+
+.fin-donut-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.fin-donut-chart-wrap {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  flex-shrink: 0;
+}
+
+.fin-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.fin-donut-center-value { font-size: 20px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
+.fin-donut-center-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.fin-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+.fin-donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.fin-donut-legend-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-main);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fin-donut-legend-pct {
+  font-weight: 700;
+  color: var(--text-main);
+  min-width: 42px;
+  text-align: right;
+}
+.fin-donut-legend-val {
+  color: var(--text-muted);
+  min-width: 78px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fin-donut-legend-item--free { border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 2px; }
+
+.fin-donut-overrun-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #dc2626;
+  line-height: 1.5;
+}
+[data-theme="dark"] .fin-donut-overrun-note { color: #f06c6b; }
+
+@media (max-width: 480px) {
+  .fin-donut-row { justify-content: center; }
+  .fin-donut-legend { min-width: 0; width: 100%; }
+}
+
 /* ── Alertas do mês ── */
 /* A altura vem via JS (inline style), medida do card de Orçamento ao lado —
    os dois precisam terminar exatamente juntos, e nenhum CSS estático prevê

@@ -201,6 +201,7 @@ export function CurrentPeriodTab({
           onEditChange={onBudgetEditChange}
           onCommitEdit={onCommitBudgetEdit}
           onCancelEdit={onCancelBudgetEdit}
+          totalIncome={period.totalIncome}
           sectionRef={el => { budgetSectionElRef.current = el }}
         />
         <AlertsPanel

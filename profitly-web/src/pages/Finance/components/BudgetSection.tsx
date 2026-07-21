@@ -1,9 +1,11 @@
+import { useState } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import type { BudgetRow, ExpenseType } from '../types'
 import { TYPE_ICONS, TYPE_HINTS, TYPE_COLORS, BUDGET_STATE_LABELS } from '../constants'
 import { fmtBRL, fmtPct } from '../helpers'
 import { HelpTip } from './HelpTip'
 
-export type BudgetView = 'list'|'chart'
+export type BudgetView = 'list'|'chart'|'donut'
 
 interface BudgetSectionProps {
   rows: BudgetRow[]
@@ -17,6 +19,8 @@ interface BudgetSectionProps {
   onEditChange: (v: string) => void
   onCommitEdit: () => void
   onCancelEdit: () => void
+  /** Renda total do período — base do donut de "% do salário por categoria". */
+  totalIncome: number
   /** Mede a altura renderizada para o painel de Alertas, ao lado, acompanhar. */
   sectionRef?: (el: HTMLDivElement | null) => void
 }
@@ -24,7 +28,7 @@ interface BudgetSectionProps {
 export function BudgetSection({
   rows, view, onViewChange, onDeleteBudget,
   editingType, editValue, onStartEdit, onEditChange, onCommitEdit, onCancelEdit,
-  sectionRef,
+  totalIncome, sectionRef,
 }: BudgetSectionProps) {
   return (
     <div ref={sectionRef} className="fin-budget-section fin-animate-in">
@@ -47,6 +51,12 @@ export function BudgetSection({
               onClick={() => onViewChange('chart')}
               aria-pressed={view === 'chart'}
             >📊 Gráfico</button>
+            <button
+              type="button"
+              className={`fin-view-btn ${view === 'donut' ? 'fin-view-btn--active' : ''}`}
+              onClick={() => onViewChange('donut')}
+              aria-pressed={view === 'donut'}
+            >🍩 Distribuição</button>
           </div>
         </div>
       </div>
@@ -66,8 +76,10 @@ export function BudgetSection({
           onCommitEdit={onCommitEdit}
           onCancelEdit={onCancelEdit}
         />
-      ) : (
+      ) : view === 'chart' ? (
         <BudgetChart rows={rows} />
+      ) : (
+        <BudgetDonut rows={rows} totalIncome={totalIncome} />
       )}
     </div>
   )
@@ -247,6 +259,102 @@ function BudgetChart({ rows }: { rows: BudgetRow[] }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+type DonutMetric = 'estimated'|'real'
+const FREE_SLICE_COLOR = '#94a3b8'
+
+/**
+ * Quanto cada categoria representa do salário total, mais o quanto ainda está
+ * livre — alterna entre gastos esperados e gastos reais sem trocar de aba.
+ */
+function BudgetDonut({ rows, totalIncome }: { rows: BudgetRow[]; totalIncome: number }) {
+  const [metric, setMetric] = useState<DonutMetric>('estimated')
+
+  if (!totalIncome || totalIncome <= 0) {
+    return (
+      <p className="fin-recurring-desc">
+        Lance sua renda do mês em Entradas para ver a distribuição do salário por categoria.
+      </p>
+    )
+  }
+
+  const values = rows
+    .map(r => ({ type: r.type, name: r.name, color: r.color, value: metric === 'estimated' ? r.budget : r.spent }))
+    .filter(r => r.value > 0)
+
+  const spentTotal = values.reduce((s, r) => s + r.value, 0)
+  // Se os gastos já passaram da renda, a "torta" cresce para caber tudo — não
+  // há livre nesse caso, mas as fatias continuam proporcionais entre si.
+  const pieTotal = Math.max(totalIncome, spentTotal)
+  const free = pieTotal - spentTotal
+
+  const data = [
+    ...values.map(r => ({ name: r.name, value: r.value, color: r.color })),
+    ...(free > 0.005 ? [{ name: 'Livre', value: free, color: FREE_SLICE_COLOR }] : []),
+  ]
+
+  return (
+    <div className="fin-donut">
+      <div className="fin-donut-toggle-row">
+        <div className="fin-donut-toggle" role="group" aria-label="Métrica exibida no donut">
+          <button
+            type="button"
+            className={`fin-donut-toggle-btn ${metric === 'estimated' ? 'fin-donut-toggle-btn--active' : ''}`}
+            onClick={() => setMetric('estimated')}
+            aria-pressed={metric === 'estimated'}
+          >Gastos esperados</button>
+          <button
+            type="button"
+            className={`fin-donut-toggle-btn ${metric === 'real' ? 'fin-donut-toggle-btn--active' : ''}`}
+            onClick={() => setMetric('real')}
+            aria-pressed={metric === 'real'}
+          >Gastos reais</button>
+        </div>
+        <HelpTip inline text="Cada fatia mostra quanto uma categoria consome do seu salário do mês. 'Livre' é o que sobra depois de todas as categorias. Alterne entre o que você planejou gastar (esperados) e o que já saiu de fato (reais)." />
+      </div>
+
+      <div className="fin-donut-row">
+        <div className="fin-donut-chart-wrap">
+          <ResponsiveContainer width={190} height={190}>
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} paddingAngle={2} strokeWidth={0}>
+                {data.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Pie>
+              <RechartsTooltip formatter={(v: number) => fmtBRL(v)} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="fin-donut-center">
+            <span className="fin-donut-center-value">{fmtPct((free / pieTotal) * 100)}</span>
+            <span className="fin-donut-center-label">livre</span>
+          </div>
+        </div>
+
+        <div className="fin-donut-legend">
+          {values.map(r => (
+            <div key={r.type} className="fin-donut-legend-item">
+              <span className="fin-cat-dot" style={{ background: r.color }} />
+              <span className="fin-donut-legend-name">{r.name}</span>
+              <span className="fin-donut-legend-pct">{fmtPct((r.value / pieTotal) * 100)}</span>
+              <span className="fin-donut-legend-val">{fmtBRL(r.value)}</span>
+            </div>
+          ))}
+          <div className="fin-donut-legend-item fin-donut-legend-item--free">
+            <span className="fin-cat-dot" style={{ background: FREE_SLICE_COLOR }} />
+            <span className="fin-donut-legend-name">Livre</span>
+            <span className="fin-donut-legend-pct">{fmtPct((free / pieTotal) * 100)}</span>
+            <span className="fin-donut-legend-val">{fmtBRL(Math.max(free, 0))}</span>
+          </div>
+        </div>
+      </div>
+
+      {spentTotal > totalIncome && (
+        <p className="fin-donut-overrun-note">
+          ⚠ Os gastos {metric === 'estimated' ? 'esperados' : 'reais'} já ultrapassam sua renda do mês — não sobra nada livre.
+        </p>
+      )}
     </div>
   )
 }
